@@ -1,0 +1,56 @@
+{
+  "name": "constructtrack",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "build": "npm run build --workspaces",
+    "dev": "npm run dev --workspaces",
+    "test": "npm run test --workspaces",
+    "lint": "npm run lint --workspaces",
+    "clean": "npm run clean --workspaces && rm -rf node_modules",
+    "web:dev": "npm run dev --workspace=apps/web",
+    "web:build": "npm run build --workspace=apps/web",
+    "mobile:dev": "npm run start --workspace=apps/mobile",
+    "mobile:ios": "npm run ios --workspace=apps/mobile",
+    "mobile:android": "npm run android --workspace=apps/mobile",
+    "packages:build": "npm run build --workspace=packages/shared && npm run build --workspace=packages/ui && npm run build --workspace=packages/supabase",
+    "notion:setup": "node src/notion-setup.js",
+    "notion:import": "node src/notion-importer.js",
+    "notion:dev": "node --watch src/notion-importer.js",
+    "notion:sync": "node src/notion-sync.js",
+    "notion:sync:dev": "NODE_ENV=development node src/notion-sync.js",
+    "notion:bulk-import": "node src/notion-bulk-importer.js",
+    "notion:sync:setup": "node src/setup-sync.js",
+    "tunnel:help": "node scripts/setup-tunnels.js",
+    "tunnel:ngrok": "node scripts/setup-tunnels.js start ngrok",
+    "tunnel:cloudflare": "node scripts/setup-tunnels.js start cloudflared",
+    "tunnel:local": "node scripts/setup-tunnels.js start localtunnel"
+  },
+  "keywords": [
+    "construction",
+    "fiber-optic",
+    "project-management",
+    "notion"
+  ],
+  "author": "ConstructTrack Development Team",
+  "license": "ISC",
+  "description": "ConstructTrack - Fiber Optic Installation Management Platform",
+  "dependencies": {
+    "@modelcontextprotocol/server-sequential-thinking": "^0.6.2",
+    "@notionhq/client": "^2.2.15",
+    "@upstash/context7-mcp": "^1.0.12",
+    "chalk": "^5.3.0",
+    "dotenv": "^16.3.1",
+    "express": "^4.21.2",
+    "ora": "^7.0.1",
+    "server-perplexity-ask": "^0.1.3"
+  }
+}

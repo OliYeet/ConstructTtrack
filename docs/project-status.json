@@ -1,0 +1,14 @@
+{
+  "lastUpdated": "2025-05-30T10:34:39.057Z",
+  "totalItems": 524,
+  "byType": {
+    "epics": 11,
+    "stories": 57,
+    "tasks": 456
+  },
+  "byStatus": {
+    "In progress": 2,
+    "Not started": 520,
+    "Done": 2
+  }
+}
