@@ -105,7 +105,7 @@
     {
       "title": "🗄️ Setup Supabase project and database",
       "type": "Task",
-      "status": "Not started"
+      "status": "In progress"
     },
     {
       "title": "📦 Setup package management and dependency strategy",
@@ -1956,7 +1956,7 @@
     {
       "title": "🌿 Initialize Git repository with branching strategy",
       "type": "Task",
-      "status": "Not started"
+      "status": "Done"
     },
     {
       "title": "🔐 Setup environment variable management",

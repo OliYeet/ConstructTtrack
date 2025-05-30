@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2025-05-30T10:34:39.057Z",
+  "lastUpdated": "2025-05-30T15:03:38.445Z",
   "totalItems": 524,
   "byType": {
     "epics": 11,
@@ -7,8 +7,8 @@
     "tasks": 456
   },
   "byStatus": {
-    "In progress": 2,
-    "Not started": 520,
-    "Done": 2
+    "In progress": 3,
+    "Not started": 518,
+    "Done": 3
   }
 }
