@@ -60,7 +60,7 @@
 
 ### 📖 🛠️ Story 0.1: Development Environment & Project Initialization
 
-🟡 **Status**: In progress | **Progress**: ████░░░░░░ 38%
+🟡 **Status**: In Progress | **Progress**: ██████░░░░ 57% (8/14 points)
 
 **Story Details:**
 - **Story Points**: 14
@@ -71,7 +71,7 @@
 |------|-----------|--------|--------|-------------|
 | **Initialize Next.js project with TypeScript** | Frontend | 2 | 🟢 Done | _No description_ |
 | **📱 Create React Native project with Expo** | Frontend | 3 | 🟢 Done | _No description_ |
-| **🗄️ Setup Supabase project and database** | Backend | 2 | 🟡 In progress | _No description_ |
+| **🗄️ Setup Supabase project and database** | Backend | 2 | ✅ Completed | Database schema, RLS policies, PostGIS integration, sample data ready |
 | **🔧 Configure development environment (ESLint, Prettier, Husky)** | Frontend | 2 | 🔴 Not started | _No description_ |
 | **📦 Setup package management and dependency strategy** | Backend | 1 | 🔴 Not started | _No description_ |
 | **🌿 Initialize Git repository with branching strategy** | DevOps | 1 | 🟢 Done | _No description_ |
