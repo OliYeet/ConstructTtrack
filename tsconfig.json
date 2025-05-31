@@ -29,13 +29,6 @@
       "@constructtrack/supabase/*": ["./packages/supabase/*"]
     }
   },
-  "include": [
-    "next-env.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
-    ".next/types/**/*.ts",
-    "apps/**/*",
-    "packages/**/*"
-  ],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "apps/**/*", "packages/**/*"],
   "exclude": ["node_modules"]
 }

@@ -6,7 +6,7 @@ export const API_ENDPOINTS = {
   SITE_SURVEYS: '/api/site-surveys',
   FORMS: '/api/forms',
   PHOTOS: '/api/photos',
-  WEATHER: '/api/weather'
+  WEATHER: '/api/weather',
 } as const;
 
 // App configuration
@@ -15,7 +15,7 @@ export const APP_CONFIG = {
   MAX_PHOTOS_PER_SURVEY: 20,
   OFFLINE_SYNC_INTERVAL: 30000, // 30 seconds
   GPS_ACCURACY_THRESHOLD: 10, // meters
-  MAP_DEFAULT_ZOOM: 15
+  MAP_DEFAULT_ZOOM: 15,
 } as const;
 
 // Status colors
@@ -24,7 +24,7 @@ export const STATUS_COLORS = {
   IN_PROGRESS: '#3B82F6',
   COMPLETED: '#10B981',
   ON_HOLD: '#F59E0B',
-  BLOCKED: '#EF4444'
+  BLOCKED: '#EF4444',
 } as const;
 
 // Form validation
@@ -32,5 +32,5 @@ export const VALIDATION_RULES = {
   MIN_PASSWORD_LENGTH: 8,
   MAX_PROJECT_NAME_LENGTH: 100,
   MAX_DESCRIPTION_LENGTH: 500,
-  MAX_NOTES_LENGTH: 1000
+  MAX_NOTES_LENGTH: 1000,
 } as const;

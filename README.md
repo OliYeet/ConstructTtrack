@@ -2,7 +2,9 @@
 
 > **Fiber Optic Installation Management Platform**
 
-A comprehensive project management platform designed specifically for fiber optic installation companies, featuring real-time mapping, mobile field worker tools, and customer documentation management.
+A comprehensive project management platform designed specifically for fiber optic installation
+companies, featuring real-time mapping, mobile field worker tools, and customer documentation
+management.
 
 ## 🚀 Features
 
@@ -27,17 +29,20 @@ This is a monorepo containing:
 ## 🛠️ Tech Stack
 
 ### Frontend
+
 - **Next.js 15.3.3** with TypeScript
 - **React Native 0.79.2** with Expo SDK 53
 - **Tailwind CSS** for styling
 - **MapBox GL JS** for mapping
 
 ### Backend
+
 - **Supabase** (PostgreSQL + Auth + Real-time)
 - **PostGIS** for geospatial data
 - **Row Level Security** for data isolation
 
 ### Development
+
 - **TypeScript** for type safety
 - **ESLint** for code quality
 - **Notion** for project management sync
@@ -46,7 +51,8 @@ This is a monorepo containing:
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Node.js 18+ 
+
+- Node.js 18+
 - npm or yarn
 - Expo CLI (for mobile development)
 - Supabase account
@@ -97,7 +103,8 @@ This project uses an agile methodology with Notion integration:
 - **Progress tracking** with story points
 - **Team assignments** and role-based planning
 
-View the current project plan: [`docs/constructtrack_agile_project_plan.md`](docs/constructtrack_agile_project_plan.md)
+View the current project plan:
+[`docs/constructtrack_agile_project_plan.md`](docs/constructtrack_agile_project_plan.md)
 
 ## 🌿 Branching Strategy
 
@@ -163,6 +170,7 @@ This project is licensed under the ISC License - see the [LICENSE](LICENSE) file
 ## 🙋‍♂️ Support
 
 For support and questions:
+
 - Create an issue in this repository
 - Check the [documentation](docs/)
 - Review the [project plan](docs/constructtrack_agile_project_plan.md)

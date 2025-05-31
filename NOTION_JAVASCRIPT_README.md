@@ -26,10 +26,10 @@ npm run notion:import
 
 ```json
 {
-  "@notionhq/client": "^2.2.15",  // Official Notion API client
-  "dotenv": "^16.3.1",            // Environment variable management
-  "chalk": "^5.3.0",              // Beautiful colored console output
-  "ora": "^7.0.1"                 // Elegant progress spinners
+  "@notionhq/client": "^2.2.15", // Official Notion API client
+  "dotenv": "^16.3.1", // Environment variable management
+  "chalk": "^5.3.0", // Beautiful colored console output
+  "ora": "^7.0.1" // Elegant progress spinners
 }
 ```
 
@@ -49,17 +49,20 @@ npm run notion:dev
 ## 📋 Setup Process
 
 ### 1. Install Dependencies
+
 ```bash
 npm install
 ```
 
 ### 2. Create Notion Integration
+
 1. Go to [https://www.notion.so/my-integrations](https://www.notion.so/my-integrations)
 2. Click **"New integration"**
 3. Name it: `ConstructTrack Importer`
 4. Copy the **Integration Token** (starts with `secret_`)
 
 ### 3. Prepare Parent Page
+
 1. Create a new page in Notion where you want the database
 2. Share the page with your integration:
    - Click **"Share"** → **"Invite"**
@@ -69,6 +72,7 @@ npm install
    - Page ID: `1234567890abcdef`
 
 ### 4. Configure Environment
+
 ```bash
 # Run setup to create .env template
 npm run notion:setup
@@ -79,6 +83,7 @@ NOTION_PARENT_PAGE_ID=your_actual_page_id_here
 ```
 
 ### 5. Import Your Project Plan
+
 ```bash
 npm run notion:import
 ```
@@ -86,6 +91,7 @@ npm run notion:import
 ## 📊 What Gets Created
 
 ### Complete Notion Database
+
 - **8 Epics** with priorities and timelines
 - **16+ User Stories** with acceptance criteria
 - **120+ Tasks** with role assignments
@@ -93,6 +99,7 @@ npm run notion:import
 - **Story Points** for sprint planning
 
 ### Database Properties
+
 - **Title**: Epic/Story/Task name
 - **Type**: Epic (purple), Story (blue), Task (green)
 - **Epic**: Which epic this belongs to
@@ -133,6 +140,7 @@ You can view it at: https://notion.so/123456781234123412341234567890abc
 ## 🔧 Configuration Options
 
 ### Environment Variables (.env)
+
 ```bash
 # Required
 NOTION_TOKEN=secret_your_token_here
@@ -144,6 +152,7 @@ NODE_ENV=development  # Shows detailed error messages
 ```
 
 ### Custom Markdown File
+
 ```bash
 # Use a different markdown file
 MARKDOWN_FILE=path/to/your/agile-plan.md
@@ -154,24 +163,29 @@ MARKDOWN_FILE=path/to/your/agile-plan.md
 ### Common Issues
 
 **"Module not found" Error**
+
 ```bash
 # Make sure dependencies are installed
 npm install
 ```
 
 **"Unauthorized" Error**
+
 - Check your integration token is correct
 - Ensure the parent page is shared with your integration
 
 **"Page not found" Error**
+
 - Verify the parent page ID is correct
 - Make sure the page exists and is accessible
 
 **"File not found" Error**
+
 - Ensure `docs/constructtrack_agile_project_plan.md` exists
 - Or set custom path with `MARKDOWN_FILE` environment variable
 
 ### Development Mode
+
 ```bash
 # Run in development mode for detailed error messages
 NODE_ENV=development npm run notion:import
@@ -179,14 +193,14 @@ NODE_ENV=development npm run notion:import
 
 ## 🆚 JavaScript vs Python Version
 
-| Feature | JavaScript | Python |
-|---------|------------|--------|
-| **Setup** | `npm install` | Virtual environment setup |
-| **Dependencies** | Automatic isolation | Manual virtual environment |
-| **Familiarity** | You already know npm | New ecosystem to learn |
-| **Debugging** | Node.js tools you know | Python-specific tools |
-| **Performance** | Fast startup | Slower startup |
-| **Maintenance** | Part of your existing workflow | Separate Python environment |
+| Feature          | JavaScript                     | Python                      |
+| ---------------- | ------------------------------ | --------------------------- |
+| **Setup**        | `npm install`                  | Virtual environment setup   |
+| **Dependencies** | Automatic isolation            | Manual virtual environment  |
+| **Familiarity**  | You already know npm           | New ecosystem to learn      |
+| **Debugging**    | Node.js tools you know         | Python-specific tools       |
+| **Performance**  | Fast startup                   | Slower startup              |
+| **Maintenance**  | Part of your existing workflow | Separate Python environment |
 
 ## 🎉 Success!
 
@@ -197,9 +211,10 @@ Once complete, you'll have a fully functional Notion project management database
 ✅ **120+ Tasks** with clear role assignments  
 ✅ **Complete dependency mapping** for proper sequencing  
 ✅ **Story point estimates** ready for sprint planning  
-✅ **Professional project management** setup in Notion  
+✅ **Professional project management** setup in Notion
 
-Your team can immediately start using this for sprint planning, task assignment, and progress tracking!
+Your team can immediately start using this for sprint planning, task assignment, and progress
+tracking!
 
 ## 📈 Next Steps
 

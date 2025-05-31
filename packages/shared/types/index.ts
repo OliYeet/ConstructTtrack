@@ -13,7 +13,7 @@ export enum ProjectStatus {
   NOT_STARTED = 'not_started',
   IN_PROGRESS = 'in_progress',
   COMPLETED = 'completed',
-  ON_HOLD = 'on_hold'
+  ON_HOLD = 'on_hold',
 }
 
 // User types
@@ -29,7 +29,7 @@ export enum UserRole {
   ADMIN = 'admin',
   MANAGER = 'manager',
   FIELD_WORKER = 'field_worker',
-  VIEWER = 'viewer'
+  VIEWER = 'viewer',
 }
 
 // Fiber network types
@@ -51,7 +51,7 @@ export enum RouteStatus {
   PLANNED = 'planned',
   IN_PROGRESS = 'in_progress',
   COMPLETED = 'completed',
-  BLOCKED = 'blocked'
+  BLOCKED = 'blocked',
 }
 
 // Site survey types
@@ -83,5 +83,5 @@ export enum FieldType {
   CHECKBOX = 'checkbox',
   SIGNATURE = 'signature',
   PHOTO = 'photo',
-  DATE = 'date'
+  DATE = 'date',
 }

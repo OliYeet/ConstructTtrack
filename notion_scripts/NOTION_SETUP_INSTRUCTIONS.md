@@ -1,10 +1,12 @@
 # ConstructTrack Agile Project Plan → Notion Database Importer
 
-This script will automatically create a comprehensive Notion database with all your epics, stories, and tasks from the agile project plan.
+This script will automatically create a comprehensive Notion database with all your epics, stories,
+and tasks from the agile project plan.
 
 ## 🚀 Quick Setup (5 minutes)
 
 ### Step 1: Create Notion Integration
+
 1. Go to [https://www.notion.so/my-integrations](https://www.notion.so/my-integrations)
 2. Click **"+ New integration"**
 3. Name it: `ConstructTrack Importer`
@@ -13,6 +15,7 @@ This script will automatically create a comprehensive Notion database with all y
 6. Copy the **"Internal Integration Token"** (starts with `secret_`)
 
 ### Step 2: Prepare Parent Page
+
 1. Create a new page in Notion where you want the database
 2. Name it something like: `ConstructTrack Project Management`
 3. Share the page with your integration:
@@ -25,18 +28,22 @@ This script will automatically create a comprehensive Notion database with all y
    - Page ID: `1234567890abcdef` (the part after the last dash)
 
 ### Step 3: Setup Environment
+
 1. Create a `.env` file in the same directory as the script:
+
 ```
 NOTION_TOKEN=secret_your_integration_token_here
 NOTION_PARENT_PAGE_ID=your_page_id_here
 ```
 
 2. Install Python dependencies:
+
 ```bash
 pip install -r requirements.txt
 ```
 
 ### Step 4: Run the Importer
+
 ```bash
 python notion_agile_importer.py
 ```
@@ -46,6 +53,7 @@ python notion_agile_importer.py
 The script creates a comprehensive Notion database with these properties:
 
 ### Database Schema
+
 - **Title**: The name of the epic/story/task
 - **Type**: Epic, Story, or Task (color-coded)
 - **Epic**: Which epic this item belongs to
@@ -60,6 +68,7 @@ The script creates a comprehensive Notion database with these properties:
 - **Acceptance Criteria**: Success criteria for stories
 
 ### Data Imported
+
 - **8 Epics** with full metadata
 - **16 User Stories** with acceptance criteria
 - **120+ Tasks** with role assignments
@@ -70,6 +79,7 @@ The script creates a comprehensive Notion database with these properties:
 ## 🎯 Using Your New Database
 
 ### Views You Can Create
+
 1. **Kanban Board**: Group by Status, filter by Type
 2. **Sprint Planning**: Filter by Timeline, group by Epic
 3. **Team Workload**: Filter by Team/Role, sum Story Points
@@ -77,12 +87,14 @@ The script creates a comprehensive Notion database with these properties:
 5. **Epic Progress**: Group by Epic, calculate completion %
 
 ### Recommended Filters
+
 - **Current Sprint**: Filter by Timeline = "Weeks X-Y"
 - **My Tasks**: Filter by Team/Role = "Your Role"
 - **Blocked Items**: Filter by Status = "Blocked"
 - **High Priority**: Filter by Priority = "P0" or "P1"
 
 ### Formulas You Can Add
+
 - **Progress %**: Calculate completion by epic
 - **Days Remaining**: Timeline vs current date
 - **Team Velocity**: Story points completed per sprint
@@ -90,6 +102,7 @@ The script creates a comprehensive Notion database with these properties:
 ## 🔧 Customization Options
 
 ### Adding Custom Properties
+
 Edit the `database_schema` in `notion_agile_importer.py`:
 
 ```python
@@ -109,6 +122,7 @@ Edit the `database_schema` in `notion_agile_importer.py`:
 ```
 
 ### Modifying Status Options
+
 Update the Status select options:
 
 ```python
@@ -130,22 +144,27 @@ Update the Status select options:
 ### Common Issues
 
 **"Unauthorized" Error**
+
 - Check your integration token is correct
 - Ensure the parent page is shared with your integration
 
 **"Page not found" Error**
+
 - Verify the parent page ID is correct
 - Make sure the page exists and is accessible
 
 **"Parsing failed" Error**
+
 - Ensure `constructtrack_agile_project_plan.md` is in the same directory
 - Check the markdown file format matches expected structure
 
 **"Rate limited" Error**
+
 - The script includes automatic retry logic
 - If it persists, add delays between API calls
 
 ### Getting Help
+
 1. Check the error message details
 2. Verify all setup steps were completed
 3. Test with a simple page first
@@ -154,6 +173,7 @@ Update the Status select options:
 ## 🎉 Success!
 
 Once complete, you'll have a fully functional project management database in Notion with:
+
 - ✅ All 8 epics organized and prioritized
 - ✅ 16 user stories with acceptance criteria
 - ✅ 120+ tasks with role assignments
@@ -161,7 +181,8 @@ Once complete, you'll have a fully functional project management database in Not
 - ✅ Story point estimates for planning
 - ✅ Timeline information for scheduling
 
-Your team can immediately start using this for sprint planning, task assignment, and progress tracking!
+Your team can immediately start using this for sprint planning, task assignment, and progress
+tracking!
 
 ## 📈 Next Steps
 

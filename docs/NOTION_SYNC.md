@@ -5,16 +5,19 @@ Bidirectional synchronization between your Notion database and local project fil
 ## 🌟 Features
 
 ### **Real-time Sync**
+
 - **Notion → Local**: Instant updates when you change anything in Notion
 - **Local → Notion**: Automatic sync when you edit local markdown files
 - **Conflict Resolution**: Smart handling of simultaneous changes
 
 ### **File Management**
+
 - **Automatic Backups**: Creates timestamped backups before overwriting
 - **Status Tracking**: Generates `project-status.json` with progress metrics
 - **Team Assignments**: Creates `team-assignments.json` for resource planning
 
 ### **Developer Experience**
+
 - **File Watching**: Monitors local files for changes
 - **Health Monitoring**: `/health` endpoint for service status
 - **Webhook Security**: Optional signature verification
@@ -23,6 +26,7 @@ Bidirectional synchronization between your Notion database and local project fil
 ## 🚀 Quick Start
 
 ### 1. Setup
+
 ```bash
 # Install dependencies
 npm install express
@@ -35,6 +39,7 @@ cp .env.example .env
 ```
 
 ### 2. Configure Notion Integration
+
 1. Go to [Notion Integrations](https://www.notion.so/my-integrations)
 2. Create or select your integration
 3. Add webhook URL: `http://localhost:3001/webhook`
@@ -42,6 +47,7 @@ cp .env.example .env
 5. Copy your integration token to `.env`
 
 ### 3. Start Sync Service
+
 ```bash
 # Production mode
 npm run notion:sync
@@ -66,6 +72,7 @@ NODE_ENV=development
 ## 🔄 How It Works
 
 ### **Notion → Local Sync**
+
 1. Notion sends webhook when database changes
 2. Service fetches updated data from Notion API
 3. Generates new markdown file with all changes
@@ -73,12 +80,14 @@ NODE_ENV=development
 5. Updates local files with new content
 
 ### **Local → Notion Sync**
+
 1. File watcher detects changes to local markdown
 2. Parses updated markdown content
 3. Updates corresponding Notion database entries
 4. Maintains parent-child relationships (Epic → Story → Task)
 
 ### **Generated Files**
+
 - `docs/constructtrack_agile_project_plan.md` - Main project plan (synced)
 - `docs/project-status.json` - Progress metrics and statistics
 - `docs/team-assignments.json` - Team member assignments
@@ -87,15 +96,19 @@ NODE_ENV=development
 ## 🛠️ API Endpoints
 
 ### **Webhook Endpoint**
+
 ```
 POST /webhook
 ```
+
 Receives Notion database change notifications.
 
 ### **Health Check**
+
 ```
 GET /health
 ```
+
 Returns service status and last sync time.
 
 ```json
@@ -109,16 +122,19 @@ Returns service status and last sync time.
 ## 📊 Use Cases
 
 ### **Project Management**
+
 - Update task status in Notion → Local files reflect changes
 - Add new epics/stories in markdown → Notion database updates
 - Team assignments sync automatically
 
 ### **Documentation**
+
 - Keep project documentation in sync across platforms
 - Generate status reports from Notion data
 - Maintain version history with automatic backups
 
 ### **Collaboration**
+
 - Team members can work in Notion or local files
 - Changes propagate automatically
 - No manual export/import needed
@@ -126,6 +142,7 @@ Returns service status and last sync time.
 ## 🔧 Advanced Configuration
 
 ### **Webhook Security**
+
 Set `NOTION_WEBHOOK_SECRET` to verify webhook signatures:
 
 ```env
@@ -133,6 +150,7 @@ NOTION_WEBHOOK_SECRET=your_secret_key
 ```
 
 ### **Custom Port**
+
 Change the sync service port:
 
 ```env
@@ -140,6 +158,7 @@ SYNC_PORT=8080
 ```
 
 ### **Development Mode**
+
 Enable detailed logging:
 
 ```bash
@@ -151,21 +170,25 @@ NODE_ENV=development npm run notion:sync
 ### **Common Issues**
 
 **Webhook not receiving events:**
+
 - Check Notion integration webhook URL
 - Ensure service is running on correct port
 - Verify firewall/network settings
 
 **Sync conflicts:**
+
 - Check logs for error messages
 - Verify database permissions
 - Ensure proper parent-child relationships
 
 **File watching not working:**
+
 - Check file permissions
 - Verify file paths exist
 - Restart sync service
 
 ### **Debugging**
+
 ```bash
 # Check service status
 curl http://localhost:3001/health
@@ -182,6 +205,7 @@ curl -X POST http://localhost:3001/webhook \
 ## 🚀 Production Deployment
 
 ### **Using ngrok (Development)**
+
 ```bash
 # Install ngrok
 npm install -g ngrok
@@ -193,6 +217,7 @@ ngrok http 3001
 ```
 
 ### **Production Server**
+
 1. Deploy sync service to your server
 2. Configure reverse proxy (nginx/Apache)
 3. Set up SSL certificate
