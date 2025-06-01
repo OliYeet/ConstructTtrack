@@ -2,6 +2,10 @@ import js from '@eslint/js';
 import tseslint from '@typescript-eslint/eslint-plugin';
 import tsparser from '@typescript-eslint/parser';
 import prettier from 'eslint-config-prettier';
+import importPlugin from 'eslint-plugin-import';
+import jsxA11y from 'eslint-plugin-jsx-a11y';
+import react from 'eslint-plugin-react';
+import reactHooks from 'eslint-plugin-react-hooks';
 
 export default [
   // Global ignores
@@ -34,6 +38,7 @@ export default [
     },
     plugins: {
       '@typescript-eslint': tseslint,
+      import: importPlugin,
     },
     rules: {
       ...js.configs.recommended.rules,
@@ -48,6 +53,27 @@ export default [
       '@typescript-eslint/explicit-function-return-type': 'off',
       '@typescript-eslint/explicit-module-boundary-types': 'off',
       '@typescript-eslint/no-non-null-assertion': 'warn',
+
+      // Import rules
+      'import/order': [
+        'error',
+        {
+          groups: [
+            'builtin',
+            'external',
+            'internal',
+            'parent',
+            'sibling',
+            'index',
+          ],
+          'newlines-between': 'always',
+          alphabetize: {
+            order: 'asc',
+            caseInsensitive: true,
+          },
+        },
+      ],
+      'import/no-unresolved': 'off', // TypeScript handles this
 
       // General rules
       'no-console': 'warn',
@@ -69,17 +95,70 @@ export default [
     },
   },
 
-  // React/JSX files
+  // React/Next.js files
   {
-    files: ['**/*.{jsx,tsx}'],
+    files: ['apps/web/**/*.{jsx,tsx}'],
+    plugins: {
+      react,
+      'react-hooks': reactHooks,
+      'jsx-a11y': jsxA11y,
+    },
     languageOptions: {
       globals: {
         React: 'readonly',
         JSX: 'readonly',
       },
     },
+    settings: {
+      react: {
+        version: 'detect',
+      },
+    },
     rules: {
       'no-undef': 'off', // TypeScript handles this better for React
+
+      // React specific rules
+      'react/react-in-jsx-scope': 'off', // Not needed in Next.js
+      'react/prop-types': 'off', // Using TypeScript
+      'react-hooks/rules-of-hooks': 'error',
+      'react-hooks/exhaustive-deps': 'warn',
+
+      // JSX accessibility rules
+      'jsx-a11y/alt-text': 'error',
+      'jsx-a11y/anchor-is-valid': 'error',
+    },
+  },
+
+  // React Native files (basic React rules only)
+  {
+    files: ['apps/mobile/**/*.{jsx,tsx}'],
+    plugins: {
+      react,
+      'react-hooks': reactHooks,
+    },
+    languageOptions: {
+      globals: {
+        React: 'readonly',
+        JSX: 'readonly',
+        __DEV__: 'readonly',
+      },
+    },
+    settings: {
+      react: {
+        version: 'detect',
+      },
+    },
+    rules: {
+      'no-undef': 'off', // TypeScript handles this better for React
+
+      // React specific rules
+      'react/react-in-jsx-scope': 'off',
+      'react/prop-types': 'off',
+      'react-hooks/rules-of-hooks': 'error',
+      'react-hooks/exhaustive-deps': 'warn',
+
+      // Allow console in React Native for debugging
+      'no-console': 'warn',
     },
   },
 

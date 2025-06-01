@@ -17,12 +17,13 @@
  *   npm run notion:sync
  */
 
-import { Client } from '@notionhq/client';
-import { config } from 'dotenv';
-import { writeFileSync, readFileSync, existsSync, watchFile } from 'fs';
-import chalk from 'chalk';
-import express from 'express';
 import crypto from 'crypto';
+import { writeFileSync, readFileSync, existsSync, watchFile } from 'fs';
+
+import { Client } from '@notionhq/client';
+import chalk from 'chalk';
+import { config } from 'dotenv';
+import express from 'express';
 
 // Load environment variables
 config();
@@ -78,16 +79,16 @@ class NotionDatabaseSync {
   setupWebhookEndpoint() {
     this.app.post('/webhook', async (req, res) => {
       try {
-        // Temporarily disable signature verification for debugging
-        // TODO: Re-enable once we figure out Notion's signature format
-        // if (this.webhookSecret && !this.verifyWebhookSignature(req)) {
-        //   console.log(chalk.red('❌ Invalid webhook signature'));
-        //   console.log(
-        //     chalk.yellow('🔍 Debug: Webhook received but signature invalid')
-        //   );
-        //   console.log(chalk.gray(`Headers: ${JSON.stringify(req.headers)}`));
-        //   return res.status(401).send('Unauthorized');
-        // }
+        // Webhook signature verification for security
+        if (this.webhookSecret && !this.verifyWebhookSignature(req)) {
+          console.log(chalk.red('❌ Invalid webhook signature'));
+          console.log(
+            chalk.yellow('🔍 Debug: Webhook received but signature invalid')
+          );
+          console.log(chalk.gray(`Headers: ${JSON.stringify(req.headers)}`));
+          console.log(chalk.gray('Expected signature format: HMAC-SHA256'));
+          return res.status(401).send('Unauthorized');
+        }
 
         console.log(chalk.green('✅ Webhook received successfully'));
         console.log(
@@ -132,18 +133,49 @@ class NotionDatabaseSync {
 
   /**
    * Verify webhook signature for security
+   * Notion uses HMAC-SHA256 with the raw request body
    */
   verifyWebhookSignature(req) {
     if (!this.webhookSecret) return true;
 
-    const signature = req.headers['notion-signature'];
-    const body = JSON.stringify(req.body);
-    const expectedSignature = crypto
-      .createHmac('sha256', this.webhookSecret)
-      .update(body)
-      .digest('hex');
+    try {
+      // Notion sends signature in different possible headers
+      const signature =
+        req.headers['notion-signature'] ||
+        req.headers['x-notion-signature'] ||
+        req.headers['x-signature'];
 
-    return signature === expectedSignature;
+      if (!signature) {
+        console.log(chalk.yellow('⚠️  No signature header found'));
+        return false;
+      }
+
+      // Get raw body - Express should have this if we use raw middleware
+      const body = req.rawBody || JSON.stringify(req.body);
+
+      // Create expected signature
+      const expectedSignature = crypto
+        .createHmac('sha256', this.webhookSecret)
+        .update(body, 'utf8')
+        .digest('hex');
+
+      // Compare signatures (handle both hex and base64 formats)
+      const providedSig = signature.replace(/^sha256=/, '');
+      const isValid = crypto.timingSafeEqual(
+        Buffer.from(expectedSignature, 'hex'),
+        Buffer.from(providedSig, 'hex')
+      );
+
+      if (!isValid) {
+        console.log(chalk.gray(`Expected: ${expectedSignature}`));
+        console.log(chalk.gray(`Received: ${providedSig}`));
+      }
+
+      return isValid;
+    } catch (error) {
+      console.log(chalk.red(`Signature verification error: ${error.message}`));
+      return false;
+    }
   }
 
   /**

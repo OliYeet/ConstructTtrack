@@ -5,10 +5,11 @@
  * Tests the Supabase database connection and basic functionality
  */
 
+import { dirname, join } from 'path';
+import { fileURLToPath } from 'url';
+
 import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
 
 // Load environment variables
 const __filename = fileURLToPath(import.meta.url);
