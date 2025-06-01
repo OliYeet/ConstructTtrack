@@ -6,9 +6,10 @@
  * This script helps you set up bidirectional sync between Notion and local files.
  */
 
-import { config } from 'dotenv';
-import chalk from 'chalk';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
+
+import chalk from 'chalk';
+import { config } from 'dotenv';
 
 // Load environment variables
 config();
@@ -59,7 +60,10 @@ async function setupSync() {
   // Display setup instructions
   console.log(chalk.blue('\n📋 Setup Instructions:'));
   console.log(chalk.white('1. Install dependencies:'));
-  console.log(chalk.gray('   npm install express'));
+  console.log(chalk.gray('   npm install'));
+  console.log(
+    chalk.gray('   (Installs: express, dotenv, chalk, @notionhq/client)')
+  );
 
   console.log(chalk.white('\n2. Start the sync service:'));
   console.log(chalk.gray('   npm run notion:sync'));
