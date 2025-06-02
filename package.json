@@ -55,7 +55,13 @@
     "type-check": "tsc --noEmit",
     "env:setup": "cd . && node scripts/env-setup.js",
     "env:validate": "cd . && node scripts/env-validator.js",
-    "env:check": "cd . && node scripts/env-validator.js"
+    "env:check": "cd . && node scripts/env-validator.js",
+    "api:validate": "node scripts/validate-openapi.js",
+    "api:validate:spec": "swagger-cli validate docs/api/openapi.yaml",
+    "api:validate:implementation": "node scripts/validate-api-implementation.js",
+    "api:diff": "node scripts/openapi-diff.js",
+    "api:docs:generate": "redoc-cli build docs/api/openapi.yaml --output docs/api/index.html",
+    "api:test:endpoints": "node scripts/test-api-endpoints.js"
   },
   "keywords": [
     "construction",
@@ -92,6 +98,11 @@
     "husky": "^9.0.11",
     "lint-staged": "^15.2.0",
     "prettier": "^3.2.5",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "@apidevtools/swagger-cli": "^4.0.4",
+    "@apidevtools/swagger-parser": "^10.1.0",
+    "openapi-diff": "^0.26.0",
+    "redoc-cli": "^0.13.21",
+    "swagger-jsdoc": "^6.2.8"
   }
 }

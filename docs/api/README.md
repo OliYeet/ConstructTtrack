@@ -284,6 +284,54 @@ Include this ID when reporting issues.
 - **[Changelog](./changelog.md)** - API version history
 - **[Migration Guide](./migration.md)** - Upgrade instructions
 
+## 🔍 API Validation & Quality Assurance
+
+The ConstructTrack API uses automated validation to ensure the OpenAPI specification stays in sync with the actual implementation:
+
+### **Validation Process**
+
+1. **Specification Validation**: Validates OpenAPI spec syntax and structure
+2. **Implementation Testing**: Tests actual API endpoints against the specification
+3. **Breaking Change Detection**: Identifies breaking changes in pull requests
+4. **Security Scanning**: Checks for common security issues
+
+### **Running Validation Locally**
+
+```bash
+# Validate OpenAPI specification
+npm run api:validate:spec
+
+# Test API implementation
+npm run api:validate:implementation
+
+# Run comprehensive validation
+npm run api:validate
+
+# Generate API documentation
+npm run api:docs:generate
+
+# Check for breaking changes
+npm run api:diff
+
+# Test all endpoints
+npm run api:test:endpoints
+```
+
+### **CI/CD Integration**
+
+- **Automatic validation** on every push and pull request
+- **Breaking change detection** with PR comments
+- **Documentation generation** and deployment
+- **Security scanning** for common vulnerabilities
+
+### **Validation Reports**
+
+Validation results are saved to `docs/api/validation/` and include:
+- Specification validation results
+- Implementation test results
+- Breaking change analysis
+- Security scan reports
+
 ## 🆘 Support
 
 - **Documentation Issues**: [GitHub Issues](https://github.com/constructtrack/api-docs/issues)

@@ -1,0 +1,24 @@
+# OpenAPI Validation Reports
+# These files are generated automatically and don't need to be committed
+
+# Validation reports
+validation-report-*.json
+implementation-test-report-*.json
+endpoint-test-report-*.json
+
+# Diff reports
+openapi-diff-*.json
+openapi-diff-*.md
+
+# Generated documentation
+index.html
+*.html
+
+# Temporary files
+*.tmp
+*.temp
+*.backup
+
+# Keep the directory structure
+!.gitignore
+!README.md
