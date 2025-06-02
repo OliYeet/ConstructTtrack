@@ -12,6 +12,8 @@ import { join } from 'path';
 
 import chalk from 'chalk';
 
+import { loadWorkspaces } from './utils/workspace-loader.js';
+
 class WorkspaceValidator {
   constructor() {
     this.rootDir = process.cwd();
@@ -198,14 +200,7 @@ class WorkspaceValidator {
   validateDependencyConsistency() {
     console.log(chalk.blue('🔍 Validating dependency consistency...'));
 
-    const workspaces = [
-      'apps/web',
-      'apps/mobile',
-      'packages/shared',
-      'packages/ui',
-      'packages/supabase',
-    ];
-
+    const workspaces = loadWorkspaces(this.rootDir);
     const dependencyVersions = new Map();
 
     // Collect all dependency versions
@@ -214,8 +209,8 @@ class WorkspaceValidator {
       if (!pkg) continue;
 
       const allDeps = {
-        ...pkg.dependencies,
-        ...pkg.devDependencies,
+        ...(pkg.dependencies || {}),
+        ...(pkg.devDependencies || {}),
       };
 
       for (const [name, version] of Object.entries(allDeps)) {
@@ -272,13 +267,7 @@ class WorkspaceValidator {
 
     this.validateRootPackage();
 
-    const workspaces = [
-      'apps/web',
-      'apps/mobile',
-      'packages/shared',
-      'packages/ui',
-      'packages/supabase',
-    ];
+    const workspaces = loadWorkspaces(this.rootDir);
 
     for (const workspace of workspaces) {
       this.validateWorkspacePackage(workspace);

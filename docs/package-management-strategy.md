@@ -49,13 +49,18 @@ constructtrack/
 {
   "workspaces": ["apps/*", "packages/*"],
   "scripts": {
-    "build": "npm run build --workspaces",
-    "dev": "npm run dev --workspaces",
-    "test": "npm run test --workspaces",
-    "lint": "npm run lint --workspaces"
+    "build": "npm run build --workspaces --if-present",
+    "build:all": "npm run build --workspaces",
+    "dev": "npm run dev --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present"
   }
 }
 ```
+
+**Note**: The `--if-present` flag prevents infinite recursion by only running scripts that exist in
+each workspace. The root workspace doesn't have these scripts defined, so it won't call itself
+recursively.
 
 ### Package Naming Convention
 
