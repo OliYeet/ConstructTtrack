@@ -5,11 +5,12 @@
  * Validates that all required environment variables are set and properly formatted
  */
 
-import { readFileSync, existsSync } from 'fs';
+import { existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
 import chalk from 'chalk';
+import { config as dotenvConfig } from 'dotenv';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -98,15 +99,26 @@ class EnvValidator {
     }
 
     try {
-      const content = readFileSync(envPath, 'utf8');
-      const lines = content.split('\n');
+      // Use dotenv to properly parse the environment file
+      const result = dotenvConfig({ path: envPath });
 
-      lines.forEach(line => {
-        line = line.trim();
-        if (line && !line.startsWith('#') && line.includes('=')) {
-          const [key, ...valueParts] = line.split('=');
-          const value = valueParts.join('=');
-          this.env[key] = value;
+      if (result.error) {
+        this.errors.push(`Failed to parse ${envFile}: ${result.error.message}`);
+        return;
+      }
+
+      // Merge parsed values into this.env
+      if (result.parsed) {
+        Object.assign(this.env, result.parsed);
+      }
+
+      // Apply default values from ENV_DEFINITIONS for any missing keys
+      Object.entries(ENV_DEFINITIONS).forEach(([key, definition]) => {
+        if (
+          definition.default !== undefined &&
+          (!this.env[key] || this.env[key].trim() === '')
+        ) {
+          this.env[key] = definition.default.toString();
         }
       });
     } catch (error) {
@@ -115,7 +127,7 @@ class EnvValidator {
   }
 
   validateVariable(name, definition) {
-    const value = this.env[name];
+    let value = this.env[name];
 
     // Check if required variable is missing
     if (definition.required && (!value || value.trim() === '')) {
@@ -125,8 +137,18 @@ class EnvValidator {
       return;
     }
 
-    // Skip validation if optional and not set
-    if (!definition.required && (!value || value.trim() === '')) {
+    // Apply default value if variable is missing and default is provided
+    if ((!value || value.trim() === '') && definition.default !== undefined) {
+      value = definition.default.toString();
+      this.env[name] = value; // Set the default value in the environment
+    }
+
+    // Skip validation if optional and not set (and no default)
+    if (
+      !definition.required &&
+      (!value || value.trim() === '') &&
+      definition.default === undefined
+    ) {
       return;
     }
 

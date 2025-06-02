@@ -8,18 +8,79 @@
  */
 
 import { execSync } from 'child_process';
-import { readFileSync } from 'fs';
+import { readFileSync, readdirSync, statSync } from 'fs';
 import { join } from 'path';
 
 import chalk from 'chalk';
 
-const WORKSPACES = [
-  'apps/web',
-  'apps/mobile',
-  'packages/shared',
-  'packages/ui',
-  'packages/supabase',
-];
+/**
+ * Expand glob patterns to actual workspace directories
+ */
+function expandGlobPattern(pattern) {
+  const rootDir = process.cwd();
+
+  if (pattern.endsWith('/*')) {
+    // Handle glob patterns like "apps/*" or "packages/*"
+    const baseDir = pattern.slice(0, -2);
+    const basePath = join(rootDir, baseDir);
+
+    try {
+      return readdirSync(basePath)
+        .map(dir => join(baseDir, dir))
+        .filter(dirPath => {
+          try {
+            const fullPath = join(rootDir, dirPath);
+            const packageJsonPath = join(fullPath, 'package.json');
+            // Check if it's a directory and has a package.json
+            return (
+              statSync(fullPath).isDirectory() &&
+              statSync(packageJsonPath).isFile()
+            );
+          } catch {
+            return false;
+          }
+        });
+    } catch {
+      return [];
+    }
+  }
+
+  // Return as-is if not a glob pattern
+  return [pattern];
+}
+
+/**
+ * Load workspaces dynamically from root package.json
+ */
+function loadWorkspaces() {
+  try {
+    const rootPackagePath = join(process.cwd(), 'package.json');
+    const rootPackage = JSON.parse(readFileSync(rootPackagePath, 'utf8'));
+    const workspacePatterns = rootPackage.workspaces || [];
+
+    // Expand all glob patterns
+    const expandedWorkspaces = workspacePatterns.flatMap(pattern =>
+      expandGlobPattern(pattern)
+    );
+
+    return expandedWorkspaces;
+  } catch (error) {
+    console.error(
+      chalk.red('Error loading workspaces from package.json:'),
+      error.message
+    );
+    // Fallback to hardcoded workspaces if loading fails
+    return [
+      'apps/web',
+      'apps/mobile',
+      'packages/shared',
+      'packages/ui',
+      'packages/supabase',
+    ];
+  }
+}
+
+const WORKSPACES = loadWorkspaces();
 
 class DependencyManager {
   constructor() {
@@ -28,19 +89,26 @@ class DependencyManager {
 
   /**
    * Execute command and return output
-   * Throws error on failure to ensure explicit error handling by callers
+   * Handles non-zero exit codes gracefully for commands like 'npm outdated' and 'npm audit'
+   * that may exit with code 1 but still provide useful output
    */
   exec(command, options = {}) {
     try {
       return execSync(command, {
         encoding: 'utf8',
         stdio: 'pipe',
+        maxBuffer: 1024 * 1024 * 10, // 10MB buffer to handle large outputs
         ...options,
       }).trim();
     } catch (err) {
+      // Check if the error has stdout output (common with npm commands)
+      if (err.stdout && err.stdout.trim()) {
+        return err.stdout.trim();
+      }
+
+      // If no stdout, this is likely a genuine error
       console.error(chalk.red(`Error executing: ${command}`));
       console.error(chalk.red(err.message));
-      // Re-throw the error to force explicit error handling by callers
       throw new Error(`Command failed: ${command} - ${err.message}`);
     }
   }
@@ -69,18 +137,11 @@ class DependencyManager {
     for (const workspace of WORKSPACES) {
       console.log(chalk.yellow(`📦 ${workspace}`));
 
-      try {
-        const result = this.exec(`npm outdated --workspace=${workspace}`);
-        if (result) {
-          console.log(result);
-        } else {
-          console.log(chalk.green('✅ All dependencies up to date'));
-        }
-      } catch (error) {
-        console.error(
-          chalk.red(`❌ Failed to check outdated dependencies for ${workspace}`)
-        );
-        console.error(chalk.gray(`Error: ${error.message}`));
+      const result = this.exec(`npm outdated --workspace=${workspace}`);
+      if (result) {
+        console.log(result);
+      } else {
+        console.log(chalk.green('✅ All dependencies up to date'));
       }
       console.log('');
     }
@@ -113,9 +174,9 @@ class DependencyManager {
       if (!pkg) continue;
 
       const allDeps = {
-        ...pkg.dependencies,
-        ...pkg.devDependencies,
-        ...pkg.peerDependencies,
+        ...(pkg.dependencies || {}),
+        ...(pkg.devDependencies || {}),
+        ...(pkg.peerDependencies || {}),
       };
 
       for (const [name, version] of Object.entries(allDeps)) {

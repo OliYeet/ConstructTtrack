@@ -48,6 +48,56 @@ export interface EnvironmentConfig {
 }
 
 /**
+ * Validate JWT secret meets security requirements
+ */
+function validateJWTSecret(value: string | undefined): string | undefined {
+  if (!value) return undefined;
+
+  if (value.length < 32) {
+    throw new Error(
+      'JWT_SECRET must be at least 32 characters long for security'
+    );
+  }
+
+  // Check for placeholder text
+  if (
+    value.includes('your_') ||
+    value.includes('example') ||
+    value.includes('placeholder')
+  ) {
+    throw new Error(
+      'JWT_SECRET appears to contain placeholder text. Please use a secure random value'
+    );
+  }
+
+  return value;
+}
+
+/**
+ * Validate encryption key meets security requirements
+ */
+function validateEncryptionKey(value: string | undefined): string | undefined {
+  if (!value) return undefined;
+
+  if (value.length !== 32) {
+    throw new Error('ENCRYPTION_KEY must be exactly 32 characters long');
+  }
+
+  // Check for placeholder text
+  if (
+    value.includes('your_') ||
+    value.includes('example') ||
+    value.includes('placeholder')
+  ) {
+    throw new Error(
+      'ENCRYPTION_KEY appears to contain placeholder text. Please use a secure random value'
+    );
+  }
+
+  return value;
+}
+
+/**
  * Load and validate environment variables
  */
 export function loadEnvironment(): EnvironmentConfig {
@@ -109,8 +159,8 @@ export function loadEnvironment(): EnvironmentConfig {
     NOTION_WEBHOOK_SECRET: getOptional('NOTION_WEBHOOK_SECRET'),
 
     // Security
-    JWT_SECRET: getOptional('JWT_SECRET'),
-    ENCRYPTION_KEY: getOptional('ENCRYPTION_KEY'),
+    JWT_SECRET: validateJWTSecret(getOptional('JWT_SECRET')),
+    ENCRYPTION_KEY: validateEncryptionKey(getOptional('ENCRYPTION_KEY')),
 
     // Email
     SMTP_HOST: getOptional('SMTP_HOST'),
@@ -142,7 +192,7 @@ export function loadEnvironment(): EnvironmentConfig {
 export function getClientEnvironment() {
   const env = process.env;
 
-  return {
+  const clientEnv = {
     NODE_ENV: env.NODE_ENV || 'development',
 
     // Supabase (client-safe)
@@ -158,6 +208,16 @@ export function getClientEnvironment() {
     // App URL
     APP_URL: env.NEXT_PUBLIC_APP_URL,
   };
+
+  // Filter out undefined values to prevent Next.js from bundling "undefined" strings
+  const filteredEnv: Record<string, string> = {};
+  for (const [key, value] of Object.entries(clientEnv)) {
+    if (value !== undefined && value !== null) {
+      filteredEnv[key] = value;
+    }
+  }
+
+  return filteredEnv;
 }
 
 /**

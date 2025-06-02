@@ -69,11 +69,62 @@ class EnvSetup {
       'Get these from: https://supabase.com/dashboard/project/[your-project]/settings/api\n'
     );
 
-    config.SUPABASE_URL = await this.question('Supabase URL: ');
-    config.SUPABASE_ANON_KEY = await this.question('Supabase Anon Key: ');
-    config.SUPABASE_SERVICE_ROLE_KEY = await this.question(
-      'Supabase Service Role Key: '
-    );
+    // Supabase URL validation
+    let supabaseUrl;
+    let supabaseUrlValid = false;
+    do {
+      supabaseUrl = await this.question('Supabase URL: ');
+      if (!supabaseUrl || supabaseUrl.trim() === '') {
+        console.log(chalk.red('❌ Supabase URL is required'));
+      } else if (!supabaseUrl.match(/^https:\/\/.*\.supabase\.co$/)) {
+        console.log(
+          chalk.red(
+            '❌ Supabase URL must be in format: https://your-project-id.supabase.co'
+          )
+        );
+      } else {
+        supabaseUrlValid = true;
+      }
+    } while (!supabaseUrlValid);
+    config.SUPABASE_URL = supabaseUrl;
+
+    // Supabase Anon Key validation
+    let supabaseAnonKey;
+    let supabaseAnonKeyValid = false;
+    do {
+      supabaseAnonKey = await this.question('Supabase Anon Key: ');
+      if (!supabaseAnonKey || supabaseAnonKey.trim() === '') {
+        console.log(chalk.red('❌ Supabase Anon Key is required'));
+      } else if (supabaseAnonKey.length < 100) {
+        console.log(
+          chalk.red(
+            '❌ Supabase Anon Key appears to be too short (should be 100+ characters)'
+          )
+        );
+      } else {
+        supabaseAnonKeyValid = true;
+      }
+    } while (!supabaseAnonKeyValid);
+    config.SUPABASE_ANON_KEY = supabaseAnonKey;
+
+    // Supabase Service Role Key validation
+    let supabaseServiceKey;
+    let supabaseServiceKeyValid = false;
+    do {
+      supabaseServiceKey = await this.question('Supabase Service Role Key: ');
+      if (!supabaseServiceKey || supabaseServiceKey.trim() === '') {
+        console.log(chalk.red('❌ Supabase Service Role Key is required'));
+      } else if (supabaseServiceKey.length < 100) {
+        console.log(
+          chalk.red(
+            '❌ Supabase Service Role Key appears to be too short (should be 100+ characters)'
+          )
+        );
+      } else {
+        supabaseServiceKeyValid = true;
+      }
+    } while (!supabaseServiceKeyValid);
+    config.SUPABASE_SERVICE_ROLE_KEY = supabaseServiceKey;
 
     // Set public versions
     config.NEXT_PUBLIC_SUPABASE_URL = config.SUPABASE_URL;
@@ -101,10 +152,60 @@ class EnvSetup {
     );
 
     console.log(chalk.blue('\n🔐 Security Configuration'));
-    config.JWT_SECRET = await this.question('JWT Secret (32+ characters): ');
-    config.ENCRYPTION_KEY = await this.question(
-      'Encryption Key (exactly 32 characters): '
-    );
+
+    // JWT Secret validation
+    let jwtSecret;
+    let jwtSecretValid = false;
+    do {
+      jwtSecret = await this.question('JWT Secret (32+ characters): ');
+      if (!jwtSecret || jwtSecret.length < 32) {
+        console.log(
+          chalk.red(
+            '❌ JWT Secret must be at least 32 characters long for security'
+          )
+        );
+      } else if (
+        jwtSecret.includes('your_') ||
+        jwtSecret.includes('example') ||
+        jwtSecret.includes('placeholder')
+      ) {
+        console.log(
+          chalk.red(
+            '❌ JWT Secret appears to contain placeholder text. Please use a secure random value'
+          )
+        );
+      } else {
+        jwtSecretValid = true;
+      }
+    } while (!jwtSecretValid);
+    config.JWT_SECRET = jwtSecret;
+
+    // Encryption Key validation
+    let encryptionKey;
+    let encryptionKeyValid = false;
+    do {
+      encryptionKey = await this.question(
+        'Encryption Key (exactly 32 characters): '
+      );
+      if (!encryptionKey || encryptionKey.length !== 32) {
+        console.log(
+          chalk.red('❌ Encryption Key must be exactly 32 characters long')
+        );
+      } else if (
+        encryptionKey.includes('your_') ||
+        encryptionKey.includes('example') ||
+        encryptionKey.includes('placeholder')
+      ) {
+        console.log(
+          chalk.red(
+            '❌ Encryption Key appears to contain placeholder text. Please use a secure random value'
+          )
+        );
+      } else {
+        encryptionKeyValid = true;
+      }
+    } while (!encryptionKeyValid);
+    config.ENCRYPTION_KEY = encryptionKey;
 
     console.log(chalk.blue('\n🔄 Sync Configuration'));
     config.SYNC_PORT = (await this.question('Sync Port [3001]: ')) || '3001';
