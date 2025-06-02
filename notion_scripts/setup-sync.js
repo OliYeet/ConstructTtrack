@@ -33,12 +33,16 @@ async function setupSync() {
       );
     } else {
       console.log(chalk.red('❌ No .env.example template found'));
-      return;
+      process.exit(1);
     }
   }
 
   // Check required environment variables
-  const requiredVars = ['NOTION_TOKEN', 'NOTION_DATABASE_ID'];
+  const requiredVars = [
+    'NOTION_TOKEN',
+    'NOTION_DATABASE_ID',
+    'NOTION_WEBHOOK_SECRET',
+  ];
 
   const missingVars = requiredVars.filter(varName => !process.env[varName]);
 
@@ -52,7 +56,7 @@ async function setupSync() {
         '\n📝 Please update your .env file with the missing values\n'
       )
     );
-    return;
+    process.exit(1);
   }
 
   console.log(chalk.green('✅ Environment variables configured'));

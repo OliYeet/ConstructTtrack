@@ -18,7 +18,15 @@
  */
 
 import crypto from 'crypto';
-import { writeFileSync, readFileSync, existsSync, watchFile } from 'fs';
+import {
+  writeFileSync,
+  readFileSync,
+  existsSync,
+  watchFile,
+  readdirSync,
+  unlinkSync,
+} from 'fs';
+import { dirname, basename, join } from 'path';
 
 import { Client } from '@notionhq/client';
 import chalk from 'chalk';
@@ -754,18 +762,16 @@ class NotionDatabaseSync {
   async cleanupOldBackups(filePath) {
     try {
       // Use fs and path modules
-      const fs = await import('fs');
-      const path = await import('path');
-      const dir = path.dirname(filePath);
-      const baseName = path.basename(filePath);
+      const dir = dirname(filePath);
+      const baseName = basename(filePath);
 
       // Find all backup files for this file
-      const files = fs.readdirSync(dir);
+      const files = readdirSync(dir);
       const backupFiles = files
         .filter(file => file.startsWith(`${baseName}.backup.`))
         .map(file => ({
           name: file,
-          path: path.join(dir, file),
+          path: join(dir, file),
           date: file.replace(`${baseName}.backup.`, ''),
         }))
         .sort((a, b) => b.date.localeCompare(a.date)); // Sort newest first
@@ -773,7 +779,7 @@ class NotionDatabaseSync {
       // Keep only the 5 most recent backups
       const filesToDelete = backupFiles.slice(5);
       filesToDelete.forEach(file => {
-        fs.unlinkSync(file.path);
+        unlinkSync(file.path);
         console.log(chalk.gray(`🗑️  Removed old backup: ${file.name}`));
       });
     } catch (error) {
