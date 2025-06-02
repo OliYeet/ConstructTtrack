@@ -37,7 +37,7 @@
     "format:check": "prettier --check .",
     "lint:fix": "eslint . --fix",
     "lint:check": "eslint .",
-    "prepare": "is-ci || husky install",
+    "prepare": "node -e \"process.exit(process.env.CI ? 0 : 1)\" || husky install",
     "type-check": "tsc --noEmit"
   },
   "keywords": [
@@ -70,7 +70,6 @@
     "eslint-plugin-react": "^7.37.2",
     "eslint-plugin-react-hooks": "^5.0.0",
     "husky": "^9.0.11",
-    "is-ci": "^4.1.0",
     "lint-staged": "^15.2.0",
     "prettier": "^3.2.5",
     "typescript": "^5.3.3"
