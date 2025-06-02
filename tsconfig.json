@@ -30,5 +30,16 @@
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "apps/**/*", "packages/**/*"],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules"],
+  "references": [
+    {
+      "path": "./packages/shared"
+    },
+    {
+      "path": "./packages/supabase"
+    },
+    {
+      "path": "./packages/ui"
+    }
+  ]
 }
