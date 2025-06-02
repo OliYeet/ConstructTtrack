@@ -8,8 +8,9 @@
  */
 
 import { execSync } from 'child_process';
-import { readFileSync, writeFileSync } from 'fs';
+import { readFileSync } from 'fs';
 import { join } from 'path';
+
 import chalk from 'chalk';
 
 const WORKSPACES = [
@@ -35,9 +36,9 @@ class DependencyManager {
         stdio: 'pipe',
         ...options 
       }).trim();
-    } catch (error) {
+    } catch (err) {
       console.error(chalk.red(`Error executing: ${command}`));
-      console.error(chalk.red(error.message));
+      console.error(chalk.red(err.message));
       return null;
     }
   }
@@ -49,7 +50,7 @@ class DependencyManager {
     try {
       const packagePath = join(this.rootDir, workspace, 'package.json');
       return JSON.parse(readFileSync(packagePath, 'utf8'));
-    } catch (error) {
+    } catch {
       console.error(chalk.red(`Error reading package.json for ${workspace}`));
       return null;
     }
@@ -147,22 +148,54 @@ class DependencyManager {
 
   /**
    * Update dependencies with safety checks
+   *
+   * Note: npm update behavior:
+   * - Without flags: Updates to latest version within semver range (respects package.json constraints)
+   * - With --latest: Ignores semver constraints and updates to absolute latest version
+   *
+   * For major updates, we use --latest because npm update alone won't cross major version boundaries.
+   * This is intentional for major updates as they may contain breaking changes.
    */
   updateDependencies(type = 'patch') {
     console.log(chalk.blue(`🔄 Updating ${type} dependencies...\n`));
-    
-    const updateFlag = type === 'major' ? '--latest' : '';
-    
+
+    let updateCommand;
+    switch (type) {
+      case 'major':
+        // Use --latest to cross major version boundaries
+        // This ignores semver constraints and updates to absolute latest versions
+        updateCommand = 'npm update --latest';
+        console.log(chalk.yellow('⚠️  Major updates may include breaking changes. Review carefully!'));
+        break;
+      case 'minor':
+        // Standard update respects semver ranges in package.json
+        updateCommand = 'npm update';
+        break;
+      case 'patch':
+      default:
+        // Standard update for patch versions
+        updateCommand = 'npm update';
+        break;
+    }
+
     for (const workspace of WORKSPACES) {
       console.log(chalk.yellow(`📦 Updating ${workspace}...`));
-      
-      const result = this.exec(`npm update ${updateFlag} --workspace=${workspace}`);
+
+      const result = this.exec(`${updateCommand} --workspace=${workspace}`);
       if (result) {
         console.log(result);
       }
       console.log('');
     }
-    
+
+    if (type === 'major') {
+      console.log(chalk.red('🚨 IMPORTANT: Major updates completed. Please:'));
+      console.log(chalk.yellow('   1. Review CHANGELOG files for breaking changes'));
+      console.log(chalk.yellow('   2. Run comprehensive tests'));
+      console.log(chalk.yellow('   3. Update code for any breaking changes'));
+      console.log(chalk.yellow('   4. Test in staging environment before production'));
+    }
+
     console.log(chalk.green('✅ Dependencies updated. Run tests to verify compatibility.'));
   }
 
