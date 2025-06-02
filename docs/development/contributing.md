@@ -69,21 +69,150 @@ git checkout -b fix/issue-description
 
 ## 📝 Development Workflow
 
-### Code Standards
-We use automated tools to maintain code quality:
+### Code Style Guidelines
 
+#### TypeScript Standards
+```typescript
+// ✅ Good: Use explicit types for function parameters and returns
+interface CreateProjectParams {
+  name: string;
+  description?: string;
+  location: GeoPoint;
+}
+
+export async function createProject(
+  params: CreateProjectParams
+): Promise<ApiResponse<Project>> {
+  // Implementation
+}
+
+// ✅ Good: Use const assertions for immutable data
+const PROJECT_STATUSES = ['planning', 'active', 'completed'] as const;
+type ProjectStatus = typeof PROJECT_STATUSES[number];
+
+// ❌ Avoid: Any types
+function processData(data: any): any { }
+
+// ✅ Good: Use proper error handling
+try {
+  const result = await apiCall();
+  return { success: true, data: result };
+} catch (error) {
+  console.error('API call failed:', error);
+  return { success: false, error: error.message };
+}
+```
+
+#### React Component Standards
+```typescript
+// ✅ Good: Use proper TypeScript interfaces for props
+interface ProjectCardProps {
+  project: Project;
+  onEdit?: (project: Project) => void;
+  className?: string;
+}
+
+export function ProjectCard({
+  project,
+  onEdit,
+  className
+}: ProjectCardProps) {
+  // Use hooks at the top level
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Event handlers with proper typing
+  const handleEdit = useCallback(() => {
+    onEdit?.(project);
+  }, [onEdit, project]);
+
+  return (
+    <div className={cn('project-card', className)}>
+      {/* Component JSX */}
+    </div>
+  );
+}
+```
+
+#### CSS/Styling Standards
+```typescript
+// ✅ Good: Use Tailwind utility classes with cn() helper
+import { cn } from '@shared/utils';
+
+const buttonVariants = {
+  primary: 'bg-blue-600 hover:bg-blue-700 text-white',
+  secondary: 'bg-gray-200 hover:bg-gray-300 text-gray-900',
+  danger: 'bg-red-600 hover:bg-red-700 text-white'
+};
+
+function Button({ variant = 'primary', className, ...props }) {
+  return (
+    <button
+      className={cn(
+        'px-4 py-2 rounded-md font-medium transition-colors',
+        buttonVariants[variant],
+        className
+      )}
+      {...props}
+    />
+  );
+}
+```
+
+#### File Naming Conventions
+```
+components/
+├── ProjectCard.tsx          # PascalCase for components
+├── project-list.types.ts    # kebab-case for types/utils
+├── useProjectData.ts        # camelCase for hooks
+└── index.ts                 # barrel exports
+
+utils/
+├── api-client.ts           # kebab-case for utilities
+├── date-helpers.ts         # descriptive names
+└── validation.ts           # single word when clear
+
+types/
+├── project.types.ts        # domain-specific types
+├── api.types.ts           # API-related types
+└── common.types.ts        # shared types
+```
+
+### Code Quality Tools
 ```bash
-# Lint code
+# Lint code (ESLint + TypeScript)
 npm run lint
 
 # Fix auto-fixable issues
 npm run lint:fix
 
-# Format code
+# Format code (Prettier)
 npm run format
 
-# Type checking
+# Type checking (TypeScript)
 npm run type-check
+
+# Run all quality checks
+npm run quality:check
+```
+
+#### ESLint Configuration
+Our ESLint setup includes:
+- **@typescript-eslint**: TypeScript-specific rules
+- **eslint-plugin-react**: React best practices
+- **eslint-plugin-react-hooks**: Hooks rules
+- **eslint-plugin-import**: Import/export rules
+- **eslint-config-prettier**: Prettier compatibility
+
+#### Prettier Configuration
+```json
+{
+  "semi": true,
+  "trailingComma": "es5",
+  "singleQuote": true,
+  "printWidth": 80,
+  "tabWidth": 2,
+  "useTabs": false
+}
 ```
 
 ### Commit Message Convention
@@ -111,26 +240,283 @@ chore(deps): update dependencies
 - `chore`: Maintenance tasks
 
 ### Testing Requirements
-All contributions should include appropriate tests:
 
+#### Running Tests Locally
 ```bash
 # Run all tests
 npm test
 
-# Run tests in watch mode
+# Run tests in watch mode (recommended during development)
 npm run test:watch
 
-# Generate coverage report
+# Run tests with coverage report
 npm run test:coverage
 
 # Run specific test file
 npm test -- auth.test.ts
+
+# Run tests for specific pattern
+npm test -- --testNamePattern="should create project"
+
+# Run tests in specific directory
+npm test -- apps/web/src/components
+
+# Debug tests with Node inspector
+npm run test:debug
 ```
 
-**Test Types:**
-- **Unit tests**: Test individual functions/components
-- **Integration tests**: Test component interactions
-- **E2E tests**: Test complete user workflows
+#### Test Types & Examples
+
+##### Unit Tests
+Test individual functions and components in isolation:
+
+```typescript
+// utils/date-helpers.test.ts
+import { formatProjectDate, isDateInRange } from './date-helpers';
+
+describe('date-helpers', () => {
+  describe('formatProjectDate', () => {
+    it('should format date correctly', () => {
+      const date = new Date('2025-01-30T10:00:00Z');
+      expect(formatProjectDate(date)).toBe('Jan 30, 2025');
+    });
+
+    it('should handle invalid dates', () => {
+      expect(formatProjectDate(null)).toBe('Invalid Date');
+    });
+  });
+
+  describe('isDateInRange', () => {
+    it('should return true for date within range', () => {
+      const start = new Date('2025-01-01');
+      const end = new Date('2025-12-31');
+      const test = new Date('2025-06-15');
+
+      expect(isDateInRange(test, start, end)).toBe(true);
+    });
+  });
+});
+```
+
+##### Component Tests
+Test React components with user interactions:
+
+```typescript
+// components/ProjectCard.test.tsx
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { ProjectCard } from './ProjectCard';
+import { mockProject } from '@/tests/mocks';
+
+describe('ProjectCard', () => {
+  const defaultProps = {
+    project: mockProject,
+    onEdit: jest.fn(),
+    onDelete: jest.fn()
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('renders project information correctly', () => {
+    render(<ProjectCard {...defaultProps} />);
+
+    expect(screen.getByText(mockProject.name)).toBeInTheDocument();
+    expect(screen.getByText(mockProject.description)).toBeInTheDocument();
+    expect(screen.getByText('Active')).toBeInTheDocument();
+  });
+
+  it('calls onEdit when edit button is clicked', async () => {
+    render(<ProjectCard {...defaultProps} />);
+
+    const editButton = screen.getByRole('button', { name: /edit/i });
+    fireEvent.click(editButton);
+
+    await waitFor(() => {
+      expect(defaultProps.onEdit).toHaveBeenCalledWith(mockProject);
+    });
+  });
+
+  it('shows loading state during async operations', async () => {
+    const slowOnEdit = jest.fn(() => new Promise(resolve => setTimeout(resolve, 100)));
+    render(<ProjectCard {...defaultProps} onEdit={slowOnEdit} />);
+
+    const editButton = screen.getByRole('button', { name: /edit/i });
+    fireEvent.click(editButton);
+
+    expect(screen.getByText('Loading...')).toBeInTheDocument();
+  });
+});
+```
+
+##### Integration Tests
+Test component interactions and API integration:
+
+```typescript
+// features/project-management.test.tsx
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { ProjectManagement } from './ProjectManagement';
+import { mockSupabase } from '@/tests/mocks';
+import { TestWrapper } from '@/tests/TestWrapper';
+
+jest.mock('@/lib/supabase', () => mockSupabase);
+
+describe('ProjectManagement Integration', () => {
+  it('should create and display new project', async () => {
+    const mockProjects = [
+      { id: '1', name: 'Existing Project', status: 'active' }
+    ];
+
+    mockSupabase.from.mockReturnValue({
+      select: jest.fn().mockResolvedValue({
+        data: mockProjects,
+        error: null
+      }),
+      insert: jest.fn().mockResolvedValue({
+        data: [{ id: '2', name: 'New Project', status: 'planning' }],
+        error: null
+      })
+    });
+
+    render(
+      <TestWrapper>
+        <ProjectManagement />
+      </TestWrapper>
+    );
+
+    // Wait for initial load
+    await waitFor(() => {
+      expect(screen.getByText('Existing Project')).toBeInTheDocument();
+    });
+
+    // Create new project
+    const createButton = screen.getByRole('button', { name: /create project/i });
+    fireEvent.click(createButton);
+
+    const nameInput = screen.getByLabelText(/project name/i);
+    fireEvent.change(nameInput, { target: { value: 'New Project' } });
+
+    const submitButton = screen.getByRole('button', { name: /save/i });
+    fireEvent.click(submitButton);
+
+    // Verify project was created
+    await waitFor(() => {
+      expect(mockSupabase.from().insert).toHaveBeenCalledWith([
+        expect.objectContaining({ name: 'New Project' })
+      ]);
+    });
+  });
+});
+```
+
+##### E2E Tests (Playwright)
+Test complete user workflows:
+
+```typescript
+// e2e/project-workflow.spec.ts
+import { test, expect } from '@playwright/test';
+
+test.describe('Project Management Workflow', () => {
+  test.beforeEach(async ({ page }) => {
+    // Login as manager
+    await page.goto('/login');
+    await page.fill('[data-testid="email"]', 'manager@test.com');
+    await page.fill('[data-testid="password"]', 'password123');
+    await page.click('[data-testid="login-button"]');
+
+    await expect(page).toHaveURL('/dashboard');
+  });
+
+  test('should complete full project creation workflow', async ({ page }) => {
+    // Navigate to projects
+    await page.click('[data-testid="projects-nav"]');
+    await expect(page).toHaveURL('/projects');
+
+    // Create new project
+    await page.click('[data-testid="create-project-button"]');
+
+    // Fill project form
+    await page.fill('[data-testid="project-name"]', 'E2E Test Project');
+    await page.fill('[data-testid="project-description"]', 'Test project description');
+    await page.selectOption('[data-testid="project-priority"]', 'high');
+
+    // Set location on map (simulate map click)
+    await page.click('[data-testid="map-container"]', { position: { x: 200, y: 200 } });
+
+    // Save project
+    await page.click('[data-testid="save-project-button"]');
+
+    // Verify project was created
+    await expect(page.locator('[data-testid="project-card"]')).toContainText('E2E Test Project');
+
+    // Verify project appears in list
+    await expect(page.locator('[data-testid="projects-list"]')).toContainText('E2E Test Project');
+  });
+});
+```
+
+#### Test Configuration
+
+##### Jest Configuration
+```javascript
+// jest.config.js
+module.exports = {
+  preset: 'ts-jest',
+  testEnvironment: 'jsdom',
+  setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
+  moduleNameMapping: {
+    '^@/(.*)$': '<rootDir>/src/$1',
+    '^@shared/(.*)$': '<rootDir>/packages/shared/$1',
+    '^@ui/(.*)$': '<rootDir>/packages/ui/$1'
+  },
+  collectCoverageFrom: [
+    'src/**/*.{ts,tsx}',
+    'packages/**/*.{ts,tsx}',
+    '!**/*.d.ts',
+    '!**/node_modules/**',
+    '!**/*.stories.tsx'
+  ],
+  coverageThreshold: {
+    global: {
+      branches: 80,
+      functions: 80,
+      lines: 80,
+      statements: 80
+    }
+  }
+};
+```
+
+##### Test Setup
+```typescript
+// tests/setup.ts
+import '@testing-library/jest-dom';
+import { server } from './mocks/server';
+
+// Mock environment variables
+process.env.NEXT_PUBLIC_SUPABASE_URL = 'http://localhost:54321';
+process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'test-key';
+
+// Setup MSW
+beforeAll(() => server.listen());
+afterEach(() => server.resetHandlers());
+afterAll(() => server.close());
+
+// Mock IntersectionObserver
+global.IntersectionObserver = jest.fn().mockImplementation(() => ({
+  observe: jest.fn(),
+  unobserve: jest.fn(),
+  disconnect: jest.fn()
+}));
+```
+
+#### Testing Best Practices
+1. **Test Behavior, Not Implementation**: Focus on what the component does, not how it does it
+2. **Use Data Test IDs**: Add `data-testid` attributes for reliable element selection
+3. **Mock External Dependencies**: Mock APIs, third-party libraries, and complex dependencies
+4. **Test Error States**: Include tests for error conditions and edge cases
+5. **Keep Tests Independent**: Each test should be able to run in isolation
+6. **Use Descriptive Test Names**: Test names should clearly describe what is being tested
 
 ### Code Review Process
 1. **Self-review**: Review your own changes before submitting

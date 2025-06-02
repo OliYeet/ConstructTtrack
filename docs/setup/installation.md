@@ -6,24 +6,79 @@ This guide will walk you through setting up ConstructTrack for development, from
 
 ## 📋 Prerequisites
 
-Before you begin, ensure you have the following installed:
+### Supported Platforms
+
+| Platform | Support Level | Notes |
+|----------|---------------|-------|
+| **macOS** | ✅ Full Support | Recommended for iOS development |
+| **Windows 10/11** | ✅ Full Support | WSL2 recommended for best experience |
+| **Linux (Ubuntu/Debian)** | ✅ Full Support | Tested on Ubuntu 20.04+ |
+| **Linux (Other)** | 🟡 Community Support | May require additional setup |
+
+### System Requirements
+
+#### Minimum Requirements
+- **RAM**: 8GB (16GB recommended for mobile development)
+- **Storage**: 10GB free space (20GB+ recommended)
+- **CPU**: Multi-core processor (Intel/AMD/Apple Silicon)
+- **Internet**: Stable connection for package downloads
+
+#### For Mobile Development
+- **macOS**: Xcode 14+ for iOS development
+- **Windows/Linux**: Android Studio for Android development
+- **RAM**: 16GB recommended for emulator performance
 
 ### Required Software
 
-- **Node.js** (v18.0.0 or higher)
-  ```bash
-  node --version  # Should be 18.0.0+
-  ```
+#### Node.js (v18.19.0 or higher)
+```bash
+# Check Node.js version
+node --version  # Should be 18.19.0+
 
-- **npm** (v8.0.0 or higher) or **yarn**
-  ```bash
-  npm --version   # Should be 8.0.0+
-  ```
+# If not installed, use Node Version Manager (recommended)
+# macOS/Linux:
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+nvm install 18.19.0
 
-- **Git** (latest version)
-  ```bash
-  git --version
-  ```
+# Windows:
+# Download nvm-windows from: https://github.com/coreybutler/nvm-windows
+```
+
+#### Package Manager
+```bash
+# npm (comes with Node.js)
+npm --version   # Should be 10.0.0+
+
+# Or yarn (optional but recommended)
+npm install -g yarn
+yarn --version
+
+# Or pnpm (alternative)
+npm install -g pnpm
+pnpm --version
+```
+
+#### Git Version Control
+```bash
+# Check Git version
+git --version  # Should be 2.30.0+
+
+# Install if needed:
+# macOS: xcode-select --install
+# Windows: Download from https://git-scm.com/
+# Linux: sudo apt install git
+```
+
+#### Code Editor
+- **VS Code** (recommended) with extensions:
+  - TypeScript and JavaScript Language Features
+  - ESLint
+  - Prettier - Code formatter
+  - React Native Tools
+  - Expo Tools
+  - GitLens
+  - Auto Rename Tag
+  - Bracket Pair Colorizer
 
 ### Development Tools
 
@@ -71,17 +126,81 @@ npm run packages:build
 
 ### 3. Environment Configuration
 
+#### Required Environment Variables
+
+ConstructTrack requires several environment variables to function properly:
+
 ```bash
 # Copy environment template
 cp .env.example .env
 
 # Interactive setup (recommended)
 npm run env:setup
-
-# Or manually edit .env file
 ```
 
-See [Environment Variables Guide](../environment-variables.md) for detailed configuration.
+#### Manual Environment Setup
+
+If you prefer to configure manually, edit `.env` with the following variables:
+
+```bash
+# Database Configuration (Supabase)
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+
+# Mapping Services (MapBox)
+NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN=pk.your-mapbox-token
+
+# Authentication & Security
+JWT_SECRET=your-jwt-secret-min-32-characters
+ENCRYPTION_KEY=your-32-character-encryption-key
+NEXTAUTH_SECRET=your-nextauth-secret
+NEXTAUTH_URL=http://localhost:3000
+
+# Project Management Integration (Optional)
+NOTION_API_KEY=secret_your-notion-integration-key
+NOTION_DATABASE_ID=your-notion-database-id
+NOTION_WEBHOOK_SECRET=your-webhook-secret
+
+# Communication Services (Optional)
+WHATSAPP_BUSINESS_TOKEN=your-whatsapp-token
+EMAIL_SERVICE_API_KEY=your-email-service-key
+SMS_SERVICE_API_KEY=your-sms-service-key
+
+# Development Configuration
+NODE_ENV=development
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+NEXT_PUBLIC_API_URL=http://localhost:3000/api
+
+# Webhook Configuration (for Notion sync)
+WEBHOOK_PORT=3001
+NGROK_TUNNEL_URL=https://your-ngrok-url.ngrok-free.app
+```
+
+#### Environment Variable Validation
+
+```bash
+# Validate all environment variables
+npm run env:validate
+
+# Check specific variables
+npm run env:check
+
+# Get help with environment setup
+npm run env:help
+```
+
+#### Security Notes
+
+⚠️ **Important Security Guidelines:**
+
+1. **Never commit `.env` files** to version control
+2. **Use strong, unique secrets** for JWT_SECRET and ENCRYPTION_KEY
+3. **Rotate API keys regularly** in production
+4. **Use different keys** for development and production
+5. **Limit API key permissions** to minimum required scope
+
+See [Environment Variables Guide](../environment-variables.md) for detailed configuration and security best practices.
 
 ### 4. Database Setup
 

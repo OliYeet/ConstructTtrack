@@ -512,6 +512,262 @@ function ClusteredMarkers({ points }) {
 }
 ```
 
+## 🎯 Usage Examples & Edge Cases
+
+### Common Usage Patterns
+
+#### 1. Project Boundary Validation
+```typescript
+// Validate if work location is within project boundary
+function validateWorkLocation(workPoint: GeoPoint, projectBoundary: Polygon): boolean {
+  try {
+    const point = turf.point([workPoint.longitude, workPoint.latitude]);
+    const polygon = turf.polygon(projectBoundary.coordinates);
+
+    return turf.booleanPointInPolygon(point, polygon);
+  } catch (error) {
+    console.error('Boundary validation failed:', error);
+    return false; // Fail safe - allow work if validation fails
+  }
+}
+
+// Usage in component
+const isValidLocation = useMemo(() => {
+  if (!currentLocation || !project.boundary) return true;
+  return validateWorkLocation(currentLocation, project.boundary);
+}, [currentLocation, project.boundary]);
+```
+
+#### 2. Route Progress Calculation
+```typescript
+// Calculate completion percentage along fiber route
+function calculateRouteProgress(
+  completedSegments: LineString[],
+  totalRoute: LineString
+): number {
+  try {
+    const totalLength = turf.length(totalRoute, { units: 'meters' });
+    const completedLength = completedSegments.reduce((sum, segment) => {
+      return sum + turf.length(segment, { units: 'meters' });
+    }, 0);
+
+    return Math.min((completedLength / totalLength) * 100, 100);
+  } catch (error) {
+    console.error('Progress calculation failed:', error);
+    return 0;
+  }
+}
+```
+
+#### 3. Offline Map Handling
+```typescript
+// Handle offline map scenarios
+function OfflineMapHandler({ children }) {
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [offlineRegions, setOfflineRegions] = useState([]);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  const downloadOfflineRegion = async (bounds: MapBounds) => {
+    try {
+      const region = await MapboxGL.offlineManager.createPack({
+        name: `project-${Date.now()}`,
+        styleURL: MapboxGL.StyleURL.SatelliteStreet,
+        bounds: [[bounds.west, bounds.south], [bounds.east, bounds.north]],
+        minZoom: 10,
+        maxZoom: 16
+      });
+
+      setOfflineRegions(prev => [...prev, region]);
+      return region;
+    } catch (error) {
+      console.error('Failed to download offline region:', error);
+      throw error;
+    }
+  };
+
+  return (
+    <MapContext.Provider value={{ isOnline, offlineRegions, downloadOfflineRegion }}>
+      {children}
+    </MapContext.Provider>
+  );
+}
+```
+
+### Edge Cases & Error Handling
+
+#### 1. Invalid Coordinates
+```typescript
+// Validate and sanitize coordinates
+function validateCoordinates(lat: number, lng: number): boolean {
+  return (
+    typeof lat === 'number' &&
+    typeof lng === 'number' &&
+    lat >= -90 && lat <= 90 &&
+    lng >= -180 && lng <= 180 &&
+    !isNaN(lat) && !isNaN(lng)
+  );
+}
+
+function sanitizeGeoJSON(geojson: any): any {
+  try {
+    // Validate GeoJSON structure
+    if (!geojson || !geojson.type) {
+      throw new Error('Invalid GeoJSON: missing type');
+    }
+
+    // Recursively validate coordinates
+    const validateGeometry = (geometry: any) => {
+      if (geometry.type === 'Point') {
+        const [lng, lat] = geometry.coordinates;
+        if (!validateCoordinates(lat, lng)) {
+          throw new Error(`Invalid coordinates: [${lng}, ${lat}]`);
+        }
+      } else if (geometry.type === 'LineString') {
+        geometry.coordinates.forEach(([lng, lat]: number[]) => {
+          if (!validateCoordinates(lat, lng)) {
+            throw new Error(`Invalid coordinates in LineString: [${lng}, ${lat}]`);
+          }
+        });
+      }
+      // Add more geometry type validations as needed
+    };
+
+    if (geojson.type === 'Feature') {
+      validateGeometry(geojson.geometry);
+    } else if (geojson.type === 'FeatureCollection') {
+      geojson.features.forEach((feature: any) => {
+        validateGeometry(feature.geometry);
+      });
+    }
+
+    return geojson;
+  } catch (error) {
+    console.error('GeoJSON validation failed:', error);
+    return null;
+  }
+}
+```
+
+#### 2. Map Loading Failures
+```typescript
+// Robust map loading with fallbacks
+function RobustMap({ fallbackStyle = 'mapbox://styles/mapbox/streets-v11', ...props }) {
+  const [mapError, setMapError] = useState(null);
+  const [currentStyle, setCurrentStyle] = useState(props.mapStyle);
+
+  const handleMapError = useCallback((error) => {
+    console.error('Map error:', error);
+    setMapError(error);
+
+    // Try fallback style
+    if (currentStyle !== fallbackStyle) {
+      console.log('Trying fallback map style...');
+      setCurrentStyle(fallbackStyle);
+      setMapError(null);
+    }
+  }, [currentStyle, fallbackStyle]);
+
+  if (mapError && currentStyle === fallbackStyle) {
+    return (
+      <div className="map-error">
+        <p>Map failed to load. Please check your internet connection.</p>
+        <button onClick={() => window.location.reload()}>
+          Retry
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <Map
+      {...props}
+      mapStyle={currentStyle}
+      onError={handleMapError}
+    />
+  );
+}
+```
+
+#### 3. GPS Accuracy Handling
+```typescript
+// Handle varying GPS accuracy levels
+function useGPSLocation() {
+  const [location, setLocation] = useState(null);
+  const [accuracy, setAccuracy] = useState(null);
+
+  useEffect(() => {
+    const watchId = navigator.geolocation.watchPosition(
+      (position) => {
+        const { latitude, longitude, accuracy } = position.coords;
+
+        // Only update if accuracy is acceptable (within 50 meters)
+        if (accuracy <= 50) {
+          setLocation({ latitude, longitude });
+          setAccuracy(accuracy);
+        } else {
+          console.warn(`GPS accuracy too low: ${accuracy}m`);
+        }
+      },
+      (error) => {
+        console.error('GPS error:', error);
+        // Handle different error types
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            alert('GPS permission denied. Please enable location access.');
+            break;
+          case error.POSITION_UNAVAILABLE:
+            alert('GPS position unavailable. Please check your device settings.');
+            break;
+          case error.TIMEOUT:
+            console.warn('GPS timeout, retrying...');
+            break;
+        }
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 60000
+      }
+    );
+
+    return () => navigator.geolocation.clearWatch(watchId);
+  }, []);
+
+  return { location, accuracy };
+}
+```
+
+## 📸 UI Screenshots & Visual Examples
+
+> **Note**: Screenshots and GIFs would be added here in a real implementation. For now, we provide text descriptions of key visual elements:
+
+### Key Visual Elements
+1. **Interactive Map Interface**: Full-screen MapBox map with custom fiber industry styling
+2. **Fiber Route Visualization**: Color-coded lines showing planned, in-progress, and completed routes
+3. **Work Area Polygons**: Geofenced project boundaries with visual indicators
+4. **GPS Photo Markers**: Thumbnail images positioned at exact GPS coordinates
+5. **Mobile Map Controls**: Touch-optimized controls for field worker use
+6. **Offline Map Indicators**: Visual cues showing downloaded offline regions
+
+### Recommended Screenshots
+- Project overview map with multiple fiber routes
+- Mobile interface showing GPS tracking and photo capture
+- Route drawing tools in action
+- Offline map download interface
+- Photo gallery with map integration
+
 ---
 
 **Next**: Explore [Mobile App Features](mobile.md) and [Real-time Features](real-time.md) for more platform-specific capabilities.

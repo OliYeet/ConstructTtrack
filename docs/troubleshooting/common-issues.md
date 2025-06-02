@@ -428,6 +428,128 @@ Include:
 5. **Error messages**: Full error output
 6. **Screenshots**: If UI-related
 
+## 🔗 External Resources & Links
+
+### Official Documentation
+- **Node.js**: [Installation Guide](https://nodejs.org/en/download/) | [Troubleshooting](https://nodejs.org/en/docs/guides/debugging-getting-started/)
+- **npm**: [Common Issues](https://docs.npmjs.com/common-errors) | [CLI Commands](https://docs.npmjs.com/cli/v8/commands)
+- **Expo**: [Troubleshooting](https://docs.expo.dev/troubleshooting/overview/) | [Common Issues](https://docs.expo.dev/troubleshooting/common-development-errors/)
+- **React Native**: [Troubleshooting](https://reactnative.dev/docs/troubleshooting) | [Environment Setup](https://reactnative.dev/docs/environment-setup)
+- **Supabase**: [Troubleshooting](https://supabase.com/docs/guides/troubleshooting) | [Local Development](https://supabase.com/docs/guides/cli/local-development)
+- **MapBox**: [Troubleshooting](https://docs.mapbox.com/help/troubleshooting/) | [React Integration](https://docs.mapbox.com/mapbox-gl-js/guides/)
+
+### Community Resources
+- **Stack Overflow**: [React Native](https://stackoverflow.com/questions/tagged/react-native) | [Next.js](https://stackoverflow.com/questions/tagged/next.js) | [Supabase](https://stackoverflow.com/questions/tagged/supabase)
+- **GitHub Issues**: [Expo CLI](https://github.com/expo/expo-cli/issues) | [React Native](https://github.com/facebook/react-native/issues) | [Supabase](https://github.com/supabase/supabase/issues)
+- **Discord Communities**: [Expo](https://chat.expo.dev/) | [Supabase](https://discord.supabase.com/) | [React Native](https://www.reactiflux.com/)
+
+### Platform-Specific Resources
+- **macOS**: [Xcode Troubleshooting](https://developer.apple.com/documentation/xcode/troubleshooting-xcode) | [Homebrew Issues](https://docs.brew.sh/Troubleshooting)
+- **Windows**: [WSL Troubleshooting](https://docs.microsoft.com/en-us/windows/wsl/troubleshooting) | [Android Studio Issues](https://developer.android.com/studio/troubleshoot)
+- **Linux**: [Ubuntu Development Setup](https://help.ubuntu.com/community/AndroidStudio) | [Node.js on Linux](https://nodejs.org/en/download/package-manager/)
+
+## 📊 Latest Known Issues (Updated: January 2025)
+
+### Current High-Priority Issues
+1. **Husky Git Hooks**: Pre-commit hooks may fail on Windows with WSL2
+   - **Workaround**: Use `git commit --no-verify` temporarily
+   - **Fix**: Update to Husky v8+ and ensure proper file permissions
+   - **GitHub Issue**: [#123](https://github.com/OliYeet/ConstructTtrack/issues/123)
+
+2. **Expo Metro Bundler**: Occasional bundling failures with monorepo setup
+   - **Workaround**: Clear Metro cache with `npx expo start --clear`
+   - **Fix**: Update Metro configuration for better monorepo support
+   - **Related**: [Expo Issue #15234](https://github.com/expo/expo/issues/15234)
+
+3. **MapBox Token Validation**: Tokens may appear invalid in development
+   - **Workaround**: Verify token scopes include `styles:read` and `fonts:read`
+   - **Fix**: Check token restrictions and allowed URLs
+   - **Documentation**: [MapBox Token Troubleshooting](https://docs.mapbox.com/help/troubleshooting/how-to-use-mapbox-securely/)
+
+### Recently Resolved Issues
+- ✅ **Environment Variable Loading**: Fixed in v1.1.0 with improved validation
+- ✅ **Supabase Connection Timeouts**: Resolved with connection pooling
+- ✅ **iOS Simulator Crashes**: Fixed with Expo SDK 50 update
+
+## 🆘 Emergency Troubleshooting
+
+### Complete Reset Procedure
+If all else fails, try this complete reset:
+
+```bash
+# 1. Stop all processes
+pkill -f "node"
+pkill -f "expo"
+
+# 2. Clean everything
+rm -rf node_modules
+rm -rf .expo
+rm -rf .next
+rm -rf apps/*/node_modules
+rm -rf packages/*/node_modules
+rm package-lock.json
+
+# 3. Clear caches
+npm cache clean --force
+npx expo install --fix
+
+# 4. Reinstall everything
+npm install
+npm run packages:build
+
+# 5. Reset environment
+cp .env.example .env
+npm run env:setup
+
+# 6. Restart development
+npm run dev
+```
+
+### System Health Check
+```bash
+# Run comprehensive system check
+npm run health:check
+
+# Check all dependencies
+npm run deps:check
+
+# Validate entire setup
+npm run validate:all
+```
+
+## 📞 Getting Help
+
+### Before Creating an Issue
+1. **Search existing issues**: Check [GitHub Issues](https://github.com/OliYeet/ConstructTtrack/issues)
+2. **Check documentation**: Review relevant docs sections
+3. **Try troubleshooting steps**: Follow this guide completely
+4. **Collect debug info**: Use the debug commands above
+
+### Creating a Bug Report
+Include this information:
+```bash
+# System information
+npm run debug:info
+
+# Error logs
+cat ~/.npm/_logs/*-debug.log
+
+# Environment status
+npm run env:check
+
+# Package versions
+npm list --depth=0
+```
+
+### Support Channels
+- **🐛 Bugs**: [GitHub Issues](https://github.com/OliYeet/ConstructTtrack/issues/new?template=bug_report.md)
+- **💡 Feature Requests**: [GitHub Discussions](https://github.com/OliYeet/ConstructTtrack/discussions)
+- **❓ Questions**: [Team Chat](https://discord.gg/constructtrack) or [Stack Overflow](https://stackoverflow.com/questions/tagged/constructtrack)
+- **🚨 Security Issues**: Email security@constructtrack.com
+
 ---
 
-**Still having issues?** Check the [Error Codes Reference](error-codes.md) or create a GitHub issue with the debug information above.
+**Still having issues?**
+- Check the [Error Codes Reference](error-codes.md) for specific error messages
+- Create a [GitHub issue](https://github.com/OliYeet/ConstructTtrack/issues/new) with the debug information above
+- Join our [Discord community](https://discord.gg/constructtrack) for real-time help

@@ -21,23 +21,90 @@ ConstructTrack provides a comprehensive REST API built on Supabase with real-tim
 ## 🔐 Authentication
 
 ### Authentication Flow
+
+#### 1. User Login
 ```bash
-# 1. Login to get JWT token
 POST /auth/login
-{
-  "email": "user@example.com",
-  "password": "password"
-}
+Content-Type: application/json
 
-# Response
 {
-  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "refresh_token": "...",
-  "user": { ... }
+  "email": "manager@fibertech.com",
+  "password": "SecurePassword123!"
 }
+```
 
-# 2. Use token in subsequent requests
+**Success Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": {
+    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyXzEyMyIsInJvbGUiOiJtYW5hZ2VyIiwib3JnIjoib3JnXzQ1NiIsImV4cCI6MTY0MzcyMzQwMH0.signature",
+    "refresh_token": "rt_abc123def456ghi789jkl012mno345pqr678stu901vwx234yz",
+    "expires_in": 3600,
+    "token_type": "Bearer",
+    "user": {
+      "id": "user_123",
+      "email": "manager@fibertech.com",
+      "role": "manager",
+      "organization_id": "org_456",
+      "profile": {
+        "first_name": "John",
+        "last_name": "Smith",
+        "phone": "+1-555-0123"
+      }
+    }
+  },
+  "meta": {
+    "timestamp": "2025-01-30T10:00:00Z",
+    "version": "1.0.0"
+  }
+}
+```
+
+**Error Response (401 Unauthorized):**
+```json
+{
+  "success": false,
+  "error": {
+    "code": "INVALID_CREDENTIALS",
+    "message": "Invalid email or password",
+    "details": []
+  },
+  "meta": {
+    "timestamp": "2025-01-30T10:00:00Z",
+    "request_id": "req_abc123"
+  }
+}
+```
+
+#### 2. Using Authentication Token
+```bash
+# Include token in Authorization header for all authenticated requests
+GET /projects
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+Content-Type: application/json
+```
+
+#### 3. Token Refresh
+```bash
+POST /auth/refresh
+Content-Type: application/json
+
+{
+  "refresh_token": "rt_abc123def456ghi789jkl012mno345pqr678stu901vwx234yz"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "expires_in": 3600,
+    "token_type": "Bearer"
+  }
+}
 ```
 
 ### Authentication Endpoints
@@ -95,32 +162,155 @@ Development: http://localhost:3000/api/v1
 ## 📋 Core Resources
 
 ### Projects API
+
+#### List Projects
 ```bash
-# List projects
-GET /projects
 GET /projects?status=active&limit=10&offset=0
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
 
-# Get project details
-GET /projects/{id}
-
-# Create project
-POST /projects
+**Response (200 OK):**
+```json
 {
-  "name": "Fiber Installation - Downtown",
-  "description": "High-speed fiber installation project",
+  "success": true,
+  "data": {
+    "projects": [
+      {
+        "id": "proj_123",
+        "name": "Fiber Installation - Downtown",
+        "description": "High-speed fiber installation project for downtown district",
+        "status": "active",
+        "priority": "high",
+        "location": {
+          "type": "Point",
+          "coordinates": [-122.4194, 37.7749]
+        },
+        "start_date": "2025-02-01",
+        "end_date": "2025-06-30",
+        "progress": 35.5,
+        "team_size": 8,
+        "created_at": "2025-01-15T09:00:00Z",
+        "updated_at": "2025-01-30T14:30:00Z"
+      }
+    ],
+    "pagination": {
+      "total": 25,
+      "limit": 10,
+      "offset": 0,
+      "has_more": true
+    }
+  }
+}
+```
+
+#### Get Project Details
+```bash
+GET /projects/proj_123
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "proj_123",
+    "name": "Fiber Installation - Downtown",
+    "description": "High-speed fiber installation project for downtown district",
+    "status": "active",
+    "priority": "high",
+    "location": {
+      "type": "Point",
+      "coordinates": [-122.4194, 37.7749],
+      "address": "123 Main St, San Francisco, CA 94105"
+    },
+    "dates": {
+      "start_date": "2025-02-01",
+      "end_date": "2025-06-30",
+      "estimated_completion": "2025-06-15"
+    },
+    "metrics": {
+      "progress": 35.5,
+      "tasks_completed": 12,
+      "tasks_total": 34,
+      "team_size": 8,
+      "budget_used": 125000.00,
+      "budget_total": 350000.00
+    },
+    "team": [
+      {
+        "user_id": "user_456",
+        "role": "project_manager",
+        "name": "Jane Doe"
+      }
+    ],
+    "created_at": "2025-01-15T09:00:00Z",
+    "updated_at": "2025-01-30T14:30:00Z"
+  }
+}
+```
+
+#### Create Project
+```bash
+POST /projects
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+Content-Type: application/json
+
+{
+  "name": "Fiber Installation - Residential Area",
+  "description": "Fiber optic installation for residential neighborhood",
   "location": {
     "type": "Point",
-    "coordinates": [-122.4194, 37.7749]
+    "coordinates": [-122.4094, 37.7849],
+    "address": "456 Oak Street, San Francisco, CA 94102"
   },
-  "start_date": "2025-02-01",
-  "end_date": "2025-06-30"
+  "start_date": "2025-03-01",
+  "end_date": "2025-08-31",
+  "priority": "medium",
+  "budget": 275000.00,
+  "team_members": ["user_456", "user_789"]
 }
+```
 
-# Update project
-PUT /projects/{id}
+**Response (201 Created):**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "proj_456",
+    "name": "Fiber Installation - Residential Area",
+    "status": "planning",
+    "created_at": "2025-01-30T15:00:00Z"
+  },
+  "message": "Project created successfully"
+}
+```
 
-# Delete project
-DELETE /projects/{id}
+#### Update Project
+```bash
+PUT /projects/proj_123
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+Content-Type: application/json
+
+{
+  "status": "in_progress",
+  "progress": 45.0,
+  "estimated_completion": "2025-06-10"
+}
+```
+
+#### Delete Project
+```bash
+DELETE /projects/proj_123
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Project deleted successfully"
+}
 ```
 
 ### Users API

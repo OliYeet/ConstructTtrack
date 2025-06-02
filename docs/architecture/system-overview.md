@@ -21,27 +21,84 @@ ConstructTrack is designed as a modern, scalable fiber optic installation manage
 
 ## 🏛️ High-Level Architecture
 
+### System Overview Diagram
 ```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Web Client    │    │  Mobile Client  │    │  Admin Portal   │
-│   (Next.js)     │    │ (React Native)  │    │   (Next.js)     │
-└─────────┬───────┘    └─────────┬───────┘    └─────────┬───────┘
-          │                      │                      │
-          └──────────────────────┼──────────────────────┘
-                                 │
-                    ┌─────────────┴─────────────┐
-                    │     API Gateway           │
-                    │   (Supabase Edge)         │
-                    └─────────────┬─────────────┘
-                                  │
-          ┌───────────────────────┼───────────────────────┐
-          │                       │                       │
-┌─────────┴───────┐    ┌─────────┴───────┐    ┌─────────┴───────┐
-│   Database      │    │   Auth Service  │    │  File Storage   │
-│ (PostgreSQL +   │    │   (Supabase)    │    │   (Supabase)    │
-│    PostGIS)     │    │                 │    │                 │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
+                    ConstructTrack Fiber Optic Management Platform
+                                        │
+        ┌───────────────────────────────┼───────────────────────────────┐
+        │                               │                               │
+        ▼                               ▼                               ▼
+┌─────────────────┐            ┌─────────────────┐            ┌─────────────────┐
+│   Web Client    │            │  Mobile Client  │            │  Admin Portal   │
+│   (Next.js)     │            │ (React Native)  │            │   (Next.js)     │
+│                 │            │                 │            │                 │
+│ • Project Mgmt  │            │ • Field Tools   │            │ • System Admin  │
+│ • Dashboards    │            │ • GPS Tracking  │            │ • User Mgmt     │
+│ • Reporting     │            │ • Photo Capture │            │ • Analytics     │
+│ • Customer UI   │            │ • Offline Mode  │            │ • Configuration │
+└─────────┬───────┘            └─────────┬───────┘            └─────────┬───────┘
+          │                              │                              │
+          │                              │                              │
+          └──────────────────────────────┼──────────────────────────────┘
+                                         │
+                                         ▼
+                            ┌─────────────────────────┐
+                            │     API Gateway         │
+                            │   (Supabase Edge)       │
+                            │                         │
+                            │ • Authentication        │
+                            │ • Rate Limiting         │
+                            │ • Request Routing       │
+                            │ • Response Caching      │
+                            └─────────────┬───────────┘
+                                          │
+                ┌─────────────────────────┼─────────────────────────┐
+                │                         │                         │
+                ▼                         ▼                         ▼
+    ┌─────────────────────┐   ┌─────────────────────┐   ┌─────────────────────┐
+    │     Database        │   │   Auth Service      │   │   File Storage      │
+    │  (PostgreSQL +      │   │   (Supabase)        │   │   (Supabase)        │
+    │     PostGIS)        │   │                     │   │                     │
+    │                     │   │ • JWT Tokens        │   │ • Photos/Documents  │
+    │ • Projects          │   │ • Role-Based Access │   │ • Map Tiles         │
+    │ • Users/Teams       │   │ • Session Mgmt      │   │ • File Versioning   │
+    │ • Fiber Routes      │   │ • Password Policies │   │ • CDN Distribution  │
+    │ • Work Areas        │   │ • 2FA Support       │   │ • Backup/Archive    │
+    │ • Tasks/Progress    │   │ • Audit Logging     │   │ • Access Control    │
+    │ • Geospatial Data   │   └─────────────────────┘   └─────────────────────┘
+    │ • Real-time Sync    │
+    └─────────────────────┘
+                │
+                ▼
+    ┌─────────────────────┐
+    │  External Services  │
+    │                     │
+    │ • MapBox API        │
+    │ • Weather Services  │
+    │ • Geocoding APIs    │
+    │ • Email/SMS         │
+    │ • WhatsApp Business │
+    │ • Notion API        │
+    └─────────────────────┘
 ```
+
+### Key Components Summary
+
+#### Client Applications
+- **Web Client (Next.js)**: Management dashboard for project oversight, reporting, and customer interactions
+- **Mobile Client (React Native)**: Field worker tools with offline capabilities, GPS tracking, and photo documentation
+- **Admin Portal**: System administration, user management, and platform configuration
+
+#### Backend Services
+- **API Gateway (Supabase Edge)**: Centralized request handling, authentication, and routing
+- **Database (PostgreSQL + PostGIS)**: Primary data store with geospatial capabilities
+- **Authentication Service**: JWT-based auth with role-based access control
+- **File Storage**: Secure file management with CDN distribution
+
+#### External Integrations
+- **MapBox**: Interactive mapping and geospatial services
+- **Communication APIs**: Email, SMS, and WhatsApp integration
+- **Third-party Services**: Weather data, geocoding, and project management tools
 
 ## 📱 Client Applications
 
