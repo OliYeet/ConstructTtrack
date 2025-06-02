@@ -23,9 +23,9 @@ export default [
     ],
   },
 
-  // Base configuration for all files
+  // TypeScript files configuration
   {
-    files: ['**/*.{js,mjs,cjs,ts,tsx}'],
+    files: ['**/*.{ts,tsx}'],
     languageOptions: {
       ecmaVersion: 'latest',
       sourceType: 'module',
@@ -74,6 +74,53 @@ export default [
         },
       ],
       'import/no-unresolved': 'off', // TypeScript handles this
+
+      // General rules
+      'no-console': 'warn',
+      'no-debugger': 'error',
+      'prefer-const': 'error',
+      'no-var': 'error',
+    },
+  },
+
+  // JavaScript files configuration (no TypeScript parser)
+  {
+    files: ['**/*.{js,mjs,cjs}'],
+    languageOptions: {
+      ecmaVersion: 'latest',
+      sourceType: 'module',
+      parserOptions: {
+        ecmaFeatures: {
+          jsx: true,
+        },
+      },
+    },
+    plugins: {
+      import: importPlugin,
+    },
+    rules: {
+      ...js.configs.recommended.rules,
+
+      // Import rules
+      'import/order': [
+        'error',
+        {
+          groups: [
+            'builtin',
+            'external',
+            'internal',
+            'parent',
+            'sibling',
+            'index',
+          ],
+          'newlines-between': 'always',
+          alphabetize: {
+            order: 'asc',
+            caseInsensitive: true,
+          },
+        },
+      ],
+      'import/no-unresolved': 'off',
 
       // General rules
       'no-console': 'warn',

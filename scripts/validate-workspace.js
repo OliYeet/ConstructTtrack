@@ -167,14 +167,18 @@ class WorkspaceValidator {
       this.addWarning(`Package ${workspacePath} missing tsconfig.json`);
     }
 
-    // Check internal dependency usage
-    if (pkg.dependencies) {
-      for (const [depName, version] of Object.entries(pkg.dependencies)) {
-        if (depName.startsWith('@constructtrack/') && version !== '*') {
-          this.addWarning(
-            `Package ${workspacePath} should use "*" for internal dependency ${depName}`
-          );
-        }
+    // Check internal dependency usage in both dependencies and devDependencies
+    const allDeps = {
+      ...(pkg.dependencies || {}),
+      ...(pkg.devDependencies || {}),
+    };
+
+    for (const [depName, version] of Object.entries(allDeps)) {
+      if (depName.startsWith('@constructtrack/') && version !== '*') {
+        const depType = pkg.dependencies?.[depName] ? 'dependencies' : 'devDependencies';
+        this.addWarning(
+          `Package ${workspacePath} should use "*" for internal dependency ${depName} in ${depType}`
+        );
       }
     }
   }

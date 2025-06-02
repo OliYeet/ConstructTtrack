@@ -40,7 +40,7 @@ async function testConnection() {
     console.log('1. Testing basic connection...');
     const { error } = await supabaseAnon
       .from('organizations')
-      .select('count')
+      .select('*')
       .limit(1);
     if (error) {
       console.log(

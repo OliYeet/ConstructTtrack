@@ -5,7 +5,7 @@
  * Helps developers set up their environment variables interactively
  */
 
-import { writeFileSync, existsSync } from 'fs';
+import { writeFileSync, existsSync, chmodSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import inquirer from 'inquirer';
@@ -78,10 +78,10 @@ class EnvSetup {
       supabaseUrl = await this.question('Supabase URL: ');
       if (!supabaseUrl || supabaseUrl.trim() === '') {
         console.log(chalk.red('❌ Supabase URL is required'));
-      } else if (!supabaseUrl.match(/^https:\/\/.*\.supabase\.co$/)) {
+      } else if (!supabaseUrl.match(/^https:\/\/(.*\.supabase\.co|localhost(:\d+)?)$/)) {
         console.log(
           chalk.red(
-            '❌ Supabase URL must be in format: https://your-project-id.supabase.co'
+            '❌ Supabase URL must be https://your-project-id.supabase.co or https://localhost:port for development'
           )
         );
       } else {
@@ -272,7 +272,9 @@ class EnvSetup {
 
     try {
       writeFileSync(envPath, envContent, 'utf8');
-      console.log(chalk.green(`\n✅ .env file created successfully!`));
+      // Set restrictive permissions (owner read/write only)
+      chmodSync(envPath, 0o600);
+      console.log(chalk.green(`\n✅ .env file created successfully with secure permissions!`));
     } catch (error) {
       console.error(
         chalk.red(`\n❌ Failed to create .env file: ${error.message}`)
@@ -377,6 +379,7 @@ async function main() {
   await setup.setup();
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+// Check if this module is being executed directly
+if (import.meta.url === new URL(process.argv[1], 'file://').href) {
   main().catch(console.error);
 }
