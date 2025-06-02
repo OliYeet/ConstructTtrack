@@ -101,7 +101,7 @@
     "typescript": "^5.3.3",
     "@apidevtools/swagger-cli": "^4.0.4",
     "@apidevtools/swagger-parser": "^10.1.0",
-    "openapi-diff": "^0.26.0",
+    "openapi-diff": "^0.23.7",
     "redoc-cli": "^0.13.21",
     "swagger-jsdoc": "^6.2.8"
   }
