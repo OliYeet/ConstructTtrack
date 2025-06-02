@@ -43,7 +43,7 @@ jobs:
         run: |
           npm ci
           # Install OpenAPI validation dependencies locally
-          npm install @apidevtools/swagger-cli @apidevtools/swagger-parser openapi-diff redoc-cli
+          npm install @apidevtools/swagger-cli @apidevtools/swagger-parser openapi-diff @redocly/cli
 
       - name: Validate OpenAPI specification syntax
         run: |
@@ -64,7 +64,7 @@ jobs:
       - name: Generate API documentation
         run: |
           echo "📚 Generating API documentation..."
-          npx redoc-cli build docs/api/openapi.yaml --output docs/api/index.html
+          npx @redocly/cli build-docs docs/api/openapi.yaml --output docs/api/index.html
 
       - name: Upload validation artifacts
         uses: actions/upload-artifact@v4
@@ -333,7 +333,7 @@ jobs:
       - name: Generate API documentation
         run: |
           echo "📚 Generating API documentation..."
-          npx redoc-cli build docs/api/openapi.yaml --output docs/api/index.html
+          npx @redocly/cli build-docs docs/api/openapi.yaml --output docs/api/index.html
 
       - name: Deploy documentation to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
