@@ -77,12 +77,12 @@ The application loads environment variables in this order:
 
 ### Email Service (SMTP)
 
-| Variable     | Description                | Default |
-| ------------ | -------------------------- | ------- |
-| `SMTP_HOST`  | SMTP server hostname       | -       |
-| `SMTP_PORT`  | SMTP server port           | `587`   |
-| `SMTP_USER`  | SMTP authentication user   | -       |
-| `SMTP_PASS`  | SMTP authentication password | -     |
+| Variable     | Description                  | Default |
+| ------------ | ---------------------------- | ------- |
+| `SMTP_HOST`  | SMTP server hostname         | -       |
+| `SMTP_PORT`  | SMTP server port             | `587`   |
+| `SMTP_USER`  | SMTP authentication user     | -       |
+| `SMTP_PASS`  | SMTP authentication password | -       |
 
 ### SMS Service (Twilio)
 

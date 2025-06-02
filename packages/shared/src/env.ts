@@ -156,11 +156,24 @@ export function loadEnvironment(): EnvironmentConfig {
     return defaultValue;
   };
 
+  // Helper function to validate NODE_ENV
+  const validateNodeEnv = (
+    value: string | undefined
+  ): 'development' | 'staging' | 'production' => {
+    const validEnvs = ['development', 'staging', 'production'] as const;
+    if (!value || !validEnvs.includes(value as any)) {
+      // eslint-disable-next-line no-console
+      console.warn(
+        `Invalid NODE_ENV value: "${value}". Defaulting to "development"`
+      );
+      return 'development';
+    }
+    return value as 'development' | 'staging' | 'production';
+  };
+
   return {
     // Core
-    NODE_ENV:
-      (env.NODE_ENV as 'development' | 'staging' | 'production') ||
-      'development',
+    NODE_ENV: validateNodeEnv(env.NODE_ENV),
     PORT: getNumber('PORT', 3000),
 
     // Supabase
@@ -211,16 +224,16 @@ export function getClientEnvironment() {
   const env = process.env;
 
   const clientEnv = {
-    NODE_ENV: env.NODE_ENV || 'development',
+    NODE_ENV: env.NODE_ENV ?? 'development',
 
-    // Supabase (client-safe)
-    SUPABASE_URL: env.NEXT_PUBLIC_SUPABASE_URL || env.EXPO_PUBLIC_SUPABASE_URL,
+    // Supabase (client-safe) - NEXT_PUBLIC_ takes precedence over EXPO_PUBLIC_
+    SUPABASE_URL: env.NEXT_PUBLIC_SUPABASE_URL ?? env.EXPO_PUBLIC_SUPABASE_URL,
     SUPABASE_ANON_KEY:
-      env.NEXT_PUBLIC_SUPABASE_ANON_KEY || env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
+      env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
 
-    // MapBox (client-safe)
+    // MapBox (client-safe) - NEXT_PUBLIC_ takes precedence over EXPO_PUBLIC_
     MAPBOX_ACCESS_TOKEN:
-      env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN ||
+      env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN ??
       env.EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN,
 
     // App URL

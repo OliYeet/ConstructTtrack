@@ -79,12 +79,17 @@ class WorkspaceValidator {
       // Dynamically validate workspace patterns by checking if they resolve to actual folders
       const actualWorkspaces = loadWorkspaces(this.rootDir);
 
+      // Helper function to escape regex special characters
+      const escapeRegex = (string) => {
+        return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      };
+
       // Verify that each workspace pattern resolves to at least one folder
       for (const pattern of workspacesArray) {
         const matchingWorkspaces = actualWorkspaces.filter(workspace => {
-          // Simple glob matching - check if workspace path matches the pattern
-          const patternRegex = pattern.replace('*', '.*');
-          return new RegExp(`^${patternRegex}$`).test(workspace);
+          // Safe glob matching - escape special characters then replace escaped \* with .*
+          const escapedPattern = escapeRegex(pattern).replace('\\*', '.*');
+          return new RegExp(`^${escapedPattern}$`).test(workspace);
         });
 
         if (matchingWorkspaces.length === 0) {

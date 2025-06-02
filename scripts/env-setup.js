@@ -78,10 +78,10 @@ class EnvSetup {
       supabaseUrl = await this.question('Supabase URL: ');
       if (!supabaseUrl || supabaseUrl.trim() === '') {
         console.log(chalk.red('❌ Supabase URL is required'));
-      } else if (!supabaseUrl.match(/^https:\/\/(.*\.supabase\.co|localhost(:\d+)?)$/)) {
+      } else if (!supabaseUrl.match(/^https:\/\/(.*\.supabase\.co|localhost(:\d+)?)|http:\/\/localhost(:\d+)?$/)) {
         console.log(
           chalk.red(
-            '❌ Supabase URL must be https://your-project-id.supabase.co or https://localhost:port for development'
+            '❌ Supabase URL must be https://your-project-id.supabase.co, https://localhost:port, or http://localhost:port for development'
           )
         );
       } else {
@@ -90,6 +90,23 @@ class EnvSetup {
     } while (!supabaseUrlValid);
     config.SUPABASE_URL = supabaseUrl;
 
+    // Helper function to validate Supabase key length based on environment
+    const validateSupabaseKeyLength = (key, keyType) => {
+      const isProduction = config.NODE_ENV === 'production';
+      const minLength = isProduction ? 100 : 80; // Stricter validation for production
+
+      if (key.length < minLength) {
+        const envNote = isProduction ? '' : ' (local emulator keys are typically ~88 characters)';
+        console.log(
+          chalk.red(
+            `❌ Supabase ${keyType} appears to be too short (should be ${minLength}+ characters)${envNote}`
+          )
+        );
+        return false;
+      }
+      return true;
+    };
+
     // Supabase Anon Key validation
     let supabaseAnonKey;
     let supabaseAnonKeyValid = false;
@@ -97,13 +114,7 @@ class EnvSetup {
       supabaseAnonKey = await this.question('Supabase Anon Key: ', { mask: true });
       if (!supabaseAnonKey || supabaseAnonKey.trim() === '') {
         console.log(chalk.red('❌ Supabase Anon Key is required'));
-      } else if (supabaseAnonKey.length < 100) {
-        console.log(
-          chalk.red(
-            '❌ Supabase Anon Key appears to be too short (should be 100+ characters)'
-          )
-        );
-      } else {
+      } else if (validateSupabaseKeyLength(supabaseAnonKey, 'Anon Key')) {
         supabaseAnonKeyValid = true;
       }
     } while (!supabaseAnonKeyValid);
@@ -116,13 +127,7 @@ class EnvSetup {
       supabaseServiceKey = await this.question('Supabase Service Role Key: ', { mask: true });
       if (!supabaseServiceKey || supabaseServiceKey.trim() === '') {
         console.log(chalk.red('❌ Supabase Service Role Key is required'));
-      } else if (supabaseServiceKey.length < 100) {
-        console.log(
-          chalk.red(
-            '❌ Supabase Service Role Key appears to be too short (should be 100+ characters)'
-          )
-        );
-      } else {
+      } else if (validateSupabaseKeyLength(supabaseServiceKey, 'Service Role Key')) {
         supabaseServiceKeyValid = true;
       }
     } while (!supabaseServiceKeyValid);
