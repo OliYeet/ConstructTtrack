@@ -1,0 +1,780 @@
+openapi: 3.0.3
+info:
+  title: ConstructTrack API
+  description: |
+    # ConstructTrack Fiber Optic Installation Management API
+    
+    The ConstructTrack API provides comprehensive endpoints for managing fiber optic construction projects, 
+    field workers, tasks, and customer interactions. This API is designed specifically for the fiber optic 
+    installation industry with features like GPS tracking, photo documentation, and real-time progress updates.
+    
+    ## Features
+    - 🏗️ Project and task management
+    - 👥 User and organization management  
+    - 📍 GPS location tracking
+    - 📸 Photo and document management
+    - 📊 Progress tracking and reporting
+    - 🔐 JWT-based authentication
+    - 📱 Mobile-optimized endpoints
+    
+    ## Base URL
+    - **Production**: `https://api.constructtrack.com/v1`
+    - **Development**: `http://localhost:3001/api/v1`
+    
+    ## Authentication
+    Most endpoints require authentication using JWT tokens. Include the token in the Authorization header:
+    ```
+    Authorization: Bearer <your-jwt-token>
+    ```
+  version: 1.0.0
+  contact:
+    name: ConstructTrack API Support
+    email: api-support@constructtrack.com
+    url: https://docs.constructtrack.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://api.constructtrack.com/v1
+    description: Production server
+  - url: http://localhost:3001/api/v1
+    description: Development server
+
+security:
+  - BearerAuth: []
+  - ApiKeyAuth: []
+
+paths:
+  /health:
+    get:
+      tags:
+        - System
+      summary: Health Check
+      description: Check the health status of the API and its dependencies
+      security: []
+      responses:
+        '200':
+          description: System is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+              example:
+                success: true
+                data:
+                  status: "healthy"
+                  timestamp: "2024-01-15T10:30:00Z"
+                  version: "1.0.0"
+                  services:
+                    api: "healthy"
+                    database: "healthy"
+                  uptime: 86400
+                message: "System is healthy"
+                meta:
+                  timestamp: "2024-01-15T10:30:00Z"
+                  version: "1.0.0"
+                  requestId: "req_1234567890_abc123"
+        '503':
+          description: System is degraded or unhealthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  /test:
+    get:
+      tags:
+        - System
+      summary: Test Endpoint
+      description: Simple test endpoint to verify API functionality
+      security: []
+      responses:
+        '200':
+          description: Test successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TestResponse'
+              example:
+                success: true
+                data:
+                  message: "API is working correctly!"
+                  timestamp: "2024-01-15T10:30:00Z"
+                  requestId: "req_1234567890_abc123"
+                  user: null
+                message: "Test endpoint successful"
+                meta:
+                  timestamp: "2024-01-15T10:30:00Z"
+                  version: "1.0.0"
+                  requestId: "req_1234567890_abc123"
+    post:
+      tags:
+        - System
+      summary: Test POST Endpoint
+      description: Test endpoint with request body validation
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TestRequest'
+            example:
+              message: "Hello API!"
+              data:
+                test: true
+                number: 42
+      responses:
+        '200':
+          description: Test POST successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TestResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /projects:
+    get:
+      tags:
+        - Projects
+      summary: List Projects
+      description: Retrieve a paginated list of projects for the authenticated user's organization
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/SortBy'
+        - $ref: '#/components/parameters/SortOrder'
+        - name: status
+          in: query
+          description: Filter by project status
+          schema:
+            type: string
+            enum: [planning, in_progress, completed, on_hold, cancelled]
+        - name: managerId
+          in: query
+          description: Filter by manager ID
+          schema:
+            type: string
+            format: uuid
+        - name: search
+          in: query
+          description: Search in project name and description
+          schema:
+            type: string
+            maxLength: 100
+      responses:
+        '200':
+          description: Projects retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedProjectsResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      tags:
+        - Projects
+      summary: Create Project
+      description: Create a new project (requires manager or admin role)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProjectRequest'
+      responses:
+        '201':
+          description: Project created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtained from authentication endpoint
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: API key for external integrations
+
+  parameters:
+    Page:
+      name: page
+      in: query
+      description: Page number for pagination
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    Limit:
+      name: limit
+      in: query
+      description: Number of items per page
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+    SortBy:
+      name: sortBy
+      in: query
+      description: Field to sort by
+      schema:
+        type: string
+    SortOrder:
+      name: sortOrder
+      in: query
+      description: Sort order
+      schema:
+        type: string
+        enum: [asc, desc]
+        default: asc
+
+  responses:
+    BadRequest:
+      description: Bad request - validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error:
+              code: "VALIDATION_ERROR"
+              message: "Invalid input data"
+              field: "email"
+              statusCode: 400
+            meta:
+              timestamp: "2024-01-15T10:30:00Z"
+              version: "1.0.0"
+              requestId: "req_1234567890_abc123"
+    Unauthorized:
+      description: Unauthorized - authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error:
+              code: "AUTHENTICATION_ERROR"
+              message: "Authentication required"
+              statusCode: 401
+            meta:
+              timestamp: "2024-01-15T10:30:00Z"
+              version: "1.0.0"
+              requestId: "req_1234567890_abc123"
+    Forbidden:
+      description: Forbidden - insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error:
+              code: "AUTHORIZATION_ERROR"
+              message: "Insufficient permissions"
+              statusCode: 403
+            meta:
+              timestamp: "2024-01-15T10:30:00Z"
+              version: "1.0.0"
+              requestId: "req_1234567890_abc123"
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error:
+              code: "NOT_FOUND"
+              message: "Resource not found"
+              statusCode: 404
+            meta:
+              timestamp: "2024-01-15T10:30:00Z"
+              version: "1.0.0"
+              requestId: "req_1234567890_abc123"
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error:
+              code: "INTERNAL_SERVER_ERROR"
+              message: "An unexpected error occurred"
+              statusCode: 500
+            meta:
+              timestamp: "2024-01-15T10:30:00Z"
+              version: "1.0.0"
+              requestId: "req_1234567890_abc123"
+
+  schemas:
+    # Base response schemas
+    ApiResponse:
+      type: object
+      required:
+        - success
+        - meta
+      properties:
+        success:
+          type: boolean
+          description: Indicates if the request was successful
+        data:
+          description: Response data (present on success)
+        error:
+          $ref: '#/components/schemas/ApiError'
+        message:
+          type: string
+          description: Human-readable message
+        meta:
+          $ref: '#/components/schemas/ResponseMeta'
+
+    ApiError:
+      type: object
+      required:
+        - code
+        - message
+        - statusCode
+      properties:
+        code:
+          type: string
+          description: Error code for programmatic handling
+          example: "VALIDATION_ERROR"
+        message:
+          type: string
+          description: Human-readable error message
+          example: "Invalid email format"
+        field:
+          type: string
+          description: Field that caused the error (for validation errors)
+          example: "email"
+        details:
+          type: object
+          description: Additional error details
+        statusCode:
+          type: integer
+          description: HTTP status code
+          example: 400
+
+    ResponseMeta:
+      type: object
+      required:
+        - timestamp
+        - version
+        - requestId
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+          description: Response timestamp
+          example: "2024-01-15T10:30:00Z"
+        version:
+          type: string
+          description: API version
+          example: "1.0.0"
+        requestId:
+          type: string
+          description: Unique request identifier for tracing
+          example: "req_1234567890_abc123"
+
+    # Pagination schemas
+    PaginationInfo:
+      type: object
+      required:
+        - page
+        - limit
+        - total
+        - totalPages
+        - hasNext
+        - hasPrev
+      properties:
+        page:
+          type: integer
+          minimum: 1
+          description: Current page number
+          example: 2
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 100
+          description: Items per page
+          example: 20
+        total:
+          type: integer
+          minimum: 0
+          description: Total number of items
+          example: 150
+        totalPages:
+          type: integer
+          minimum: 0
+          description: Total number of pages
+          example: 8
+        hasNext:
+          type: boolean
+          description: Whether there is a next page
+          example: true
+        hasPrev:
+          type: boolean
+          description: Whether there is a previous page
+          example: true
+
+    # System schemas
+    HealthResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              required:
+                - status
+                - timestamp
+                - version
+                - services
+                - uptime
+              properties:
+                status:
+                  type: string
+                  enum: [healthy, degraded, unhealthy]
+                  description: Overall system status
+                timestamp:
+                  type: string
+                  format: date-time
+                  description: Health check timestamp
+                version:
+                  type: string
+                  description: API version
+                services:
+                  type: object
+                  required:
+                    - api
+                    - database
+                  properties:
+                    api:
+                      type: string
+                      enum: [healthy, unhealthy]
+                      description: API service status
+                    database:
+                      type: string
+                      enum: [healthy, unhealthy]
+                      description: Database service status
+                uptime:
+                  type: number
+                  description: System uptime in seconds
+
+    TestRequest:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: Test message
+          example: "Hello API!"
+        data:
+          type: object
+          description: Optional test data
+          example:
+            test: true
+            number: 42
+
+    TestResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              required:
+                - message
+                - timestamp
+                - requestId
+              properties:
+                message:
+                  type: string
+                  description: Response message
+                  example: "Received: Hello API!"
+                timestamp:
+                  type: string
+                  format: date-time
+                  description: Response timestamp
+                requestId:
+                  type: string
+                  description: Request ID
+                user:
+                  $ref: '#/components/schemas/UserInfo'
+                receivedData:
+                  type: object
+                  description: Echoed request data
+
+    # User schemas
+    UserInfo:
+      type: object
+      required:
+        - id
+        - email
+        - role
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: User ID
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        email:
+          type: string
+          format: email
+          description: User email
+          example: "user@example.com"
+        role:
+          type: string
+          enum: [admin, manager, field_worker]
+          description: User role
+          example: "field_worker"
+        organizationId:
+          type: string
+          format: uuid
+          description: Organization ID
+          example: "456e7890-e89b-12d3-a456-426614174000"
+
+    # Project schemas
+    Location:
+      type: object
+      required:
+        - latitude
+        - longitude
+      properties:
+        latitude:
+          type: number
+          minimum: -90
+          maximum: 90
+          description: Latitude coordinate
+          example: 40.7128
+        longitude:
+          type: number
+          minimum: -180
+          maximum: 180
+          description: Longitude coordinate
+          example: -74.0060
+
+    Project:
+      type: object
+      required:
+        - id
+        - organizationId
+        - name
+        - status
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Project ID
+          example: "789e0123-e89b-12d3-a456-426614174000"
+        organizationId:
+          type: string
+          format: uuid
+          description: Organization ID
+          example: "456e7890-e89b-12d3-a456-426614174000"
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: Project name
+          example: "Fiber Installation - Downtown District"
+        description:
+          type: string
+          maxLength: 500
+          description: Project description
+          example: "Installation of fiber optic cables in the downtown business district"
+        status:
+          type: string
+          enum: [planning, in_progress, completed, on_hold, cancelled]
+          description: Project status
+          example: "in_progress"
+        startDate:
+          type: string
+          format: date-time
+          description: Project start date
+          example: "2024-01-15T09:00:00Z"
+        endDate:
+          type: string
+          format: date-time
+          description: Project end date
+          example: "2024-03-15T17:00:00Z"
+        budget:
+          type: number
+          minimum: 0
+          description: Project budget
+          example: 50000.00
+        managerId:
+          type: string
+          format: uuid
+          description: Project manager ID
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        customerName:
+          type: string
+          maxLength: 100
+          description: Customer name
+          example: "Downtown Business Association"
+        customerEmail:
+          type: string
+          format: email
+          description: Customer email
+          example: "contact@downtownbiz.com"
+        customerPhone:
+          type: string
+          description: Customer phone number
+          example: "+1-555-123-4567"
+        customerAddress:
+          type: string
+          maxLength: 200
+          description: Customer address
+          example: "123 Main St, Downtown, NY 10001"
+        location:
+          $ref: '#/components/schemas/Location'
+        createdAt:
+          type: string
+          format: date-time
+          description: Creation timestamp
+          example: "2024-01-01T10:00:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last update timestamp
+          example: "2024-01-15T14:30:00Z"
+
+    CreateProjectRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: Project name
+          example: "Fiber Installation - Downtown District"
+        description:
+          type: string
+          maxLength: 500
+          description: Project description
+          example: "Installation of fiber optic cables in the downtown business district"
+        startDate:
+          type: string
+          format: date-time
+          description: Project start date
+          example: "2024-01-15T09:00:00Z"
+        endDate:
+          type: string
+          format: date-time
+          description: Project end date
+          example: "2024-03-15T17:00:00Z"
+        budget:
+          type: number
+          minimum: 0
+          description: Project budget
+          example: 50000.00
+        customerName:
+          type: string
+          maxLength: 100
+          description: Customer name
+          example: "Downtown Business Association"
+        customerEmail:
+          type: string
+          format: email
+          description: Customer email
+          example: "contact@downtownbiz.com"
+        customerPhone:
+          type: string
+          description: Customer phone number
+          example: "+1-555-123-4567"
+        customerAddress:
+          type: string
+          maxLength: 200
+          description: Customer address
+          example: "123 Main St, Downtown, NY 10001"
+        location:
+          $ref: '#/components/schemas/Location'
+
+    ProjectResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/Project'
+
+    PaginatedProjectsResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              required:
+                - data
+                - pagination
+              properties:
+                data:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Project'
+                pagination:
+                  $ref: '#/components/schemas/PaginationInfo'
+
+    ErrorResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            success:
+              type: boolean
+              enum: [false]
+            error:
+              $ref: '#/components/schemas/ApiError'
+
+tags:
+  - name: System
+    description: System health and testing endpoints
+  - name: Projects
+    description: Project management endpoints
+  - name: Tasks
+    description: Task management endpoints
+  - name: Users
+    description: User management endpoints
+  - name: Organizations
+    description: Organization management endpoints
+  - name: Authentication
+    description: Authentication and authorization endpoints
