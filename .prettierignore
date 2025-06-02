@@ -67,8 +67,10 @@ pnpm-lock.yaml
 CHANGELOG.md
 
 # Supabase
-supabase/.branches
-supabase/.temp
+packages/supabase/.branches
+packages/supabase/.temp
+**/supabase/.branches
+**/supabase/.temp
 
 # Backup files
 *.backup.*

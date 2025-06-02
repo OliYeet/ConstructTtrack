@@ -9,6 +9,7 @@
 
 import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
+
 import chalk from 'chalk';
 
 class WorkspaceValidator {
@@ -58,8 +59,20 @@ class WorkspaceValidator {
       this.addError('Root package.json missing workspaces configuration');
     } else {
       const expectedWorkspaces = ['apps/*', 'packages/*'];
+
+      // Handle both array format and object format for workspaces
+      let workspacesArray;
+      if (Array.isArray(rootPkg.workspaces)) {
+        workspacesArray = rootPkg.workspaces;
+      } else if (rootPkg.workspaces && Array.isArray(rootPkg.workspaces.packages)) {
+        workspacesArray = rootPkg.workspaces.packages;
+      } else {
+        this.addError('Workspaces configuration is not in expected format (array or object with packages array)');
+        return;
+      }
+
       for (const workspace of expectedWorkspaces) {
-        if (!rootPkg.workspaces.includes(workspace)) {
+        if (!workspacesArray.includes(workspace)) {
           this.addError(`Missing workspace: ${workspace}`);
         }
       }

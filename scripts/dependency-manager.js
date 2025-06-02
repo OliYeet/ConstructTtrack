@@ -28,18 +28,20 @@ class DependencyManager {
 
   /**
    * Execute command and return output
+   * Throws error on failure to ensure explicit error handling by callers
    */
   exec(command, options = {}) {
     try {
-      return execSync(command, { 
-        encoding: 'utf8', 
+      return execSync(command, {
+        encoding: 'utf8',
         stdio: 'pipe',
-        ...options 
+        ...options
       }).trim();
     } catch (err) {
       console.error(chalk.red(`Error executing: ${command}`));
       console.error(chalk.red(err.message));
-      return null;
+      // Re-throw the error to force explicit error handling by callers
+      throw new Error(`Command failed: ${command} - ${err.message}`);
     }
   }
 
@@ -50,8 +52,10 @@ class DependencyManager {
     try {
       const packagePath = join(this.rootDir, workspace, 'package.json');
       return JSON.parse(readFileSync(packagePath, 'utf8'));
-    } catch {
+    } catch (error) {
       console.error(chalk.red(`Error reading package.json for ${workspace}`));
+      console.error(chalk.red(`Error details: ${error.message}`));
+      console.error(chalk.gray(`Stack trace: ${error.stack}`));
       return null;
     }
   }
@@ -61,15 +65,20 @@ class DependencyManager {
    */
   checkOutdated() {
     console.log(chalk.blue('🔍 Checking for outdated dependencies...\n'));
-    
+
     for (const workspace of WORKSPACES) {
       console.log(chalk.yellow(`📦 ${workspace}`));
-      const result = this.exec(`npm outdated --workspace=${workspace}`);
-      
-      if (result) {
-        console.log(result);
-      } else {
-        console.log(chalk.green('✅ All dependencies up to date'));
+
+      try {
+        const result = this.exec(`npm outdated --workspace=${workspace}`);
+        if (result) {
+          console.log(result);
+        } else {
+          console.log(chalk.green('✅ All dependencies up to date'));
+        }
+      } catch (error) {
+        console.error(chalk.red(`❌ Failed to check outdated dependencies for ${workspace}`));
+        console.error(chalk.gray(`Error: ${error.message}`));
       }
       console.log('');
     }

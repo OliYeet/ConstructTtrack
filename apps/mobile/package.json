@@ -8,26 +8,28 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "build": "expo export",
-    "build:android": "expo build:android",
-    "build:ios": "expo build:ios"
+    "build:android": "eas build --platform android",
+    "build:ios": "eas build --platform ios",
+    "build:all": "eas build --platform all"
   },
   "dependencies": {
-    "expo": "~53.0.9",
-    "expo-status-bar": "~2.2.3",
-    "react": "19.0.0",
-    "react-native": "0.79.2",
     "@constructtrack/shared": "*",
-    "@constructtrack/ui": "*",
     "@constructtrack/supabase": "*",
+    "@constructtrack/ui": "*",
+    "@rnmapbox/maps": "^10.1.30",
     "@supabase/supabase-js": "^2.39.0",
-    "expo-location": "~18.0.4",
+    "expo": "~53.0.9",
     "expo-camera": "~16.0.8",
     "expo-file-system": "~18.0.4",
-    "@rnmapbox/maps": "^10.1.30"
+    "expo-location": "~18.0.4",
+    "expo-status-bar": "~2.2.3",
+    "react": "19.0.0",
+    "react-native": "0.79.2"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
     "@types/react": "~19.0.10",
+    "eas-cli": "16.7.0",
     "typescript": "~5.8.3"
   },
   "private": true
