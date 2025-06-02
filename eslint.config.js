@@ -162,28 +162,27 @@ export default [
     },
   },
 
-  // Node.js scripts configuration
+  // Node.js scripts configuration (ES modules)
   {
     files: ['scripts/**/*.js', 'notion_scripts/**/*.js', 'src/**/*.js'],
     languageOptions: {
+      ecmaVersion: 'latest',
+      sourceType: 'module',
       globals: {
         process: 'readonly',
         Buffer: 'readonly',
-        __dirname: 'readonly',
-        __filename: 'readonly',
         console: 'readonly',
-        require: 'readonly',
-        module: 'readonly',
-        exports: 'readonly',
         setTimeout: 'readonly',
         setInterval: 'readonly',
         clearTimeout: 'readonly',
         clearInterval: 'readonly',
+        global: 'readonly',
       },
     },
     rules: {
       'no-console': 'off', // Allow console in scripts
       '@typescript-eslint/no-var-requires': 'off', // Allow require in Node.js scripts
+      'no-undef': 'off', // Node.js globals are handled above
     },
   },
 

@@ -8,6 +8,7 @@
 import { readFileSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+
 import chalk from 'chalk';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -17,22 +18,54 @@ const rootDir = join(__dirname, '..');
 // Environment variable definitions
 const ENV_DEFINITIONS = {
   // Core environment
-  NODE_ENV: { required: true, type: 'string', values: ['development', 'staging', 'production'] },
+  NODE_ENV: {
+    required: true,
+    type: 'string',
+    values: ['development', 'staging', 'production'],
+  },
   PORT: { required: false, type: 'number', default: 3000 },
 
   // Supabase (required)
-  SUPABASE_URL: { required: true, type: 'url', pattern: /^https:\/\/.*\.supabase\.co$/ },
+  SUPABASE_URL: {
+    required: true,
+    type: 'url',
+    pattern: /^https:\/\/.*\.supabase\.co$/,
+  },
   SUPABASE_ANON_KEY: { required: true, type: 'string', minLength: 100 },
   SUPABASE_SERVICE_ROLE_KEY: { required: true, type: 'string', minLength: 100 },
-  NEXT_PUBLIC_SUPABASE_URL: { required: true, type: 'url', pattern: /^https:\/\/.*\.supabase\.co$/ },
-  NEXT_PUBLIC_SUPABASE_ANON_KEY: { required: true, type: 'string', minLength: 100 },
-  EXPO_PUBLIC_SUPABASE_URL: { required: true, type: 'url', pattern: /^https:\/\/.*\.supabase\.co$/ },
-  EXPO_PUBLIC_SUPABASE_ANON_KEY: { required: true, type: 'string', minLength: 100 },
+  NEXT_PUBLIC_SUPABASE_URL: {
+    required: true,
+    type: 'url',
+    pattern: /^https:\/\/.*\.supabase\.co$/,
+  },
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: {
+    required: true,
+    type: 'string',
+    minLength: 100,
+  },
+  EXPO_PUBLIC_SUPABASE_URL: {
+    required: true,
+    type: 'url',
+    pattern: /^https:\/\/.*\.supabase\.co$/,
+  },
+  EXPO_PUBLIC_SUPABASE_ANON_KEY: {
+    required: true,
+    type: 'string',
+    minLength: 100,
+  },
 
   // MapBox (required)
   MAPBOX_ACCESS_TOKEN: { required: true, type: 'string', pattern: /^pk\./ },
-  NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN: { required: true, type: 'string', pattern: /^pk\./ },
-  EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN: { required: true, type: 'string', pattern: /^pk\./ },
+  NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN: {
+    required: true,
+    type: 'string',
+    pattern: /^pk\./,
+  },
+  EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN: {
+    required: true,
+    type: 'string',
+    pattern: /^pk\./,
+  },
 
   // Notion (required for sync features)
   NOTION_TOKEN: { required: true, type: 'string', pattern: /^secret_/ },
@@ -67,7 +100,7 @@ class EnvValidator {
     try {
       const content = readFileSync(envPath, 'utf8');
       const lines = content.split('\n');
-      
+
       lines.forEach(line => {
         line = line.trim();
         if (line && !line.startsWith('#') && line.includes('=')) {
@@ -86,7 +119,9 @@ class EnvValidator {
 
     // Check if required variable is missing
     if (definition.required && (!value || value.trim() === '')) {
-      this.errors.push(`Required environment variable ${name} is missing or empty`);
+      this.errors.push(
+        `Required environment variable ${name} is missing or empty`
+      );
       return;
     }
 
@@ -123,28 +158,44 @@ class EnvValidator {
 
     // Length validation
     if (definition.length && value.length !== definition.length) {
-      this.errors.push(`${name} must be exactly ${definition.length} characters long`);
+      this.errors.push(
+        `${name} must be exactly ${definition.length} characters long`
+      );
     }
 
     if (definition.minLength && value.length < definition.minLength) {
-      this.errors.push(`${name} must be at least ${definition.minLength} characters long`);
+      this.errors.push(
+        `${name} must be at least ${definition.minLength} characters long`
+      );
     }
 
     // Value validation
     if (definition.values && !definition.values.includes(value)) {
-      this.errors.push(`${name} must be one of: ${definition.values.join(', ')}`);
+      this.errors.push(
+        `${name} must be one of: ${definition.values.join(', ')}`
+      );
     }
 
     // Security warnings
-    if (name.includes('SECRET') || name.includes('KEY') || name.includes('TOKEN')) {
-      if (value.includes('your_') || value.includes('example') || value.includes('placeholder')) {
+    if (
+      name.includes('SECRET') ||
+      name.includes('KEY') ||
+      name.includes('TOKEN')
+    ) {
+      if (
+        value.includes('your_') ||
+        value.includes('example') ||
+        value.includes('placeholder')
+      ) {
         this.warnings.push(`${name} appears to contain placeholder text`);
       }
     }
   }
 
   validate() {
-    console.log(chalk.blue('🔍 Validating ConstructTrack environment variables...\n'));
+    console.log(
+      chalk.blue('🔍 Validating ConstructTrack environment variables...\n')
+    );
 
     // Validate all defined variables
     Object.entries(ENV_DEFINITIONS).forEach(([name, definition]) => {
@@ -167,11 +218,15 @@ class EnvValidator {
     const expoPublicUrl = this.env.EXPO_PUBLIC_SUPABASE_URL;
 
     if (supabaseUrl && nextPublicUrl && supabaseUrl !== nextPublicUrl) {
-      this.warnings.push('SUPABASE_URL and NEXT_PUBLIC_SUPABASE_URL should match');
+      this.warnings.push(
+        'SUPABASE_URL and NEXT_PUBLIC_SUPABASE_URL should match'
+      );
     }
 
     if (supabaseUrl && expoPublicUrl && supabaseUrl !== expoPublicUrl) {
-      this.warnings.push('SUPABASE_URL and EXPO_PUBLIC_SUPABASE_URL should match');
+      this.warnings.push(
+        'SUPABASE_URL and EXPO_PUBLIC_SUPABASE_URL should match'
+      );
     }
 
     // Check MapBox token consistency
@@ -180,11 +235,15 @@ class EnvValidator {
     const expoMapbox = this.env.EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN;
 
     if (mapboxToken && nextMapbox && mapboxToken !== nextMapbox) {
-      this.warnings.push('MAPBOX_ACCESS_TOKEN and NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN should match');
+      this.warnings.push(
+        'MAPBOX_ACCESS_TOKEN and NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN should match'
+      );
     }
 
     if (mapboxToken && expoMapbox && mapboxToken !== expoMapbox) {
-      this.warnings.push('MAPBOX_ACCESS_TOKEN and EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN should match');
+      this.warnings.push(
+        'MAPBOX_ACCESS_TOKEN and EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN should match'
+      );
     }
   }
 
@@ -211,7 +270,9 @@ class EnvValidator {
     }
 
     if (this.errors.length > 0) {
-      console.log(chalk.red('Please fix the errors above before continuing.\n'));
+      console.log(
+        chalk.red('Please fix the errors above before continuing.\n')
+      );
       process.exit(1);
     }
   }
@@ -220,11 +281,11 @@ class EnvValidator {
 // Main execution
 function main() {
   const validator = new EnvValidator();
-  
+
   // Load environment file based on NODE_ENV
   const nodeEnv = process.env.NODE_ENV || 'development';
   const envFile = `.env.${nodeEnv}`;
-  
+
   // Try to load specific environment file first, then fallback to .env
   if (existsSync(join(rootDir, envFile))) {
     validator.loadEnvFile(envFile);
@@ -233,7 +294,7 @@ function main() {
   }
 
   const isValid = validator.validate();
-  
+
   if (isValid) {
     console.log(chalk.green('🎉 Environment configuration is ready!'));
   }

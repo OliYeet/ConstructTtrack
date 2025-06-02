@@ -5,10 +5,11 @@
  * Helps developers set up their environment variables interactively
  */
 
-import { readFileSync, writeFileSync, existsSync } from 'fs';
+import { writeFileSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
 import readline from 'readline';
+import { fileURLToPath } from 'url';
+
 import chalk from 'chalk';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -19,47 +20,60 @@ class EnvSetup {
   constructor() {
     this.rl = readline.createInterface({
       input: process.stdin,
-      output: process.stdout
+      output: process.stdout,
     });
   }
 
   async question(prompt) {
-    return new Promise((resolve) => {
+    return new Promise(resolve => {
       this.rl.question(prompt, resolve);
     });
   }
 
   async setup() {
     console.log(chalk.blue('🚀 ConstructTrack Environment Setup\n'));
-    console.log('This script will help you set up your environment variables.\n');
+    console.log(
+      'This script will help you set up your environment variables.\n'
+    );
 
     // Check if .env already exists
     const envPath = join(rootDir, '.env');
     if (existsSync(envPath)) {
       const overwrite = await this.question(
-        chalk.yellow('⚠️  .env file already exists. Do you want to overwrite it? (y/N): ')
+        chalk.yellow(
+          '⚠️  .env file already exists. Do you want to overwrite it? (y/N): '
+        )
       );
       if (overwrite.toLowerCase() !== 'y') {
-        console.log(chalk.blue('Setup cancelled. Your existing .env file is unchanged.'));
+        console.log(
+          chalk.blue('Setup cancelled. Your existing .env file is unchanged.')
+        );
         this.rl.close();
         return;
       }
     }
 
-    console.log(chalk.green('Let\'s set up your environment variables:\n'));
+    console.log(chalk.green("Let's set up your environment variables:\n"));
 
     const config = {};
 
     // Environment
-    config.NODE_ENV = await this.question('Environment (development/staging/production) [development]: ') || 'development';
-    config.PORT = await this.question('Port [3000]: ') || '3000';
+    config.NODE_ENV =
+      (await this.question(
+        'Environment (development/staging/production) [development]: '
+      )) || 'development';
+    config.PORT = (await this.question('Port [3000]: ')) || '3000';
 
     console.log(chalk.blue('\n📊 Supabase Configuration'));
-    console.log('Get these from: https://supabase.com/dashboard/project/[your-project]/settings/api\n');
-    
+    console.log(
+      'Get these from: https://supabase.com/dashboard/project/[your-project]/settings/api\n'
+    );
+
     config.SUPABASE_URL = await this.question('Supabase URL: ');
     config.SUPABASE_ANON_KEY = await this.question('Supabase Anon Key: ');
-    config.SUPABASE_SERVICE_ROLE_KEY = await this.question('Supabase Service Role Key: ');
+    config.SUPABASE_SERVICE_ROLE_KEY = await this.question(
+      'Supabase Service Role Key: '
+    );
 
     // Set public versions
     config.NEXT_PUBLIC_SUPABASE_URL = config.SUPABASE_URL;
@@ -68,8 +82,10 @@ class EnvSetup {
     config.EXPO_PUBLIC_SUPABASE_ANON_KEY = config.SUPABASE_ANON_KEY;
 
     console.log(chalk.blue('\n🗺️  MapBox Configuration'));
-    console.log('Get your token from: https://account.mapbox.com/access-tokens/\n');
-    
+    console.log(
+      'Get your token from: https://account.mapbox.com/access-tokens/\n'
+    );
+
     const mapboxToken = await this.question('MapBox Access Token: ');
     config.MAPBOX_ACCESS_TOKEN = mapboxToken;
     config.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN = mapboxToken;
@@ -77,21 +93,29 @@ class EnvSetup {
 
     console.log(chalk.blue('\n📝 Notion Configuration'));
     console.log('Get these from: https://www.notion.so/my-integrations\n');
-    
+
     config.NOTION_TOKEN = await this.question('Notion Token: ');
     config.NOTION_DATABASE_ID = await this.question('Notion Database ID: ');
-    config.NOTION_WEBHOOK_SECRET = await this.question('Notion Webhook Secret: ');
+    config.NOTION_WEBHOOK_SECRET = await this.question(
+      'Notion Webhook Secret: '
+    );
 
     console.log(chalk.blue('\n🔐 Security Configuration'));
     config.JWT_SECRET = await this.question('JWT Secret (32+ characters): ');
-    config.ENCRYPTION_KEY = await this.question('Encryption Key (exactly 32 characters): ');
+    config.ENCRYPTION_KEY = await this.question(
+      'Encryption Key (exactly 32 characters): '
+    );
 
     console.log(chalk.blue('\n🔄 Sync Configuration'));
-    config.SYNC_PORT = await this.question('Sync Port [3001]: ') || '3001';
+    config.SYNC_PORT = (await this.question('Sync Port [3001]: ')) || '3001';
 
     // Optional services
-    const setupOptional = await this.question(chalk.blue('\nDo you want to set up optional services (email, SMS, cloud storage)? (y/N): '));
-    
+    const setupOptional = await this.question(
+      chalk.blue(
+        '\nDo you want to set up optional services (email, SMS, cloud storage)? (y/N): '
+      )
+    );
+
     if (setupOptional.toLowerCase() === 'y') {
       await this.setupOptionalServices(config);
     }
@@ -113,13 +137,15 @@ class EnvSetup {
     const setupEmail = await this.question('Set up email service? (y/N): ');
     if (setupEmail.toLowerCase() === 'y') {
       config.SMTP_HOST = await this.question('SMTP Host: ');
-      config.SMTP_PORT = await this.question('SMTP Port [587]: ') || '587';
+      config.SMTP_PORT = (await this.question('SMTP Port [587]: ')) || '587';
       config.SMTP_USER = await this.question('SMTP User: ');
       config.SMTP_PASS = await this.question('SMTP Password: ');
     }
 
     console.log(chalk.blue('\n📱 SMS Service (optional)'));
-    const setupSMS = await this.question('Set up SMS service (Twilio)? (y/N): ');
+    const setupSMS = await this.question(
+      'Set up SMS service (Twilio)? (y/N): '
+    );
     if (setupSMS.toLowerCase() === 'y') {
       config.TWILIO_ACCOUNT_SID = await this.question('Twilio Account SID: ');
       config.TWILIO_AUTH_TOKEN = await this.question('Twilio Auth Token: ');
@@ -130,8 +156,11 @@ class EnvSetup {
     const setupStorage = await this.question('Set up AWS S3 storage? (y/N): ');
     if (setupStorage.toLowerCase() === 'y') {
       config.AWS_ACCESS_KEY_ID = await this.question('AWS Access Key ID: ');
-      config.AWS_SECRET_ACCESS_KEY = await this.question('AWS Secret Access Key: ');
-      config.AWS_REGION = await this.question('AWS Region [us-east-1]: ') || 'us-east-1';
+      config.AWS_SECRET_ACCESS_KEY = await this.question(
+        'AWS Secret Access Key: '
+      );
+      config.AWS_REGION =
+        (await this.question('AWS Region [us-east-1]: ')) || 'us-east-1';
       config.AWS_S3_BUCKET = await this.question('S3 Bucket Name: ');
     }
   }
@@ -139,12 +168,14 @@ class EnvSetup {
   async generateEnvFile(config) {
     const envContent = this.buildEnvContent(config);
     const envPath = join(rootDir, '.env');
-    
+
     try {
       writeFileSync(envPath, envContent, 'utf8');
       console.log(chalk.green(`\n✅ .env file created successfully!`));
     } catch (error) {
-      console.error(chalk.red(`\n❌ Failed to create .env file: ${error.message}`));
+      console.error(
+        chalk.red(`\n❌ Failed to create .env file: ${error.message}`)
+      );
     }
   }
 

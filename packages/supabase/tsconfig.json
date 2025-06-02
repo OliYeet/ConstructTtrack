@@ -20,13 +20,8 @@
     "declarationMap": true,
     "composite": true
   },
-  "include": [
-    "./**/*"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist"
-  ],
+  "include": ["./**/*"],
+  "exclude": ["node_modules", "dist"],
   "references": [
     {
       "path": "../shared"

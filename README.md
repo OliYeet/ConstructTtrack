@@ -106,15 +106,16 @@ npm run env:validate
 
 1. **Supabase** - Get credentials from [supabase.com/dashboard](https://supabase.com/dashboard)
 2. **MapBox** - Get token from [account.mapbox.com](https://account.mapbox.com/access-tokens/)
-3. **Notion** - Get integration token from [notion.so/my-integrations](https://www.notion.so/my-integrations)
+3. **Notion** - Get integration token from
+   [notion.so/my-integrations](https://www.notion.so/my-integrations)
 
 #### Environment Scripts
 
-| Command | Description |
-|---------|-------------|
-| `npm run env:setup` | Interactive environment setup |
+| Command                | Description                    |
+| ---------------------- | ------------------------------ |
+| `npm run env:setup`    | Interactive environment setup  |
 | `npm run env:validate` | Validate environment variables |
-| `npm run env:check` | Quick environment check |
+| `npm run env:check`    | Quick environment check        |
 
 See [Environment Variables Guide](docs/environment-variables.md) for detailed setup instructions.
 

@@ -90,7 +90,9 @@ export function loadEnvironment(): EnvironmentConfig {
 
   return {
     // Core
-    NODE_ENV: (env.NODE_ENV as any) || 'development',
+    NODE_ENV:
+      (env.NODE_ENV as 'development' | 'staging' | 'production') ||
+      'development',
     PORT: getNumber('PORT', 3000),
 
     // Supabase
@@ -129,7 +131,7 @@ export function loadEnvironment(): EnvironmentConfig {
 
     // Development
     DEBUG: getOptional('DEBUG'),
-    LOG_LEVEL: (env.LOG_LEVEL as any) || 'info',
+    LOG_LEVEL: (env.LOG_LEVEL as 'debug' | 'info' | 'warn' | 'error') || 'info',
     ENABLE_LOGGING: getBoolean('ENABLE_LOGGING', true),
   };
 }
@@ -142,14 +144,17 @@ export function getClientEnvironment() {
 
   return {
     NODE_ENV: env.NODE_ENV || 'development',
-    
+
     // Supabase (client-safe)
     SUPABASE_URL: env.NEXT_PUBLIC_SUPABASE_URL || env.EXPO_PUBLIC_SUPABASE_URL,
-    SUPABASE_ANON_KEY: env.NEXT_PUBLIC_SUPABASE_ANON_KEY || env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
-    
+    SUPABASE_ANON_KEY:
+      env.NEXT_PUBLIC_SUPABASE_ANON_KEY || env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
+
     // MapBox (client-safe)
-    MAPBOX_ACCESS_TOKEN: env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN || env.EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN,
-    
+    MAPBOX_ACCESS_TOKEN:
+      env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN ||
+      env.EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN,
+
     // App URL
     APP_URL: env.NEXT_PUBLIC_APP_URL,
   };
@@ -162,6 +167,7 @@ export function validateEnvironment(): void {
   try {
     loadEnvironment();
   } catch (error) {
+    // eslint-disable-next-line no-console
     console.error('Environment validation failed:', error);
     process.exit(1);
   }
@@ -204,5 +210,9 @@ export const isSMSEnabled = () => {
 
 export const isCloudStorageEnabled = () => {
   const env = getEnvironment();
-  return !!(env.AWS_ACCESS_KEY_ID && env.AWS_SECRET_ACCESS_KEY && env.AWS_S3_BUCKET);
+  return !!(
+    env.AWS_ACCESS_KEY_ID &&
+    env.AWS_SECRET_ACCESS_KEY &&
+    env.AWS_S3_BUCKET
+  );
 };

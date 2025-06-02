@@ -2,7 +2,7 @@
 
 /**
  * ConstructTrack Workspace Validator
- * 
+ *
  * Validates workspace configuration and package consistency
  * Ensures all packages follow the established conventions
  */
@@ -50,7 +50,7 @@ class WorkspaceValidator {
    */
   validateRootPackage() {
     console.log(chalk.blue('🔍 Validating root package.json...'));
-    
+
     const rootPkg = this.readJson(join(this.rootDir, 'package.json'));
     if (!rootPkg) return;
 
@@ -64,10 +64,15 @@ class WorkspaceValidator {
       let workspacesArray;
       if (Array.isArray(rootPkg.workspaces)) {
         workspacesArray = rootPkg.workspaces;
-      } else if (rootPkg.workspaces && Array.isArray(rootPkg.workspaces.packages)) {
+      } else if (
+        rootPkg.workspaces &&
+        Array.isArray(rootPkg.workspaces.packages)
+      ) {
         workspacesArray = rootPkg.workspaces.packages;
       } else {
-        this.addError('Workspaces configuration is not in expected format (array or object with packages array)');
+        this.addError(
+          'Workspaces configuration is not in expected format (array or object with packages array)'
+        );
         return;
       }
 
@@ -80,10 +85,16 @@ class WorkspaceValidator {
 
     // Check required scripts
     const requiredScripts = [
-      'build', 'dev', 'test', 'lint', 'clean',
-      'packages:build', 'deps:check', 'format'
+      'build',
+      'dev',
+      'test',
+      'lint',
+      'clean',
+      'packages:build',
+      'deps:check',
+      'format',
     ];
-    
+
     for (const script of requiredScripts) {
       if (!rootPkg.scripts || !rootPkg.scripts[script]) {
         this.addWarning(`Missing recommended script: ${script}`);
@@ -101,7 +112,7 @@ class WorkspaceValidator {
    */
   validateWorkspacePackage(workspacePath) {
     const packagePath = join(this.rootDir, workspacePath, 'package.json');
-    
+
     if (!existsSync(packagePath)) {
       this.addError(`Missing package.json in ${workspacePath}`);
       return;
@@ -113,7 +124,9 @@ class WorkspaceValidator {
     // Check naming convention
     if (workspacePath.startsWith('packages/')) {
       if (!pkg.name || !pkg.name.startsWith('@constructtrack/')) {
-        this.addError(`Package ${workspacePath} should use @constructtrack/ scope`);
+        this.addError(
+          `Package ${workspacePath} should use @constructtrack/ scope`
+        );
       }
     }
 
@@ -132,7 +145,9 @@ class WorkspaceValidator {
 
     for (const script of requiredScripts) {
       if (!pkg.scripts || !pkg.scripts[script]) {
-        this.addError(`Package ${workspacePath} missing required script: ${script}`);
+        this.addError(
+          `Package ${workspacePath} missing required script: ${script}`
+        );
       }
     }
 
@@ -146,7 +161,9 @@ class WorkspaceValidator {
     if (pkg.dependencies) {
       for (const [depName, version] of Object.entries(pkg.dependencies)) {
         if (depName.startsWith('@constructtrack/') && version !== '*') {
-          this.addWarning(`Package ${workspacePath} should use "*" for internal dependency ${depName}`);
+          this.addWarning(
+            `Package ${workspacePath} should use "*" for internal dependency ${depName}`
+          );
         }
       }
     }
@@ -157,7 +174,7 @@ class WorkspaceValidator {
    */
   validateTypeScriptConfig() {
     console.log(chalk.blue('🔍 Validating TypeScript configuration...'));
-    
+
     const rootTsConfig = join(this.rootDir, 'tsconfig.json');
     if (!existsSync(rootTsConfig)) {
       this.addError('Missing root tsconfig.json');
@@ -169,7 +186,9 @@ class WorkspaceValidator {
 
     // Check if it's a project references setup
     if (!tsConfig.references) {
-      this.addWarning('Consider using TypeScript project references for better build performance');
+      this.addWarning(
+        'Consider using TypeScript project references for better build performance'
+      );
     }
   }
 
@@ -178,13 +197,13 @@ class WorkspaceValidator {
    */
   validateDependencyConsistency() {
     console.log(chalk.blue('🔍 Validating dependency consistency...'));
-    
+
     const workspaces = [
       'apps/web',
       'apps/mobile',
       'packages/shared',
       'packages/ui',
-      'packages/supabase'
+      'packages/supabase',
     ];
 
     const dependencyVersions = new Map();
@@ -196,7 +215,7 @@ class WorkspaceValidator {
 
       const allDeps = {
         ...pkg.dependencies,
-        ...pkg.devDependencies
+        ...pkg.devDependencies,
       };
 
       for (const [name, version] of Object.entries(allDeps)) {
@@ -212,7 +231,9 @@ class WorkspaceValidator {
     // Check for version conflicts
     for (const [depName, versions] of dependencyVersions.entries()) {
       if (versions.size > 1) {
-        this.addWarning(`Dependency ${depName} has multiple versions: ${Array.from(versions).join(', ')}`);
+        this.addWarning(
+          `Dependency ${depName} has multiple versions: ${Array.from(versions).join(', ')}`
+        );
       }
     }
   }
@@ -222,13 +243,13 @@ class WorkspaceValidator {
    */
   validateBuildOrder() {
     console.log(chalk.blue('🔍 Validating build order...'));
-    
+
     const packages = ['shared', 'supabase', 'ui'];
     const rootPkg = this.readJson(join(this.rootDir, 'package.json'));
-    
+
     if (rootPkg && rootPkg.scripts && rootPkg.scripts['packages:build']) {
       const buildScript = rootPkg.scripts['packages:build'];
-      
+
       // Check if packages are built in correct order
       let lastIndex = -1;
       for (const pkg of packages) {
@@ -250,13 +271,13 @@ class WorkspaceValidator {
     console.log(chalk.blue('🔍 Validating ConstructTrack workspace...\n'));
 
     this.validateRootPackage();
-    
+
     const workspaces = [
       'apps/web',
       'apps/mobile',
       'packages/shared',
       'packages/ui',
-      'packages/supabase'
+      'packages/supabase',
     ];
 
     for (const workspace of workspaces) {
@@ -283,7 +304,9 @@ class WorkspaceValidator {
       }
 
       if (this.warnings.length > 0) {
-        console.log(chalk.yellow(`⚠️  ${this.warnings.length} warning(s) found:`));
+        console.log(
+          chalk.yellow(`⚠️  ${this.warnings.length} warning(s) found:`)
+        );
         for (const warning of this.warnings) {
           console.log(chalk.yellow(`   • ${warning}`));
         }

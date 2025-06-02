@@ -2,7 +2,7 @@
 
 /**
  * ConstructTrack Dependency Manager
- * 
+ *
  * Utility script for managing dependencies across the monorepo
  * Provides commands for checking, updating, and analyzing dependencies
  */
@@ -15,10 +15,10 @@ import chalk from 'chalk';
 
 const WORKSPACES = [
   'apps/web',
-  'apps/mobile', 
+  'apps/mobile',
   'packages/shared',
   'packages/ui',
-  'packages/supabase'
+  'packages/supabase',
 ];
 
 class DependencyManager {
@@ -35,7 +35,7 @@ class DependencyManager {
       return execSync(command, {
         encoding: 'utf8',
         stdio: 'pipe',
-        ...options
+        ...options,
       }).trim();
     } catch (err) {
       console.error(chalk.red(`Error executing: ${command}`));
@@ -77,7 +77,9 @@ class DependencyManager {
           console.log(chalk.green('✅ All dependencies up to date'));
         }
       } catch (error) {
-        console.error(chalk.red(`❌ Failed to check outdated dependencies for ${workspace}`));
+        console.error(
+          chalk.red(`❌ Failed to check outdated dependencies for ${workspace}`)
+        );
         console.error(chalk.gray(`Error: ${error.message}`));
       }
       console.log('');
@@ -89,7 +91,7 @@ class DependencyManager {
    */
   auditSecurity() {
     console.log(chalk.blue('🛡️ Running security audit...\n'));
-    
+
     const result = this.exec('npm audit --workspaces');
     if (result) {
       console.log(result);
@@ -103,19 +105,19 @@ class DependencyManager {
    */
   analyzeDependencies() {
     console.log(chalk.blue('📊 Analyzing dependency usage...\n'));
-    
+
     const dependencyMap = new Map();
-    
+
     for (const workspace of WORKSPACES) {
       const pkg = this.getPackageJson(workspace);
       if (!pkg) continue;
-      
+
       const allDeps = {
         ...pkg.dependencies,
         ...pkg.devDependencies,
-        ...pkg.peerDependencies
+        ...pkg.peerDependencies,
       };
-      
+
       for (const [name, version] of Object.entries(allDeps)) {
         if (!dependencyMap.has(name)) {
           dependencyMap.set(name, []);
@@ -123,11 +125,11 @@ class DependencyManager {
         dependencyMap.get(name).push({ workspace, version });
       }
     }
-    
+
     // Find version conflicts
     console.log(chalk.yellow('🔍 Dependency Version Analysis:'));
     console.log('');
-    
+
     for (const [depName, usages] of dependencyMap.entries()) {
       if (usages.length > 1) {
         const versions = [...new Set(usages.map(u => u.version))];
@@ -140,16 +142,20 @@ class DependencyManager {
         }
       }
     }
-    
+
     // Show shared dependencies
     console.log(chalk.yellow('📦 Shared Dependencies:'));
     console.log('');
-    
+
     for (const [depName, usages] of dependencyMap.entries()) {
       if (usages.length > 1) {
         const versions = [...new Set(usages.map(u => u.version))];
         if (versions.length === 1) {
-          console.log(chalk.green(`✅ ${depName}@${versions[0]} (used in ${usages.length} workspaces)`));
+          console.log(
+            chalk.green(
+              `✅ ${depName}@${versions[0]} (used in ${usages.length} workspaces)`
+            )
+          );
         }
       }
     }
@@ -174,7 +180,11 @@ class DependencyManager {
         // Use --latest to cross major version boundaries
         // This ignores semver constraints and updates to absolute latest versions
         updateCommand = 'npm update --latest';
-        console.log(chalk.yellow('⚠️  Major updates may include breaking changes. Review carefully!'));
+        console.log(
+          chalk.yellow(
+            '⚠️  Major updates may include breaking changes. Review carefully!'
+          )
+        );
         break;
       case 'minor':
         // Standard update respects semver ranges in package.json
@@ -199,13 +209,19 @@ class DependencyManager {
 
     if (type === 'major') {
       console.log(chalk.red('🚨 IMPORTANT: Major updates completed. Please:'));
-      console.log(chalk.yellow('   1. Review CHANGELOG files for breaking changes'));
+      console.log(
+        chalk.yellow('   1. Review CHANGELOG files for breaking changes')
+      );
       console.log(chalk.yellow('   2. Run comprehensive tests'));
       console.log(chalk.yellow('   3. Update code for any breaking changes'));
-      console.log(chalk.yellow('   4. Test in staging environment before production'));
+      console.log(
+        chalk.yellow('   4. Test in staging environment before production')
+      );
     }
 
-    console.log(chalk.green('✅ Dependencies updated. Run tests to verify compatibility.'));
+    console.log(
+      chalk.green('✅ Dependencies updated. Run tests to verify compatibility.')
+    );
   }
 
   /**
@@ -213,15 +229,15 @@ class DependencyManager {
    */
   cleanInstall() {
     console.log(chalk.blue('🧹 Cleaning and reinstalling dependencies...\n'));
-    
+
     // Clean
     console.log(chalk.yellow('Removing node_modules...'));
     this.exec('npm run workspace:clean');
-    
+
     // Reinstall
     console.log(chalk.yellow('Reinstalling dependencies...'));
     this.exec('npm install');
-    
+
     console.log(chalk.green('✅ Clean install completed'));
   }
 
@@ -232,13 +248,24 @@ class DependencyManager {
     console.log(chalk.blue('📦 ConstructTrack Dependency Manager\n'));
     console.log('Available commands:');
     console.log('');
-    console.log(chalk.yellow('  check-outdated') + '  - Check for outdated dependencies');
+    console.log(
+      chalk.yellow('  check-outdated') + '  - Check for outdated dependencies'
+    );
     console.log(chalk.yellow('  audit') + '          - Run security audit');
-    console.log(chalk.yellow('  analyze') + '        - Analyze dependency usage and conflicts');
+    console.log(
+      chalk.yellow('  analyze') +
+        '        - Analyze dependency usage and conflicts'
+    );
     console.log(chalk.yellow('  update-patch') + '   - Update patch versions');
     console.log(chalk.yellow('  update-minor') + '   - Update minor versions');
-    console.log(chalk.yellow('  update-major') + '   - Update major versions (use with caution)');
-    console.log(chalk.yellow('  clean-install') + '  - Clean and reinstall all dependencies');
+    console.log(
+      chalk.yellow('  update-major') +
+        '   - Update major versions (use with caution)'
+    );
+    console.log(
+      chalk.yellow('  clean-install') +
+        '  - Clean and reinstall all dependencies'
+    );
     console.log(chalk.yellow('  help') + '           - Show this help message');
     console.log('');
     console.log('Usage: node scripts/dependency-manager.js <command>');
@@ -249,7 +276,7 @@ class DependencyManager {
    */
   run() {
     const command = process.argv[2];
-    
+
     switch (command) {
       case 'check-outdated':
         this.checkOutdated();
