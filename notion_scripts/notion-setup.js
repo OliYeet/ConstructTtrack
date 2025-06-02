@@ -12,6 +12,7 @@
  */
 
 import { writeFileSync, existsSync } from 'fs';
+
 import chalk from 'chalk';
 
 function createEnvTemplate() {

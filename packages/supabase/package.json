@@ -8,10 +8,11 @@
     "dev": "tsc --watch"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.39.0",
-    "@constructtrack/shared": "*"
+    "@constructtrack/shared": "*",
+    "@supabase/supabase-js": "^2.39.0"
   },
   "devDependencies": {
+    "eas-cli": "16.7.0",
     "typescript": "^5.0.0"
   }
 }

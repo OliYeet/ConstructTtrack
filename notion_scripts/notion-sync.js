@@ -45,9 +45,14 @@ class NotionDatabaseSync {
     this.lastSync = new Date();
     this.syncInProgress = false;
 
-    // Configure Express
+    // Configure Express - raw middleware must come before json middleware
+    // to properly capture raw body for webhook signature verification
+    this.app.use('/webhook', express.raw({ type: 'application/json' }), (req, _res, next) => {
+      // Save raw body for signature verification
+      req.rawBody = req.body;
+      next();
+    });
     this.app.use(express.json());
-    this.app.use(express.raw({ type: 'application/json' }));
   }
 
   /**
@@ -593,7 +598,19 @@ class NotionDatabaseSync {
               .split('\n')
               .filter(line => line.trim());
             criteria.forEach(criterion => {
-              markdown += `  ${criterion.startsWith('-') ? criterion : `- ${criterion}`}\n`;
+              // Sanitize and format criterion to prevent markdown issues
+              const sanitizedCriterion = criterion.trim()
+                .replace(/[<>&"']/g, char => {
+                  const entities = { '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&#39;' };
+                  return entities[char] || char;
+                });
+
+              // Ensure proper dash formatting
+              const formattedCriterion = sanitizedCriterion.startsWith('-')
+                ? sanitizedCriterion
+                : `- ${sanitizedCriterion}`;
+
+              markdown += `  ${formattedCriterion}\n`;
             });
           }
           if (storyContent.dependencies) {
@@ -758,34 +775,98 @@ class NotionDatabaseSync {
 
   /**
    * Clean up old backup files (keep only last 5 days)
+   * Includes robust error handling and retry logic
    */
   async cleanupOldBackups(filePath) {
-    try {
-      // Use fs and path modules
-      const dir = dirname(filePath);
-      const baseName = basename(filePath);
+    const maxRetries = 3;
+    const retryDelay = 1000; // 1 second
 
-      // Find all backup files for this file
-      const files = readdirSync(dir);
-      const backupFiles = files
-        .filter(file => file.startsWith(`${baseName}.backup.`))
-        .map(file => ({
-          name: file,
-          path: join(dir, file),
-          date: file.replace(`${baseName}.backup.`, ''),
-        }))
-        .sort((a, b) => b.date.localeCompare(a.date)); // Sort newest first
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        // Use fs and path modules
+        const dir = dirname(filePath);
+        const baseName = basename(filePath);
 
-      // Keep only the 5 most recent backups
-      const filesToDelete = backupFiles.slice(5);
-      filesToDelete.forEach(file => {
-        unlinkSync(file.path);
-        console.log(chalk.gray(`🗑️  Removed old backup: ${file.name}`));
-      });
-    } catch (error) {
-      console.log(
-        chalk.gray(`Warning: Could not clean up old backups: ${error.message}`)
-      );
+        // Validate directory exists
+        if (!existsSync(dir)) {
+          console.log(chalk.yellow(`⚠️  Directory does not exist: ${dir}`));
+          return;
+        }
+
+        // Find all backup files for this file
+        const files = readdirSync(dir);
+        const backupFiles = files
+          .filter(file => file.startsWith(`${baseName}.backup.`))
+          .map(file => ({
+            name: file,
+            path: join(dir, file),
+            date: file.replace(`${baseName}.backup.`, ''),
+          }))
+          .sort((a, b) => b.date.localeCompare(a.date)); // Sort newest first
+
+        console.log(chalk.gray(`📁 Found ${backupFiles.length} backup files for ${baseName}`));
+
+        // Keep only the 5 most recent backups
+        const filesToDelete = backupFiles.slice(5);
+
+        if (filesToDelete.length === 0) {
+          console.log(chalk.gray(`✅ No old backups to clean up`));
+          return;
+        }
+
+        // Delete files with individual error handling
+        const deletionResults = [];
+        for (const file of filesToDelete) {
+          try {
+            // Check if file still exists before attempting deletion
+            if (existsSync(file.path)) {
+              unlinkSync(file.path);
+              deletionResults.push({ file: file.name, success: true });
+              console.log(chalk.gray(`🗑️  Removed old backup: ${file.name}`));
+            } else {
+              deletionResults.push({ file: file.name, success: true, skipped: true });
+              console.log(chalk.gray(`⏭️  Backup already removed: ${file.name}`));
+            }
+          } catch (deleteError) {
+            deletionResults.push({
+              file: file.name,
+              success: false,
+              error: deleteError.message
+            });
+            console.error(chalk.red(`❌ Failed to delete backup ${file.name}: ${deleteError.message}`));
+          }
+        }
+
+        // Report cleanup summary
+        const successful = deletionResults.filter(r => r.success).length;
+        const failed = deletionResults.filter(r => !r.success).length;
+
+        if (failed === 0) {
+          console.log(chalk.green(`✅ Backup cleanup completed: ${successful} files processed`));
+          return; // Success, exit retry loop
+        } else {
+          console.log(chalk.yellow(`⚠️  Partial cleanup: ${successful} successful, ${failed} failed`));
+          if (attempt < maxRetries) {
+            console.log(chalk.blue(`🔄 Retrying cleanup in ${retryDelay}ms (attempt ${attempt + 1}/${maxRetries})`));
+            await new Promise(resolve => setTimeout(resolve, retryDelay));
+            continue; // Retry
+          }
+        }
+
+      } catch (error) {
+        console.error(chalk.red(`❌ Backup cleanup error (attempt ${attempt}/${maxRetries}): ${error.message}`));
+
+        if (attempt < maxRetries) {
+          console.log(chalk.blue(`🔄 Retrying cleanup in ${retryDelay}ms...`));
+          await new Promise(resolve => setTimeout(resolve, retryDelay));
+        } else {
+          console.error(chalk.red(`💥 Backup cleanup failed after ${maxRetries} attempts`));
+          console.error(chalk.gray(`Error details: ${error.stack}`));
+
+          // Fallback: Log the issue but don't fail the entire sync
+          console.log(chalk.yellow(`⚠️  Continuing without backup cleanup. Manual cleanup may be required.`));
+        }
+      }
     }
   }
 

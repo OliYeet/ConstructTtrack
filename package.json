@@ -50,7 +50,10 @@
     "lint:fix": "eslint . --fix",
     "lint:check": "eslint . --max-warnings 0",
     "prepare": "node -e \"process.exit(process.env.CI ? 0 : 1)\" || husky install",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "env:setup": "cd . && node scripts/env-setup.js",
+    "env:validate": "cd . && node scripts/env-validator.js",
+    "env:check": "cd . && node scripts/env-validator.js"
   },
   "keywords": [
     "construction",

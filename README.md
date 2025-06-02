@@ -86,13 +86,37 @@ npm run dev
 
 ### Environment Setup
 
-Create `.env.local` files in both `apps/web` and `apps/mobile`:
+ConstructTrack uses a comprehensive environment variable management system:
 
-```env
-SUPABASE_URL=your-supabase-url
-SUPABASE_ANON_KEY=your-supabase-anon-key
-MAPBOX_ACCESS_TOKEN=your-mapbox-token
+```bash
+# 1. Copy environment template
+cp .env.example .env
+
+# 2. Interactive setup (recommended)
+npm run env:setup
+
+# 3. Validate configuration
+npm run env:validate
+
+# 4. Manual setup (alternative)
+# Edit .env with your credentials
 ```
+
+#### Required Services
+
+1. **Supabase** - Get credentials from [supabase.com/dashboard](https://supabase.com/dashboard)
+2. **MapBox** - Get token from [account.mapbox.com](https://account.mapbox.com/access-tokens/)
+3. **Notion** - Get integration token from [notion.so/my-integrations](https://www.notion.so/my-integrations)
+
+#### Environment Scripts
+
+| Command | Description |
+|---------|-------------|
+| `npm run env:setup` | Interactive environment setup |
+| `npm run env:validate` | Validate environment variables |
+| `npm run env:check` | Quick environment check |
+
+See [Environment Variables Guide](docs/environment-variables.md) for detailed setup instructions.
 
 ## 📋 Project Management
 
