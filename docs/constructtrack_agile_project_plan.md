@@ -22,9 +22,9 @@
 
 | Status          | Count | Badge |
 | --------------- | ----- | ----- |
-| **In progress** | 3     | 🟡    |
+| **In progress** | 2     | 🟡    |
 | **Not started** | 518   | 🔴    |
-| **Done**        | 3     | 🟢    |
+| **Done**        | 4     | 🟢    |
 
 ---
 
@@ -61,7 +61,7 @@
 
 ### 📖 🛠️ Story 0.1: Development Environment & Project Initialization
 
-🟡 **Status**: In Progress | **Progress**: ███████░░░ 64% (9/14 points)
+🟢 **Status**: Complete | **Progress**: ██████████ 100% (14/14 points)
 
 **Story Details:**
 
@@ -78,7 +78,7 @@
 | **📦 Setup package management and dependency strategy**            | Backend   | 1      | 🟢 Done        | Comprehensive package management strategy with monorepo optimization   |
 | **🌿 Initialize Git repository with branching strategy**           | DevOps    | 1      | 🟢 Done        | _No description_                                                       |
 | **🔐 Setup environment variable management**                       | DevOps    | 2      | � Done         | Comprehensive environment management with validation and setup scripts |
-| **📚 Create project documentation structure**                      | Backend   | 1      | 🔴 Not started | _No description_                                                       |
+| **📚 Create project documentation structure**                      | Backend   | 1      | 🟢 Done        | Comprehensive documentation structure with guides, API docs, and templates |
 
 ---
 
