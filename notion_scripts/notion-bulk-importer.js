@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 
+import fs from 'fs/promises';
+
 import { Client } from '@notionhq/client';
 import chalk from 'chalk';
-import ora from 'ora';
 import { config } from 'dotenv';
-import fs from 'fs/promises';
+import ora from 'ora';
 
 // Load environment variables
 config();
@@ -24,7 +25,7 @@ class SimpleLogger {
     if (this.enableFileLogging) {
       try {
         await fs.mkdir('logs', { recursive: true });
-      } catch (error) {
+      } catch {
         // Directory might already exist, ignore error
       }
     }
@@ -45,7 +46,7 @@ class SimpleLogger {
     if (this.enableFileLogging) {
       try {
         await fs.appendFile(filename, content + '\n');
-      } catch (error) {
+      } catch {
         // Silently fail file writing to avoid breaking the import
       }
     }
@@ -118,7 +119,7 @@ class NotionBulkImporter {
     this.logger = new SimpleLogger(true);
 
     // Rate limiting configuration
-    this.rateLimitDelay = 100; // Base delay in ms
+    this.rateLimitDelay = 333; // Base delay in ms (333ms = ~3 req/s to comply with Notion API limit)
     this.maxRetries = 3;
     this.batchSize = 3; // Process items in batches
 
@@ -167,8 +168,11 @@ class NotionBulkImporter {
   updateProgress(current, total, type) {
     const percentage = Math.round((current / total) * 100);
     const elapsed = Date.now() - this.importStats.startTime;
-    const rate = current / (elapsed / 1000);
-    const eta = total > current ? Math.round((total - current) / rate) : 0;
+    // Prevent division by zero when elapsed time is 0 or very small
+    const elapsedSeconds = elapsed / 1000;
+    const rate = elapsedSeconds > 0 ? current / elapsedSeconds : 0;
+    const eta =
+      total > current && rate > 0 ? Math.round((total - current) / rate) : 0;
 
     console.log(
       chalk.blue(
@@ -626,12 +630,18 @@ class NotionBulkImporter {
         await this.rateLimiter();
         return await this.createNotionPage(properties);
       } catch (error) {
-        if (error.code === 'rate_limited' && i < retries - 1) {
+        // Check for rate limiting using both error.code and HTTP status 429
+        if (
+          (error.code === 'rate_limited' || error.status === 429) &&
+          i < retries - 1
+        ) {
           const delay = Math.pow(2, i) * 1000; // Exponential backoff
           this.logger.warn('Rate limited, retrying', {
             attempt: i + 1,
             delay,
             error: error.message,
+            errorCode: error.code,
+            errorStatus: error.status,
           });
           await this.delay(delay);
           continue;

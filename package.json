@@ -37,7 +37,7 @@
     "format:check": "prettier --check .",
     "lint:fix": "eslint . --fix",
     "lint:check": "eslint .",
-    "prepare": "husky",
+    "prepare": "husky install",
     "type-check": "tsc --noEmit"
   },
   "keywords": [
