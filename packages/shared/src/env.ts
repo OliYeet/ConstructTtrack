@@ -135,7 +135,25 @@ export function loadEnvironment(): EnvironmentConfig {
   const getBoolean = (key: string, defaultValue = false): boolean => {
     const value = env[key];
     if (!value) return defaultValue;
-    return value.toLowerCase() === 'true';
+
+    const lowerValue = value.toLowerCase();
+
+    // Explicitly recognize true values
+    if (['true', '1', 'yes'].includes(lowerValue)) {
+      return true;
+    }
+
+    // Explicitly recognize false values
+    if (['false', '0', 'no'].includes(lowerValue)) {
+      return false;
+    }
+
+    // Log warning for unknown values and return default
+    // eslint-disable-next-line no-console
+    console.warn(
+      `Unknown boolean value for ${key}: "${value}". Using default: ${defaultValue}`
+    );
+    return defaultValue;
   };
 
   return {
@@ -229,7 +247,7 @@ export function validateEnvironment(): void {
   } catch (error) {
     // eslint-disable-next-line no-console
     console.error('Environment validation failed:', error);
-    process.exit(1);
+    throw error;
   }
 }
 

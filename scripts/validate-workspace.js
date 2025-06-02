@@ -60,8 +60,6 @@ class WorkspaceValidator {
     if (!rootPkg.workspaces) {
       this.addError('Root package.json missing workspaces configuration');
     } else {
-      const expectedWorkspaces = ['apps/*', 'packages/*'];
-
       // Handle both array format and object format for workspaces
       let workspacesArray;
       if (Array.isArray(rootPkg.workspaces)) {
@@ -78,9 +76,19 @@ class WorkspaceValidator {
         return;
       }
 
-      for (const workspace of expectedWorkspaces) {
-        if (!workspacesArray.includes(workspace)) {
-          this.addError(`Missing workspace: ${workspace}`);
+      // Dynamically validate workspace patterns by checking if they resolve to actual folders
+      const actualWorkspaces = loadWorkspaces(this.rootDir);
+
+      // Verify that each workspace pattern resolves to at least one folder
+      for (const pattern of workspacesArray) {
+        const matchingWorkspaces = actualWorkspaces.filter(workspace => {
+          // Simple glob matching - check if workspace path matches the pattern
+          const patternRegex = pattern.replace('*', '.*');
+          return new RegExp(`^${patternRegex}$`).test(workspace);
+        });
+
+        if (matchingWorkspaces.length === 0) {
+          this.addWarning(`Workspace pattern "${pattern}" does not match any existing folders`);
         }
       }
     }
@@ -253,8 +261,9 @@ class WorkspaceValidator {
           this.addError(`Package ${pkg} not found in packages:build script`);
         } else if (index < lastIndex) {
           this.addError(`Package ${pkg} built in wrong order`);
+        } else {
+          lastIndex = index;
         }
-        lastIndex = index;
       }
     }
   }

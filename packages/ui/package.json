@@ -9,10 +9,12 @@
   },
   "dependencies": {
     "@constructtrack/shared": "*",
+    "inquirer": "9.3.7",
     "react": "^18.0.0",
     "react-native": "^0.74.0"
   },
   "devDependencies": {
+    "@types/inquirer": "9.0.8",
     "@types/react": "^18.0.0",
     "eas-cli": "16.7.0",
     "typescript": "^5.0.0"

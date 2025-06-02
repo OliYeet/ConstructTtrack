@@ -8,9 +8,11 @@
     "dev": "tsc --watch"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.39.0"
+    "@supabase/supabase-js": "^2.39.0",
+    "inquirer": "9.3.7"
   },
   "devDependencies": {
+    "@types/inquirer": "9.0.8",
     "eas-cli": "16.7.0",
     "typescript": "^5.0.0"
   }

@@ -14,6 +14,7 @@
     "@constructtrack/ui": "*",
     "@mapbox/mapbox-gl-draw": "^1.4.0",
     "@supabase/supabase-js": "^2.39.0",
+    "inquirer": "9.3.7",
     "mapbox-gl": "^3.0.0",
     "next": "15.3.3",
     "react": "^19.0.0",
@@ -22,6 +23,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
+    "@types/inquirer": "9.0.8",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

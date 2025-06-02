@@ -7,8 +7,8 @@
 
 import { writeFileSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
-import readline from 'readline';
 import { fileURLToPath } from 'url';
+import inquirer from 'inquirer';
 
 import chalk from 'chalk';
 
@@ -18,16 +18,19 @@ const rootDir = join(__dirname, '..');
 
 class EnvSetup {
   constructor() {
-    this.rl = readline.createInterface({
-      input: process.stdin,
-      output: process.stdout,
-    });
+    // No longer need readline interface
   }
 
-  async question(prompt) {
-    return new Promise(resolve => {
-      this.rl.question(prompt, resolve);
-    });
+  async question(prompt, options = {}) {
+    const { type = 'input', mask = false } = options;
+    const response = await inquirer.prompt([
+      {
+        type: mask ? 'password' : type,
+        name: 'answer',
+        message: prompt,
+      },
+    ]);
+    return response.answer;
   }
 
   async setup() {
@@ -48,7 +51,6 @@ class EnvSetup {
         console.log(
           chalk.blue('Setup cancelled. Your existing .env file is unchanged.')
         );
-        this.rl.close();
         return;
       }
     }
@@ -92,7 +94,7 @@ class EnvSetup {
     let supabaseAnonKey;
     let supabaseAnonKeyValid = false;
     do {
-      supabaseAnonKey = await this.question('Supabase Anon Key: ');
+      supabaseAnonKey = await this.question('Supabase Anon Key: ', { mask: true });
       if (!supabaseAnonKey || supabaseAnonKey.trim() === '') {
         console.log(chalk.red('❌ Supabase Anon Key is required'));
       } else if (supabaseAnonKey.length < 100) {
@@ -111,7 +113,7 @@ class EnvSetup {
     let supabaseServiceKey;
     let supabaseServiceKeyValid = false;
     do {
-      supabaseServiceKey = await this.question('Supabase Service Role Key: ');
+      supabaseServiceKey = await this.question('Supabase Service Role Key: ', { mask: true });
       if (!supabaseServiceKey || supabaseServiceKey.trim() === '') {
         console.log(chalk.red('❌ Supabase Service Role Key is required'));
       } else if (supabaseServiceKey.length < 100) {
@@ -137,7 +139,7 @@ class EnvSetup {
       'Get your token from: https://account.mapbox.com/access-tokens/\n'
     );
 
-    const mapboxToken = await this.question('MapBox Access Token: ');
+    const mapboxToken = await this.question('MapBox Access Token: ', { mask: true });
     config.MAPBOX_ACCESS_TOKEN = mapboxToken;
     config.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN = mapboxToken;
     config.EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN = mapboxToken;
@@ -145,10 +147,10 @@ class EnvSetup {
     console.log(chalk.blue('\n📝 Notion Configuration'));
     console.log('Get these from: https://www.notion.so/my-integrations\n');
 
-    config.NOTION_TOKEN = await this.question('Notion Token: ');
+    config.NOTION_TOKEN = await this.question('Notion Token: ', { mask: true });
     config.NOTION_DATABASE_ID = await this.question('Notion Database ID: ');
     config.NOTION_WEBHOOK_SECRET = await this.question(
-      'Notion Webhook Secret: '
+      'Notion Webhook Secret: ', { mask: true }
     );
 
     console.log(chalk.blue('\n🔐 Security Configuration'));
@@ -157,7 +159,7 @@ class EnvSetup {
     let jwtSecret;
     let jwtSecretValid = false;
     do {
-      jwtSecret = await this.question('JWT Secret (32+ characters): ');
+      jwtSecret = await this.question('JWT Secret (32+ characters): ', { mask: true });
       if (!jwtSecret || jwtSecret.length < 32) {
         console.log(
           chalk.red(
@@ -185,7 +187,7 @@ class EnvSetup {
     let encryptionKeyValid = false;
     do {
       encryptionKey = await this.question(
-        'Encryption Key (exactly 32 characters): '
+        'Encryption Key (exactly 32 characters): ', { mask: true }
       );
       if (!encryptionKey || encryptionKey.length !== 32) {
         console.log(
@@ -229,8 +231,6 @@ class EnvSetup {
     console.log('1. Review your .env file');
     console.log('2. Run: npm run env:validate');
     console.log('3. Start development: npm run dev\n');
-
-    this.rl.close();
   }
 
   async setupOptionalServices(config) {
@@ -240,7 +240,7 @@ class EnvSetup {
       config.SMTP_HOST = await this.question('SMTP Host: ');
       config.SMTP_PORT = (await this.question('SMTP Port [587]: ')) || '587';
       config.SMTP_USER = await this.question('SMTP User: ');
-      config.SMTP_PASS = await this.question('SMTP Password: ');
+      config.SMTP_PASS = await this.question('SMTP Password: ', { mask: true });
     }
 
     console.log(chalk.blue('\n📱 SMS Service (optional)'));
@@ -249,7 +249,7 @@ class EnvSetup {
     );
     if (setupSMS.toLowerCase() === 'y') {
       config.TWILIO_ACCOUNT_SID = await this.question('Twilio Account SID: ');
-      config.TWILIO_AUTH_TOKEN = await this.question('Twilio Auth Token: ');
+      config.TWILIO_AUTH_TOKEN = await this.question('Twilio Auth Token: ', { mask: true });
       config.TWILIO_PHONE_NUMBER = await this.question('Twilio Phone Number: ');
     }
 
@@ -258,7 +258,7 @@ class EnvSetup {
     if (setupStorage.toLowerCase() === 'y') {
       config.AWS_ACCESS_KEY_ID = await this.question('AWS Access Key ID: ');
       config.AWS_SECRET_ACCESS_KEY = await this.question(
-        'AWS Secret Access Key: '
+        'AWS Secret Access Key: ', { mask: true }
       );
       config.AWS_REGION =
         (await this.question('AWS Region [us-east-1]: ')) || 'us-east-1';
