@@ -122,7 +122,12 @@ export function createCreatedResponse<T>(
   message?: string,
   requestId?: string
 ): NextResponse<ApiResponse<T>> {
-  return createSuccessResponse(data, message || 'Resource created successfully', 201, requestId);
+  return createSuccessResponse(
+    data,
+    message || 'Resource created successfully',
+    201,
+    requestId
+  );
 }
 
 // Accepted Response (202)
@@ -130,7 +135,7 @@ export function createAcceptedResponse<T>(
   data?: T,
   message?: string,
   requestId?: string
-): NextResponse<ApiResponse<T>> {
+): NextResponse<ApiResponse<T | undefined>> {
   return createSuccessResponse(
     data,
     message || 'Request accepted for processing',
@@ -169,8 +174,14 @@ export function createMethodNotAllowedResponse(
 // CORS Headers Helper
 export function addCorsHeaders(response: NextResponse): NextResponse {
   response.headers.set('Access-Control-Allow-Origin', '*');
-  response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  response.headers.set(
+    'Access-Control-Allow-Methods',
+    'GET, POST, PUT, DELETE, OPTIONS'
+  );
+  response.headers.set(
+    'Access-Control-Allow-Headers',
+    'Content-Type, Authorization'
+  );
   response.headers.set('Access-Control-Max-Age', '86400');
   return response;
 }

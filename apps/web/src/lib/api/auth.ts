@@ -58,7 +58,7 @@ export async function verifyToken(
       id: user.id,
       email: user.email!,
       role: profile.role,
-      organizationId: profile.organization_id,
+      organizationId: profile.organization_id || undefined,
     };
   } catch (error) {
     if (error instanceof AuthenticationError) {

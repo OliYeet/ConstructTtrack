@@ -41,7 +41,12 @@ async function checkDatabase(): Promise<'healthy' | 'unhealthy'> {
 }
 
 // GET /api/v1/health
-async function handleGet(request: NextRequest) {
+async function handleGet(
+  request: NextRequest,
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _: { params: Promise<Record<string, string>> }
+) {
   const startTime = Date.now();
 
   // Check all services
@@ -75,7 +80,8 @@ async function handleGet(request: NextRequest) {
     healthData,
     `System is ${overallStatus} (${responseTime}ms)`,
     statusCode,
-    request.context?.requestId
+    (request as NextRequest & { context?: { requestId?: string } }).context
+      ?.requestId
   );
 }
 

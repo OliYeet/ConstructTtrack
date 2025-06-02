@@ -51,19 +51,19 @@ interface ProjectRow {
   id: string;
   organization_id: string;
   name: string;
-  description?: string;
+  description: string | null;
   status: string;
-  start_date?: string;
-  end_date?: string;
-  budget?: string | number;
-  manager_id?: string;
-  customer_name?: string;
-  customer_email?: string;
-  customer_phone?: string;
-  customer_address?: string;
-  location?: {
+  start_date: string | null;
+  end_date: string | null;
+  budget: string | number | null;
+  manager_id: string | null;
+  customer_name: string | null;
+  customer_email: string | null;
+  customer_phone: string | null;
+  customer_address: string | null;
+  location: {
     coordinates: [number, number];
-  };
+  } | null;
   created_at: string;
   updated_at: string;
 }
@@ -74,16 +74,16 @@ function transformProject(row: ProjectRow): ProjectResponse {
     id: row.id,
     organizationId: row.organization_id,
     name: row.name,
-    description: row.description,
+    description: row.description || undefined,
     status: row.status,
-    startDate: row.start_date,
-    endDate: row.end_date,
-    budget: row.budget ? parseFloat(row.budget) : undefined,
-    managerId: row.manager_id,
-    customerName: row.customer_name,
-    customerEmail: row.customer_email,
-    customerPhone: row.customer_phone,
-    customerAddress: row.customer_address,
+    startDate: row.start_date || undefined,
+    endDate: row.end_date || undefined,
+    budget: row.budget ? parseFloat(String(row.budget)) : undefined,
+    managerId: row.manager_id || undefined,
+    customerName: row.customer_name || undefined,
+    customerEmail: row.customer_email || undefined,
+    customerPhone: row.customer_phone || undefined,
+    customerAddress: row.customer_address || undefined,
     location: row.location
       ? {
           latitude: row.location.coordinates[1],
@@ -96,8 +96,16 @@ function transformProject(row: ProjectRow): ProjectResponse {
 }
 
 // GET /api/v1/projects - List projects
-async function handleGet(request: NextRequest) {
-  const context = request.context!;
+async function handleGet(
+  request: NextRequest,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _: { params: Promise<Record<string, string>> }
+) {
+  const context = (
+    request as NextRequest & {
+      context: { requestId: string; organizationId: string };
+    }
+  ).context;
   const queryParams = validateQueryParams(request, listProjectsSchema);
 
   // Dynamically import Supabase client
@@ -130,8 +138,10 @@ async function handleGet(request: NextRequest) {
   query = query.order(sortColumn, { ascending: sortOrder === 'asc' });
 
   // Apply pagination
-  const offset = (queryParams.page - 1) * queryParams.limit;
-  query = query.range(offset, offset + queryParams.limit - 1);
+  const page = queryParams.page || 1;
+  const limit = queryParams.limit || 10;
+  const offset = (page - 1) * limit;
+  query = query.range(offset, offset + limit - 1);
 
   const { data, error, count } = await query;
 
@@ -139,21 +149,29 @@ async function handleGet(request: NextRequest) {
     throw new Error(`Failed to fetch projects: ${error.message}`);
   }
 
-  const projects = data?.map(transformProject) || [];
+  const projects = data?.map(row => transformProject(row as ProjectRow)) || [];
 
   return createPaginatedResponse(
     projects,
     count || 0,
-    queryParams.page,
-    queryParams.limit,
+    page,
+    limit,
     'Projects retrieved successfully',
     context.requestId
   );
 }
 
 // POST /api/v1/projects - Create project
-async function handlePost(request: NextRequest) {
-  const context = request.context!;
+async function handlePost(
+  request: NextRequest,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _: { params: Promise<Record<string, string>> }
+) {
+  const context = (
+    request as NextRequest & {
+      context: { requestId: string; organizationId: string };
+    }
+  ).context;
   const projectData = await validateRequestBody(
     request,
     constructTrackSchemas.createProject
@@ -163,17 +181,18 @@ async function handlePost(request: NextRequest) {
   const { supabase } = await import('@constructtrack/supabase/client');
 
   // Prepare data for insertion
-  const insertData: Record<string, unknown> = {
-    organization_id: context.organizationId,
+  const insertData = {
+    organization_id: context.organizationId!,
     name: projectData.name,
-    description: projectData.description,
-    start_date: projectData.startDate,
-    end_date: projectData.endDate,
-    budget: projectData.budget,
-    customer_name: projectData.customerName,
-    customer_email: projectData.customerEmail,
-    customer_phone: projectData.customerPhone,
-    customer_address: projectData.customerAddress,
+    description: projectData.description || null,
+    start_date: projectData.startDate || null,
+    end_date: projectData.endDate || null,
+    budget: projectData.budget || null,
+    customer_name: projectData.customerName || null,
+    customer_email: projectData.customerEmail || null,
+    customer_phone: projectData.customerPhone || null,
+    customer_address: projectData.customerAddress || null,
+    location: null as string | null,
   };
 
   // Handle location if provided
@@ -191,7 +210,7 @@ async function handlePost(request: NextRequest) {
     throw new Error(`Failed to create project: ${error.message}`);
   }
 
-  const project = transformProject(data);
+  const project = transformProject(data as ProjectRow);
 
   return createCreatedResponse(
     project,

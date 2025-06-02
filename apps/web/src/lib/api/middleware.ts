@@ -82,13 +82,13 @@ export function withApiMiddleware(
   options: {
     requireAuth?: boolean;
     requireRoles?: string[];
-    rateLimit?: RateLimitConfig;
+    rateLimit?: RateLimitConfig | false;
     cors?: boolean;
   } = {}
 ) {
   return async function handler(
     request: NextRequest,
-    context: { params?: Record<string, string> }
+    context: { params: Promise<Record<string, string>> }
   ): Promise<NextResponse> {
     const startTime = Date.now();
     let requestContext: RequestContext | undefined;

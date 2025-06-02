@@ -29,8 +29,19 @@ interface TestResponse {
 }
 
 // GET /api/v1/test - Public test endpoint
-async function handleGet(request: NextRequest) {
-  const context = request.context!;
+async function handleGet(
+  request: NextRequest,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _: { params: Promise<Record<string, string>> }
+) {
+  const context = (
+    request as NextRequest & {
+      context: {
+        requestId: string;
+        user?: { id: string; email: string; role: string };
+      };
+    }
+  ).context;
 
   const testData: TestResponse = {
     message: 'API is working correctly!',
@@ -48,8 +59,19 @@ async function handleGet(request: NextRequest) {
 }
 
 // POST /api/v1/test - Test with request body validation
-async function handlePost(request: NextRequest) {
-  const context = request.context!;
+async function handlePost(
+  request: NextRequest,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _: { params: Promise<Record<string, string>> }
+) {
+  const context = (
+    request as NextRequest & {
+      context: {
+        requestId: string;
+        user?: { id: string; email: string; role: string };
+      };
+    }
+  ).context;
   const body = await validateRequestBody(request, testRequestSchema);
 
   const testData: TestResponse = {

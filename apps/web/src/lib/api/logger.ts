@@ -71,8 +71,12 @@ class ApiLogger {
     if (duration) logMessage += ` | Duration: ${duration}ms`;
 
     if (error && this.isDevelopment) {
-      logMessage += `\nError: ${error.message}`;
-      if (error.stack) logMessage += `\nStack: ${error.stack}`;
+      if (error instanceof Error) {
+        logMessage += `\nError: ${error.message}`;
+        if (error.stack) logMessage += `\nStack: ${error.stack}`;
+      } else {
+        logMessage += `\nError: ${String(error)}`;
+      }
     }
 
     if (metadata && Object.keys(metadata).length > 0) {

@@ -3,7 +3,7 @@
  * Standardized types for API requests, responses, and error handling
  */
 
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
 // Standard API Response Format
 export interface ApiResponse<T = unknown> {
@@ -71,8 +71,8 @@ export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 // API Route Handler Type
 export type ApiHandler = (
   request: ApiRequest,
-  context: { params?: Record<string, string> }
-) => Promise<Response>;
+  context: { params: Promise<Record<string, string>> }
+) => Promise<NextResponse>;
 
 // Validation Error
 export interface ValidationError {

@@ -6,7 +6,7 @@
 import { NextRequest } from 'next/server';
 
 // Set test environment variables
-process.env.NODE_ENV = 'test';
+// NODE_ENV is set by the test runner
 process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://test.supabase.co';
 process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'test-anon-key';
 process.env.SUPABASE_URL = 'https://test.supabase.co';
@@ -182,13 +182,15 @@ export const createMockRequest = (
   };
 
   // Add headers.get method
-  (request.headers as Headers & { get: (key: string) => string | null }).get = (
-    key: string
-  ) => {
+  (
+    request.headers as Map<string, string> & {
+      get: (key: string) => string | undefined;
+    }
+  ).get = (key: string) => {
     return (request.headers as Map<string, string>).get(key.toLowerCase());
   };
 
-  return request as NextRequest;
+  return request as unknown as NextRequest;
 };
 
 export const createMockResponse = () => ({
