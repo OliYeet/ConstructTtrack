@@ -5,10 +5,14 @@
 
 import { GET, POST } from '../test/route';
 import { createMockRequest } from '@/tests/setup';
+import { NextRequest } from 'next/server';
+import { RequestContext } from '@/types/api';
+
+type RequestWithContext = NextRequest & { context?: RequestContext };
 
 // Mock the middleware to return the handlers directly
 jest.mock('@/lib/api/middleware', () => ({
-  withApiMiddleware: jest.fn((handlers, options) => {
+  withApiMiddleware: jest.fn(handlers => {
     // Return a function that routes to the correct handler based on method
     return async (request, context) => {
       const method = request.method;
@@ -33,7 +37,7 @@ describe('/api/v1/test GET', () => {
     });
 
     const requestId = 'test-request-id';
-    (request as any).context = {
+    (request as RequestWithContext).context = {
       requestId,
       timestamp: new Date().toISOString(),
     };
@@ -61,7 +65,7 @@ describe('/api/v1/test GET', () => {
       role: 'field_worker',
     };
 
-    (request as any).context = {
+    (request as RequestWithContext).context = {
       requestId: 'test-request-id',
       timestamp: new Date().toISOString(),
       user: mockUser,
@@ -79,7 +83,7 @@ describe('/api/v1/test GET', () => {
       url: 'http://localhost:3000/api/v1/test',
     });
 
-    (request as any).context = {
+    (request as RequestWithContext).context = {
       requestId: 'test-request-id',
       timestamp: new Date().toISOString(),
       // No user
@@ -111,7 +115,7 @@ describe('/api/v1/test POST', () => {
     });
 
     const requestId = 'test-request-id';
-    (request as any).context = {
+    (request as RequestWithContext).context = {
       requestId,
       timestamp: new Date().toISOString(),
     };
@@ -138,7 +142,7 @@ describe('/api/v1/test POST', () => {
       body: invalidBody,
     });
 
-    (request as any).context = {
+    (request as RequestWithContext).context = {
       requestId: 'test-request-id',
       timestamp: new Date().toISOString(),
     };
@@ -158,7 +162,7 @@ describe('/api/v1/test POST', () => {
       body: requestBody,
     });
 
-    (request as any).context = {
+    (request as RequestWithContext).context = {
       requestId: 'test-request-id',
       timestamp: new Date().toISOString(),
     };
@@ -188,7 +192,7 @@ describe('/api/v1/test POST', () => {
       role: 'manager',
     };
 
-    (request as any).context = {
+    (request as RequestWithContext).context = {
       requestId: 'test-request-id',
       timestamp: new Date().toISOString(),
       user: mockUser,
@@ -212,7 +216,7 @@ describe('/api/v1/test POST', () => {
       body: shortMessage,
     });
 
-    (request1 as any).context = {
+    (request1 as RequestWithContext).context = {
       requestId: 'test-request-id-1',
       timestamp: new Date().toISOString(),
     };
@@ -230,7 +234,7 @@ describe('/api/v1/test POST', () => {
       body: longMessage,
     });
 
-    (request2 as any).context = {
+    (request2 as RequestWithContext).context = {
       requestId: 'test-request-id-2',
       timestamp: new Date().toISOString(),
     };
@@ -259,7 +263,7 @@ describe('/api/v1/test POST', () => {
       body: complexData,
     });
 
-    (request as any).context = {
+    (request as RequestWithContext).context = {
       requestId: 'test-request-id',
       timestamp: new Date().toISOString(),
     };
@@ -282,7 +286,7 @@ describe('/api/v1/test POST', () => {
       body: requestBody,
     });
 
-    (request as any).context = {
+    (request as RequestWithContext).context = {
       requestId: 'test-request-id',
       timestamp: new Date().toISOString(),
     };

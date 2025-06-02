@@ -25,8 +25,8 @@ interface LogEntry {
   url?: string;
   statusCode?: number;
   duration?: number;
-  error?: any;
-  metadata?: Record<string, any>;
+  error?: Error | unknown;
+  metadata?: Record<string, unknown>;
 }
 
 // Simple logger class
@@ -35,41 +35,58 @@ class ApiLogger {
   private logLevel = process.env.LOG_LEVEL || 'INFO';
 
   private shouldLog(level: LogLevel): boolean {
-    const levels = [LogLevel.ERROR, LogLevel.WARN, LogLevel.INFO, LogLevel.DEBUG];
+    const levels = [
+      LogLevel.ERROR,
+      LogLevel.WARN,
+      LogLevel.INFO,
+      LogLevel.DEBUG,
+    ];
     const currentLevelIndex = levels.indexOf(this.logLevel as LogLevel);
     const messageLevelIndex = levels.indexOf(level);
-    
+
     return messageLevelIndex <= currentLevelIndex;
   }
 
   private formatLog(entry: LogEntry): string {
-    const { level, message, timestamp, requestId, userId, method, url, statusCode, duration, error, metadata } = entry;
-    
+    const {
+      level,
+      message,
+      timestamp,
+      requestId,
+      userId,
+      method,
+      url,
+      statusCode,
+      duration,
+      error,
+      metadata,
+    } = entry;
+
     let logMessage = `[${timestamp}] ${level}: ${message}`;
-    
+
     if (requestId) logMessage += ` | RequestID: ${requestId}`;
     if (userId) logMessage += ` | UserID: ${userId}`;
     if (method && url) logMessage += ` | ${method} ${url}`;
     if (statusCode) logMessage += ` | Status: ${statusCode}`;
     if (duration) logMessage += ` | Duration: ${duration}ms`;
-    
+
     if (error && this.isDevelopment) {
       logMessage += `\nError: ${error.message}`;
       if (error.stack) logMessage += `\nStack: ${error.stack}`;
     }
-    
+
     if (metadata && Object.keys(metadata).length > 0) {
       logMessage += `\nMetadata: ${JSON.stringify(metadata, null, 2)}`;
     }
-    
+
     return logMessage;
   }
 
   private log(entry: LogEntry): void {
     if (!this.shouldLog(entry.level)) return;
-    
+
     const formattedMessage = this.formatLog(entry);
-    
+
     switch (entry.level) {
       case LogLevel.ERROR:
         console.error(formattedMessage);
@@ -86,7 +103,11 @@ class ApiLogger {
     }
   }
 
-  error(message: string, error?: any, context?: Partial<LogEntry>): void {
+  error(
+    message: string,
+    error?: Error | unknown,
+    context?: Partial<LogEntry>
+  ): void {
     this.log({
       level: LogLevel.ERROR,
       message,
@@ -132,7 +153,9 @@ class ApiLogger {
       url: request.url,
       metadata: {
         userAgent: request.headers.get('user-agent'),
-        ip: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip'),
+        ip:
+          request.headers.get('x-forwarded-for') ||
+          request.headers.get('x-real-ip'),
       },
     });
   }
@@ -144,8 +167,13 @@ class ApiLogger {
     duration: number,
     context?: RequestContext
   ): void {
-    const level = statusCode >= 500 ? LogLevel.ERROR : statusCode >= 400 ? LogLevel.WARN : LogLevel.INFO;
-    
+    const level =
+      statusCode >= 500
+        ? LogLevel.ERROR
+        : statusCode >= 400
+          ? LogLevel.WARN
+          : LogLevel.INFO;
+
     this.log({
       level,
       message: 'API Response',
@@ -162,7 +190,7 @@ class ApiLogger {
   // Log API error
   logError(
     message: string,
-    error: any,
+    error: Error | unknown,
     request?: NextRequest,
     context?: RequestContext
   ): void {
@@ -175,7 +203,12 @@ class ApiLogger {
   }
 
   // Log database operation
-  logDatabase(operation: string, table: string, duration?: number, context?: RequestContext): void {
+  logDatabase(
+    operation: string,
+    table: string,
+    duration?: number,
+    context?: RequestContext
+  ): void {
     this.debug(`Database ${operation}`, {
       requestId: context?.requestId,
       userId: context?.user?.id,
@@ -219,7 +252,7 @@ export const logResponse = (
 
 export const logError = (
   message: string,
-  error: any,
+  error: Error | unknown,
   request?: NextRequest,
   context?: RequestContext
 ) => {

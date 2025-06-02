@@ -5,10 +5,12 @@
 
 import { NextRequest } from 'next/server';
 import { withAuth } from '@/lib/api/middleware';
-import { createSuccessResponse, createCreatedResponse, createPaginatedResponse } from '@/lib/api/response';
-import { validateRequestBody, validateQueryParams, extractPaginationParams } from '@/lib/api/validation';
+import {
+  createCreatedResponse,
+  createPaginatedResponse,
+} from '@/lib/api/response';
+import { validateRequestBody, validateQueryParams } from '@/lib/api/validation';
 import { constructTrackSchemas, commonSchemas } from '@/lib/api/validation';
-import { NotFoundError, ValidationError } from '@/lib/errors/api-errors';
 import { z } from 'zod';
 
 // Project response interface
@@ -37,13 +39,37 @@ interface ProjectResponse {
 // Query parameters schema for listing projects
 const listProjectsSchema = z.object({
   ...commonSchemas.pagination.shape,
-  status: z.enum(['planning', 'in_progress', 'completed', 'on_hold', 'cancelled']).optional(),
+  status: z
+    .enum(['planning', 'in_progress', 'completed', 'on_hold', 'cancelled'])
+    .optional(),
   managerId: commonSchemas.uuid.optional(),
   search: z.string().max(100).optional(),
 });
 
+// Database row interface
+interface ProjectRow {
+  id: string;
+  organization_id: string;
+  name: string;
+  description?: string;
+  status: string;
+  start_date?: string;
+  end_date?: string;
+  budget?: string | number;
+  manager_id?: string;
+  customer_name?: string;
+  customer_email?: string;
+  customer_phone?: string;
+  customer_address?: string;
+  location?: {
+    coordinates: [number, number];
+  };
+  created_at: string;
+  updated_at: string;
+}
+
 // Transform database row to API response
-function transformProject(row: any): ProjectResponse {
+function transformProject(row: ProjectRow): ProjectResponse {
   return {
     id: row.id,
     organizationId: row.organization_id,
@@ -58,10 +84,12 @@ function transformProject(row: any): ProjectResponse {
     customerEmail: row.customer_email,
     customerPhone: row.customer_phone,
     customerAddress: row.customer_address,
-    location: row.location ? {
-      latitude: row.location.coordinates[1],
-      longitude: row.location.coordinates[0],
-    } : undefined,
+    location: row.location
+      ? {
+          latitude: row.location.coordinates[1],
+          longitude: row.location.coordinates[0],
+        }
+      : undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -80,37 +108,39 @@ async function handleGet(request: NextRequest) {
     .from('projects')
     .select('*', { count: 'exact' })
     .eq('organization_id', context.organizationId!);
-  
+
   // Apply filters
   if (queryParams.status) {
     query = query.eq('status', queryParams.status);
   }
-  
+
   if (queryParams.managerId) {
     query = query.eq('manager_id', queryParams.managerId);
   }
-  
+
   if (queryParams.search) {
-    query = query.or(`name.ilike.%${queryParams.search}%,description.ilike.%${queryParams.search}%`);
+    query = query.or(
+      `name.ilike.%${queryParams.search}%,description.ilike.%${queryParams.search}%`
+    );
   }
-  
+
   // Apply sorting
   const sortColumn = queryParams.sortBy || 'created_at';
   const sortOrder = queryParams.sortOrder || 'desc';
   query = query.order(sortColumn, { ascending: sortOrder === 'asc' });
-  
+
   // Apply pagination
   const offset = (queryParams.page - 1) * queryParams.limit;
   query = query.range(offset, offset + queryParams.limit - 1);
-  
+
   const { data, error, count } = await query;
-  
+
   if (error) {
     throw new Error(`Failed to fetch projects: ${error.message}`);
   }
-  
+
   const projects = data?.map(transformProject) || [];
-  
+
   return createPaginatedResponse(
     projects,
     count || 0,
@@ -124,13 +154,16 @@ async function handleGet(request: NextRequest) {
 // POST /api/v1/projects - Create project
 async function handlePost(request: NextRequest) {
   const context = request.context!;
-  const projectData = await validateRequestBody(request, constructTrackSchemas.createProject);
+  const projectData = await validateRequestBody(
+    request,
+    constructTrackSchemas.createProject
+  );
 
   // Dynamically import Supabase client
   const { supabase } = await import('@constructtrack/supabase/client');
 
   // Prepare data for insertion
-  const insertData: any = {
+  const insertData: Record<string, unknown> = {
     organization_id: context.organizationId,
     name: projectData.name,
     description: projectData.description,
@@ -142,24 +175,24 @@ async function handlePost(request: NextRequest) {
     customer_phone: projectData.customerPhone,
     customer_address: projectData.customerAddress,
   };
-  
+
   // Handle location if provided
   if (projectData.location) {
     insertData.location = `POINT(${projectData.location.longitude} ${projectData.location.latitude})`;
   }
-  
+
   const { data, error } = await supabase
     .from('projects')
     .insert(insertData)
     .select()
     .single();
-  
+
   if (error) {
     throw new Error(`Failed to create project: ${error.message}`);
   }
-  
+
   const project = transformProject(data);
-  
+
   return createCreatedResponse(
     project,
     'Project created successfully',
@@ -168,14 +201,20 @@ async function handlePost(request: NextRequest) {
 }
 
 // Export route handlers with authentication middleware
-export const GET = withAuth({
-  GET: handleGet,
-}, {
-  requireRoles: ['admin', 'manager', 'field_worker'], // All authenticated users can list projects
-});
+export const GET = withAuth(
+  {
+    GET: handleGet,
+  },
+  {
+    requireRoles: ['admin', 'manager', 'field_worker'], // All authenticated users can list projects
+  }
+);
 
-export const POST = withAuth({
-  POST: handlePost,
-}, {
-  requireRoles: ['admin', 'manager'], // Only managers and admins can create projects
-});
+export const POST = withAuth(
+  {
+    POST: handlePost,
+  },
+  {
+    requireRoles: ['admin', 'manager'], // Only managers and admins can create projects
+  }
+);

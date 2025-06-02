@@ -9,14 +9,14 @@ import { ApiError } from '@/types/api';
 export class BaseApiError extends Error {
   public readonly statusCode: number;
   public readonly code: string;
-  public readonly details?: Record<string, any>;
+  public readonly details?: Record<string, unknown>;
   public readonly field?: string;
 
   constructor(
     message: string,
     statusCode: number,
     code: string,
-    details?: Record<string, any>,
+    details?: Record<string, unknown>,
     field?: string
   ) {
     super(message);
@@ -45,7 +45,11 @@ export class BaseApiError extends Error {
 
 // Specific Error Classes
 export class ValidationError extends BaseApiError {
-  constructor(message: string, field?: string, details?: Record<string, any>) {
+  constructor(
+    message: string,
+    field?: string,
+    details?: Record<string, unknown>
+  ) {
     super(message, 400, 'VALIDATION_ERROR', details, field);
   }
 }
@@ -69,7 +73,7 @@ export class NotFoundError extends BaseApiError {
 }
 
 export class ConflictError extends BaseApiError {
-  constructor(message: string, details?: Record<string, any>) {
+  constructor(message: string, details?: Record<string, unknown>) {
     super(message, 409, 'CONFLICT', details);
   }
 }
@@ -83,13 +87,16 @@ export class RateLimitError extends BaseApiError {
 }
 
 export class InternalServerError extends BaseApiError {
-  constructor(message: string = 'Internal server error', details?: Record<string, any>) {
+  constructor(
+    message: string = 'Internal server error',
+    details?: Record<string, unknown>
+  ) {
     super(message, 500, 'INTERNAL_SERVER_ERROR', details);
   }
 }
 
 export class DatabaseError extends BaseApiError {
-  constructor(message: string, details?: Record<string, any>) {
+  constructor(message: string, details?: Record<string, unknown>) {
     super(message, 500, 'DATABASE_ERROR', details);
   }
 }
@@ -115,11 +122,11 @@ export const createNotFoundError = (resource: string) => {
 };
 
 // Error Type Guards
-export const isApiError = (error: any): error is BaseApiError => {
+export const isApiError = (error: unknown): error is BaseApiError => {
   return error instanceof BaseApiError;
 };
 
-export const isValidationError = (error: any): error is ValidationError => {
+export const isValidationError = (error: unknown): error is ValidationError => {
   return error instanceof ValidationError;
 };
 

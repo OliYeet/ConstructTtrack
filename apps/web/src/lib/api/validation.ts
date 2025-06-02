@@ -12,13 +12,13 @@ import { PaginationParams } from '@/types/api';
 export const commonSchemas = {
   // UUID validation
   uuid: z.string().uuid('Invalid UUID format'),
-  
+
   // Email validation
   email: z.string().email('Invalid email format'),
-  
+
   // Phone validation (basic)
   phone: z.string().regex(/^\+?[\d\s\-\(\)]+$/, 'Invalid phone number format'),
-  
+
   // Password validation
   password: z
     .string()
@@ -26,7 +26,7 @@ export const commonSchemas = {
     .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
     .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
     .regex(/\d/, 'Password must contain at least one number'),
-  
+
   // Pagination parameters
   pagination: z.object({
     page: z.coerce.number().int().min(1).default(1),
@@ -34,10 +34,10 @@ export const commonSchemas = {
     sortBy: z.string().optional(),
     sortOrder: z.enum(['asc', 'desc']).default('asc'),
   }),
-  
+
   // Date validation
   date: z.string().datetime('Invalid date format'),
-  
+
   // Coordinates validation
   coordinates: z.object({
     latitude: z.number().min(-90).max(90),
@@ -56,11 +56,9 @@ export async function validateRequestBody<T>(
   } catch (error) {
     if (error instanceof z.ZodError) {
       const firstError = error.errors[0];
-      throw new ValidationError(
-        firstError.message,
-        firstError.path.join('.'),
-        { zodError: error.errors }
-      );
+      throw new ValidationError(firstError.message, firstError.path.join('.'), {
+        zodError: error.errors,
+      });
     }
     throw new ValidationError('Invalid JSON in request body');
   }
@@ -73,21 +71,19 @@ export function validateQueryParams<T>(
 ): T {
   try {
     const { searchParams } = new URL(request.url);
-    const params: Record<string, any> = {};
-    
+    const params: Record<string, string> = {};
+
     searchParams.forEach((value, key) => {
       params[key] = value;
     });
-    
+
     return schema.parse(params);
   } catch (error) {
     if (error instanceof z.ZodError) {
       const firstError = error.errors[0];
-      throw new ValidationError(
-        firstError.message,
-        firstError.path.join('.'),
-        { zodError: error.errors }
-      );
+      throw new ValidationError(firstError.message, firstError.path.join('.'), {
+        zodError: error.errors,
+      });
     }
     throw new ValidationError('Invalid query parameters');
   }
@@ -103,18 +99,18 @@ export function validatePathParams<T>(
   } catch (error) {
     if (error instanceof z.ZodError) {
       const firstError = error.errors[0];
-      throw new ValidationError(
-        firstError.message,
-        firstError.path.join('.'),
-        { zodError: error.errors }
-      );
+      throw new ValidationError(firstError.message, firstError.path.join('.'), {
+        zodError: error.errors,
+      });
     }
     throw new ValidationError('Invalid path parameters');
   }
 }
 
 // Extract and validate pagination parameters
-export function extractPaginationParams(request: NextRequest): PaginationParams {
+export function extractPaginationParams(
+  request: NextRequest
+): PaginationParams {
   return validateQueryParams(request, commonSchemas.pagination);
 }
 
@@ -174,11 +170,14 @@ export function validateSearchQuery(query: string): string {
   if (!query || query.trim().length === 0) {
     throw new ValidationError('Search query cannot be empty', 'query');
   }
-  
+
   if (query.length > 100) {
-    throw new ValidationError('Search query cannot exceed 100 characters', 'query');
+    throw new ValidationError(
+      'Search query cannot exceed 100 characters',
+      'query'
+    );
   }
-  
+
   return sanitizeString(query);
 }
 
@@ -197,7 +196,7 @@ export const constructTrackSchemas = {
     customerAddress: z.string().max(200).optional(),
     location: commonSchemas.coordinates.optional(),
   }),
-  
+
   // Task validation
   createTask: z.object({
     projectId: commonSchemas.uuid,
@@ -209,7 +208,7 @@ export const constructTrackSchemas = {
     estimatedHours: z.number().positive().optional(),
     location: commonSchemas.coordinates.optional(),
   }),
-  
+
   // User profile validation
   updateProfile: z.object({
     fullName: z.string().min(1).max(100).optional(),

@@ -1,3 +1,5 @@
+import Image from 'next/image';
+
 export default function Home() {
   return (
     <div className='grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]'>
@@ -6,14 +8,19 @@ export default function Home() {
           <div className='text-4xl'>🏗️</div>
           <div>
             <h1 className='text-3xl font-bold'>ConstructTrack</h1>
-            <p className='text-gray-600'>Fiber Optic Installation Management Platform</p>
+            <p className='text-gray-600'>
+              Fiber Optic Installation Management Platform
+            </p>
           </div>
         </div>
 
         <div className='bg-green-50 border border-green-200 rounded-lg p-4 w-full max-w-md'>
-          <h2 className='text-lg font-semibold text-green-800 mb-2'>✅ API & Documentation Complete</h2>
+          <h2 className='text-lg font-semibold text-green-800 mb-2'>
+            ✅ API & Documentation Complete
+          </h2>
           <p className='text-green-700 text-sm'>
-            Base API structure with comprehensive documentation, testing framework, and interactive guides is ready.
+            Base API structure with comprehensive documentation, testing
+            framework, and interactive guides is ready.
           </p>
         </div>
 
@@ -21,9 +28,20 @@ export default function Home() {
           <div className='border rounded-lg p-4'>
             <h3 className='font-semibold mb-2'>🔌 API Endpoints</h3>
             <ul className='text-sm space-y-1'>
-              <li><code className='bg-gray-100 px-1 rounded'>/api/v1/health</code> - Health check</li>
-              <li><code className='bg-gray-100 px-1 rounded'>/api/v1/test</code> - Test endpoint</li>
-              <li><code className='bg-gray-100 px-1 rounded'>/api/v1/projects</code> - Projects CRUD</li>
+              <li>
+                <code className='bg-gray-100 px-1 rounded'>/api/v1/health</code>{' '}
+                - Health check
+              </li>
+              <li>
+                <code className='bg-gray-100 px-1 rounded'>/api/v1/test</code> -
+                Test endpoint
+              </li>
+              <li>
+                <code className='bg-gray-100 px-1 rounded'>
+                  /api/v1/projects
+                </code>{' '}
+                - Projects CRUD
+              </li>
             </ul>
           </div>
 

@@ -23,8 +23,11 @@ interface HealthCheckResponse {
 async function checkDatabase(): Promise<'healthy' | 'unhealthy'> {
   try {
     // For now, just check if environment variables are set
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
+    const supabaseUrl =
+      process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
+    const supabaseKey =
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+      process.env.SUPABASE_ANON_KEY;
 
     if (!supabaseUrl || !supabaseKey) {
       return 'unhealthy';
@@ -40,20 +43,21 @@ async function checkDatabase(): Promise<'healthy' | 'unhealthy'> {
 // GET /api/v1/health
 async function handleGet(request: NextRequest) {
   const startTime = Date.now();
-  
+
   // Check all services
-  const [databaseStatus] = await Promise.all([
-    checkDatabase(),
-  ]);
-  
+  const [databaseStatus] = await Promise.all([checkDatabase()]);
+
   const apiStatus = 'healthy'; // If we reach here, API is working
-  
+
   // Determine overall status
   let overallStatus: HealthCheckResponse['status'] = 'healthy';
   if (databaseStatus === 'unhealthy') {
     overallStatus = 'degraded';
   }
-  
+
+  // Calculate response time
+  const responseTime = Date.now() - startTime;
+
   const healthData: HealthCheckResponse = {
     status: overallStatus,
     timestamp: new Date().toISOString(),
@@ -64,24 +68,27 @@ async function handleGet(request: NextRequest) {
     },
     uptime: process.uptime(),
   };
-  
+
   const statusCode = overallStatus === 'healthy' ? 200 : 503;
-  
+
   return createSuccessResponse(
     healthData,
-    `System is ${overallStatus}`,
+    `System is ${overallStatus} (${responseTime}ms)`,
     statusCode,
     request.context?.requestId
   );
 }
 
 // Export the route handler with middleware
-export const GET = withApiMiddleware({
-  GET: handleGet,
-}, {
-  requireAuth: false, // Health check should be public
-  rateLimit: {
-    windowMs: 1 * 60 * 1000, // 1 minute
-    maxRequests: 60, // 60 requests per minute
+export const GET = withApiMiddleware(
+  {
+    GET: handleGet,
   },
-});
+  {
+    requireAuth: false, // Health check should be public
+    rateLimit: {
+      windowMs: 1 * 60 * 1000, // 1 minute
+      maxRequests: 60, // 60 requests per minute
+    },
+  }
+);

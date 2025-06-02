@@ -5,10 +5,14 @@
 
 import { GET } from '../health/route';
 import { createMockRequest } from '@/tests/setup';
+import { NextRequest } from 'next/server';
+import { RequestContext } from '@/types/api';
+
+type RequestWithContext = NextRequest & { context?: RequestContext };
 
 // Mock the middleware to return the GET handler directly
 jest.mock('@/lib/api/middleware', () => ({
-  withApiMiddleware: jest.fn((handlers, options) => {
+  withApiMiddleware: jest.fn(handlers => {
     return async (request, context) => {
       const handler = handlers.GET;
       if (handler) {
@@ -22,7 +26,7 @@ jest.mock('@/lib/api/middleware', () => ({
 describe('/api/v1/health', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    
+
     // Set up environment variables for tests
     process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://test.supabase.co';
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'test-key';
@@ -35,7 +39,7 @@ describe('/api/v1/health', () => {
     });
 
     // Add mock context
-    (request as any).context = {
+    (request as RequestWithContext).context = {
       requestId: 'test-request-id',
       timestamp: new Date().toISOString(),
     };
@@ -62,7 +66,7 @@ describe('/api/v1/health', () => {
       url: 'http://localhost:3000/api/v1/health',
     });
 
-    (request as any).context = {
+    (request as RequestWithContext).context = {
       requestId: 'test-request-id',
       timestamp: new Date().toISOString(),
     };
@@ -84,7 +88,7 @@ describe('/api/v1/health', () => {
     });
 
     const requestId = 'test-request-id-123';
-    (request as any).context = {
+    (request as RequestWithContext).context = {
       requestId,
       timestamp: new Date().toISOString(),
     };
@@ -104,11 +108,11 @@ describe('/api/v1/health', () => {
     });
 
     // Remove context to simulate an error
-    delete (request as any).context;
+    delete (request as RequestWithContext).context;
 
     // This should not throw, but handle the error gracefully
     const response = await GET(request);
-    
+
     // The response should still be valid, even if there's an internal error
     expect(response).toBeDefined();
   });
@@ -119,7 +123,7 @@ describe('/api/v1/health', () => {
       url: 'http://localhost:3000/api/v1/health',
     });
 
-    (request as any).context = {
+    (request as RequestWithContext).context = {
       requestId: 'test-request-id',
       timestamp: new Date().toISOString(),
     };
@@ -156,7 +160,7 @@ describe('/api/v1/health', () => {
       url: 'http://localhost:3000/api/v1/health',
     });
 
-    (request as any).context = {
+    (request as RequestWithContext).context = {
       requestId: 'test-request-id',
       timestamp: new Date().toISOString(),
     };
@@ -167,12 +171,12 @@ describe('/api/v1/health', () => {
     // Verify timestamp is valid ISO string
     expect(() => new Date(data.data.timestamp)).not.toThrow();
     expect(() => new Date(data.meta.timestamp)).not.toThrow();
-    
+
     // Verify timestamps are recent (within last minute)
     const now = Date.now();
     const dataTimestamp = new Date(data.data.timestamp).getTime();
     const metaTimestamp = new Date(data.meta.timestamp).getTime();
-    
+
     expect(now - dataTimestamp).toBeLessThan(60000); // Less than 1 minute
     expect(now - metaTimestamp).toBeLessThan(60000); // Less than 1 minute
   });

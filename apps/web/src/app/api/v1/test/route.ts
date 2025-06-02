@@ -25,20 +25,20 @@ interface TestResponse {
     email: string;
     role: string;
   };
-  receivedData?: any;
+  receivedData?: unknown;
 }
 
 // GET /api/v1/test - Public test endpoint
 async function handleGet(request: NextRequest) {
   const context = request.context!;
-  
+
   const testData: TestResponse = {
     message: 'API is working correctly!',
     timestamp: new Date().toISOString(),
     requestId: context.requestId,
     user: context.user,
   };
-  
+
   return createSuccessResponse(
     testData,
     'Test endpoint successful',
@@ -51,7 +51,7 @@ async function handleGet(request: NextRequest) {
 async function handlePost(request: NextRequest) {
   const context = request.context!;
   const body = await validateRequestBody(request, testRequestSchema);
-  
+
   const testData: TestResponse = {
     message: `Received: ${body.message}`,
     timestamp: new Date().toISOString(),
@@ -59,7 +59,7 @@ async function handlePost(request: NextRequest) {
     user: context.user,
     receivedData: body.data,
   };
-  
+
   return createSuccessResponse(
     testData,
     'Test POST successful',
@@ -69,22 +69,28 @@ async function handlePost(request: NextRequest) {
 }
 
 // Export route handlers
-export const GET = withApiMiddleware({
-  GET: handleGet,
-}, {
-  requireAuth: false, // Public endpoint for testing
-  rateLimit: {
-    windowMs: 1 * 60 * 1000, // 1 minute
-    maxRequests: 30, // 30 requests per minute
+export const GET = withApiMiddleware(
+  {
+    GET: handleGet,
   },
-});
+  {
+    requireAuth: false, // Public endpoint for testing
+    rateLimit: {
+      windowMs: 1 * 60 * 1000, // 1 minute
+      maxRequests: 30, // 30 requests per minute
+    },
+  }
+);
 
-export const POST = withApiMiddleware({
-  POST: handlePost,
-}, {
-  requireAuth: false, // Public endpoint for testing
-  rateLimit: {
-    windowMs: 1 * 60 * 1000, // 1 minute
-    maxRequests: 20, // 20 requests per minute
+export const POST = withApiMiddleware(
+  {
+    POST: handlePost,
   },
-});
+  {
+    requireAuth: false, // Public endpoint for testing
+    rateLimit: {
+      windowMs: 1 * 60 * 1000, // 1 minute
+      maxRequests: 20, // 20 requests per minute
+    },
+  }
+);

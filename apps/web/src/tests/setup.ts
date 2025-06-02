@@ -3,6 +3,8 @@
  * Global test configuration and utilities
  */
 
+import { NextRequest } from 'next/server';
+
 // Set test environment variables
 process.env.NODE_ENV = 'test';
 process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://test.supabase.co';
@@ -29,6 +31,7 @@ afterEach(() => {
 
 // Global test utilities
 declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace jest {
     interface Matchers<R> {
       toBeValidApiResponse(): R;
@@ -40,7 +43,7 @@ declare global {
 // Custom Jest matchers
 expect.extend({
   toBeValidApiResponse(received) {
-    const pass = 
+    const pass =
       typeof received === 'object' &&
       received !== null &&
       typeof received.success === 'boolean' &&
@@ -52,19 +55,21 @@ expect.extend({
 
     if (pass) {
       return {
-        message: () => `expected ${JSON.stringify(received)} not to be a valid API response`,
+        message: () =>
+          `expected ${JSON.stringify(received)} not to be a valid API response`,
         pass: true,
       };
     } else {
       return {
-        message: () => `expected ${JSON.stringify(received)} to be a valid API response`,
+        message: () =>
+          `expected ${JSON.stringify(received)} to be a valid API response`,
         pass: false,
       };
     }
   },
 
   toBeValidApiError(received) {
-    const pass = 
+    const pass =
       typeof received === 'object' &&
       received !== null &&
       typeof received.success === 'boolean' &&
@@ -79,12 +84,14 @@ expect.extend({
 
     if (pass) {
       return {
-        message: () => `expected ${JSON.stringify(received)} not to be a valid API error`,
+        message: () =>
+          `expected ${JSON.stringify(received)} not to be a valid API error`,
         pass: true,
       };
     } else {
       return {
-        message: () => `expected ${JSON.stringify(received)} to be a valid API error`,
+        message: () =>
+          `expected ${JSON.stringify(received)} to be a valid API error`,
         pass: false,
       };
     }
@@ -147,12 +154,14 @@ export const createMockRequestContext = (overrides = {}) => ({
 });
 
 // Test helpers
-export const createMockRequest = (options: {
-  method?: string;
-  url?: string;
-  headers?: Record<string, string>;
-  body?: any;
-} = {}) => {
+export const createMockRequest = (
+  options: {
+    method?: string;
+    url?: string;
+    headers?: Record<string, string>;
+    body?: unknown;
+  } = {}
+) => {
   const {
     method = 'GET',
     url = 'http://localhost:3000/api/test',
@@ -163,19 +172,23 @@ export const createMockRequest = (options: {
   const request = {
     method,
     url,
-    headers: new Map(Object.entries({
-      'content-type': 'application/json',
-      ...headers,
-    })),
+    headers: new Map(
+      Object.entries({
+        'content-type': 'application/json',
+        ...headers,
+      })
+    ),
     json: jest.fn().mockResolvedValue(body),
   };
 
   // Add headers.get method
-  (request.headers as any).get = (key: string) => {
+  (request.headers as Headers & { get: (key: string) => string | null }).get = (
+    key: string
+  ) => {
     return (request.headers as Map<string, string>).get(key.toLowerCase());
   };
 
-  return request as any;
+  return request as NextRequest;
 };
 
 export const createMockResponse = () => ({
