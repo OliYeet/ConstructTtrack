@@ -2,13 +2,13 @@ name: OpenAPI Specification Validation
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
     paths:
       - 'docs/api/**'
       - 'apps/web/src/app/api/**'
       - '.github/workflows/openapi-validation.yml'
   pull_request:
-    branches: [ main, develop ]
+    branches: [main, develop]
     paths:
       - 'docs/api/**'
       - 'apps/web/src/app/api/**'
@@ -25,40 +25,47 @@ jobs:
   validate-openapi-spec:
     name: Validate OpenAPI Specification
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 2  # Fetch current and previous commit for diff
-      
+          fetch-depth: 2 # Fetch current and previous commit for diff
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '18'
           cache: 'npm'
-      
+          cache-dependency-path: 'package-lock.json'
+
       - name: Install dependencies
         run: |
           npm ci
-          npm install -g @apidevtools/swagger-cli
-      
+          # Install OpenAPI validation dependencies locally
+          npm install @apidevtools/swagger-cli @apidevtools/swagger-parser openapi-diff redoc-cli
+
       - name: Validate OpenAPI specification syntax
         run: |
           echo "🔍 Validating OpenAPI specification syntax..."
-          swagger-cli validate docs/api/openapi.yaml
+          # Try global swagger-cli first, then local
+          if command -v swagger-cli &> /dev/null; then
+            swagger-cli validate docs/api/openapi.yaml
+          else
+            npx swagger-cli validate docs/api/openapi.yaml
+          fi
           echo "✅ OpenAPI specification is valid"
-      
+
       - name: Run comprehensive OpenAPI validation
         run: |
           echo "🧪 Running comprehensive OpenAPI validation..."
-          npm run api:validate
-      
+          node scripts/validate-openapi.js
+
       - name: Generate API documentation
         run: |
           echo "📚 Generating API documentation..."
-          npm run api:docs:generate
-      
+          npx redoc-cli build docs/api/openapi.yaml --output docs/api/index.html
+
       - name: Upload validation artifacts
         uses: actions/upload-artifact@v4
         if: always()
@@ -74,7 +81,7 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ !inputs.skip_implementation_tests }}
     needs: validate-openapi-spec
-    
+
     services:
       postgres:
         image: postgres:15
@@ -88,52 +95,53 @@ jobs:
           --health-retries 5
         ports:
           - 5432:5432
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '18'
           cache: 'npm'
-      
+          cache-dependency-path: 'package-lock.json'
+
       - name: Install dependencies
         run: npm ci
-      
+
       - name: Setup test environment
         run: |
           cp .env.example .env.test
           echo "DATABASE_URL=postgresql://postgres:postgres@localhost:5432/constructtrack_test" >> .env.test
           echo "NODE_ENV=test" >> .env.test
           echo "API_BASE_URL=http://localhost:3001/api/v1" >> .env.test
-      
+
       - name: Build application
         run: |
           npm run packages:build
           npm run build --workspace=apps/web
-      
+
       - name: Start API server
         run: |
           npm run web:dev &
           echo $! > api_server.pid
-          
+
           # Wait for server to be ready
           echo "⏳ Waiting for API server to start..."
           timeout 60 bash -c 'until curl -f http://localhost:3001/api/v1/health; do sleep 2; done'
           echo "✅ API server is ready"
         env:
           NODE_ENV: test
-      
+
       - name: Test API endpoints against specification
         run: |
           echo "🧪 Testing API implementation against OpenAPI spec..."
-          npm run api:validate:implementation
+          node scripts/validate-api-implementation.js
         env:
           API_BASE_URL: http://localhost:3001/api/v1
           NODE_ENV: test
-      
+
       - name: Stop API server
         if: always()
         run: |
@@ -141,7 +149,7 @@ jobs:
             kill $(cat api_server.pid) || true
             rm api_server.pid
           fi
-      
+
       - name: Upload implementation test results
         uses: actions/upload-artifact@v4
         if: always()
@@ -154,34 +162,35 @@ jobs:
     name: Check for Breaking Changes
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Fetch full history for comparison
-      
+          fetch-depth: 0 # Fetch full history for comparison
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '18'
           cache: 'npm'
-      
+          cache-dependency-path: 'package-lock.json'
+
       - name: Install dependencies
         run: npm ci
-      
+
       - name: Get previous OpenAPI spec
         run: |
           # Get the OpenAPI spec from the base branch
           git show ${{ github.event.pull_request.base.sha }}:docs/api/openapi.yaml > docs/api/openapi.yaml.base
           echo "📋 Retrieved base OpenAPI specification"
-      
+
       - name: Generate OpenAPI diff
         run: |
           echo "🔄 Generating OpenAPI diff..."
-          npm run api:diff docs/api/openapi.yaml.base
+          node scripts/openapi-diff.js docs/api/openapi.yaml.base
         continue-on-error: true
-      
+
       - name: Check for breaking changes
         id: breaking_changes
         run: |
@@ -201,7 +210,7 @@ jobs:
             echo "❌ Could not generate diff"
             echo "breaking_changes_found=unknown" >> $GITHUB_OUTPUT
           fi
-      
+
       - name: Comment on PR with breaking changes warning
         if: steps.breaking_changes.outputs.breaking_changes_found == 'true'
         uses: actions/github-script@v7
@@ -209,11 +218,11 @@ jobs:
           script: |
             const fs = require('fs');
             const path = require('path');
-            
+
             // Find the latest diff file
             const validationDir = 'docs/api/validation';
             const files = fs.readdirSync(validationDir).filter(f => f.startsWith('openapi-diff-') && f.endsWith('.json'));
-            
+
             if (files.length > 0) {
               const latestDiff = files.sort().reverse()[0];
               const diffPath = path.join(validationDir, latestDiff);
@@ -247,7 +256,7 @@ jobs:
                 body: comment
               });
             }
-      
+
       - name: Upload diff results
         uses: actions/upload-artifact@v4
         if: always()
@@ -259,45 +268,46 @@ jobs:
   security-scan:
     name: Security Scan
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '18'
           cache: 'npm'
-      
+          cache-dependency-path: 'package-lock.json'
+
       - name: Install dependencies
         run: npm ci
-      
+
       - name: Run security audit
         run: |
           echo "🔒 Running security audit..."
           npm audit --audit-level moderate
-      
+
       - name: Scan OpenAPI spec for security issues
         run: |
           echo "🔍 Scanning OpenAPI specification for security issues..."
           # Check for common security issues in OpenAPI spec
-          
+
           # Check if HTTPS is enforced
           if ! grep -q "https://" docs/api/openapi.yaml; then
             echo "⚠️ Warning: No HTTPS servers defined in OpenAPI spec"
           fi
-          
+
           # Check for security schemes
           if ! grep -q "securitySchemes:" docs/api/openapi.yaml; then
             echo "⚠️ Warning: No security schemes defined in OpenAPI spec"
           fi
-          
+
           # Check for security requirements
           if ! grep -q "security:" docs/api/openapi.yaml; then
             echo "⚠️ Warning: No security requirements defined in OpenAPI spec"
           fi
-          
+
           echo "✅ Security scan completed"
 
   generate-documentation:
@@ -305,25 +315,26 @@ jobs:
     runs-on: ubuntu-latest
     needs: [validate-openapi-spec]
     if: github.ref == 'refs/heads/main'
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '18'
           cache: 'npm'
-      
+          cache-dependency-path: 'package-lock.json'
+
       - name: Install dependencies
         run: npm ci
-      
+
       - name: Generate API documentation
         run: |
           echo "📚 Generating API documentation..."
-          npm run api:docs:generate
-      
+          npx redoc-cli build docs/api/openapi.yaml --output docs/api/index.html
+
       - name: Deploy documentation to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         if: github.ref == 'refs/heads/main'
@@ -331,7 +342,7 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./docs/api
           destination_dir: api-docs
-          
+
       - name: Comment on commit with documentation link
         if: github.ref == 'refs/heads/main'
         uses: actions/github-script@v7
@@ -339,7 +350,7 @@ jobs:
           script: |
             const { owner, repo } = context.repo;
             const sha = context.sha;
-            
+
             github.rest.repos.createCommitComment({
               owner,
               repo,

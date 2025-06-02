@@ -57,10 +57,10 @@
     "env:validate": "cd . && node scripts/env-validator.js",
     "env:check": "cd . && node scripts/env-validator.js",
     "api:validate": "node scripts/validate-openapi.js",
-    "api:validate:spec": "swagger-cli validate docs/api/openapi.yaml",
+    "api:validate:spec": "npx swagger-cli validate docs/api/openapi.yaml",
     "api:validate:implementation": "node scripts/validate-api-implementation.js",
     "api:diff": "node scripts/openapi-diff.js",
-    "api:docs:generate": "redoc-cli build docs/api/openapi.yaml --output docs/api/index.html",
+    "api:docs:generate": "npx redoc-cli build docs/api/openapi.yaml --output docs/api/index.html",
     "api:test:endpoints": "node scripts/test-api-endpoints.js"
   },
   "keywords": [
@@ -84,6 +84,8 @@
     "server-perplexity-ask": "^0.1.3"
   },
   "devDependencies": {
+    "@apidevtools/swagger-cli": "^4.0.4",
+    "@apidevtools/swagger-parser": "10.1.1",
     "@eslint/js": "^9.18.0",
     "@types/inquirer": "9.0.7",
     "@typescript-eslint/eslint-plugin": "^8.27.1",
@@ -97,12 +99,10 @@
     "eslint-plugin-react-hooks": "^5.0.0",
     "husky": "^9.0.11",
     "lint-staged": "^15.2.0",
+    "openapi-diff": "0.23.7",
     "prettier": "^3.2.5",
-    "typescript": "^5.3.3",
-    "@apidevtools/swagger-cli": "^4.0.4",
-    "@apidevtools/swagger-parser": "^10.1.0",
-    "openapi-diff": "^0.23.7",
     "redoc-cli": "^0.13.21",
-    "swagger-jsdoc": "^6.2.8"
+    "swagger-jsdoc": "^6.2.8",
+    "typescript": "^5.3.3"
   }
 }
