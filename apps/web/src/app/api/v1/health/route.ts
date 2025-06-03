@@ -7,6 +7,13 @@ import { NextRequest } from 'next/server';
 import { withApiMiddleware } from '@/lib/api/middleware';
 import { createSuccessResponse } from '@/lib/api/response';
 
+// Extended NextRequest interface with context
+interface ExtendedNextRequest extends NextRequest {
+  context?: {
+    requestId?: string;
+  };
+}
+
 // Health check response interface
 interface HealthCheckResponse {
   status: 'healthy' | 'degraded' | 'unhealthy';
@@ -42,10 +49,10 @@ async function checkDatabase(): Promise<'healthy' | 'unhealthy'> {
 
 // GET /api/v1/health
 async function handleGet(
-  request: NextRequest,
+  request: ExtendedNextRequest,
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  _: { params: Promise<Record<string, string>> }
+  _: { params: Record<string, string> }
 ) {
   const startTime = Date.now();
 
@@ -80,8 +87,7 @@ async function handleGet(
     healthData,
     `System is ${overallStatus} (${responseTime}ms)`,
     statusCode,
-    (request as NextRequest & { context?: { requestId?: string } }).context
-      ?.requestId
+    request.context?.requestId
   );
 }
 

@@ -324,30 +324,48 @@ export class ApiMetricsTracker {
   }
 
   // Get all metrics
-  getMetrics(): ApiMetric[] {
-    return [...this.metrics];
+// API metrics configuration
+export interface ApiMetricsConfig {
+  maxMetrics?: number;
+  retentionPeriod?: number; // milliseconds
+  slowRequestThreshold?: number; // milliseconds
+  recentErrorWindow?: number; // milliseconds
+  aggregationWindow?: number; // milliseconds
+}
+
+ // API metrics tracker
+ export class ApiMetricsTracker {
+   private metrics: ApiMetric[] = [];
+  private config: Required<ApiMetricsConfig>;
+
+  constructor(config: ApiMetricsConfig = {}) {
+    this.config = {
+      maxMetrics: config.maxMetrics ?? 10000,
+      retentionPeriod: config.retentionPeriod ?? 24 * 60 * 60 * 1000, // 24 hours
+      slowRequestThreshold: config.slowRequestThreshold ?? 2000, // 2 seconds
+      recentErrorWindow: config.recentErrorWindow ?? 60000, // 1 minute
+      aggregationWindow: config.aggregationWindow ?? 60 * 60 * 1000, // 1 hour
+    };
   }
 
-  // Get recent metrics
-  getRecentMetrics(minutes: number = 5): ApiMetric[] {
-    const threshold = Date.now() - (minutes * 60 * 1000);
-    return this.metrics.filter(
-      metric => new Date(metric.timestamp).getTime() > threshold
-    );
-  }
+     // Log slow requests
+    if (responseTime > this.config.slowRequestThreshold) {
 
-  // Cleanup old metrics
-  private cleanup(): void {
-    const cutoff = Date.now() - this.retentionPeriod;
-    this.metrics = this.metrics.filter(
-      metric => new Date(metric.timestamp).getTime() > cutoff
-    );
+     // Recent errors
+     const recentErrors = filteredMetrics
+      .filter(m => m.error && new Date(m.timestamp).getTime() > Date.now() - this.config.recentErrorWindow)
 
-    // Limit total metrics
-    if (this.metrics.length > this.maxMetrics) {
-      this.metrics = this.metrics.slice(-this.maxMetrics);
-    }
-  }
+   // Get aggregated metrics
+   getAggregatedMetrics(): ApiMetricsAggregation {
+    const recentThreshold = Date.now() - this.config.aggregationWindow;
+
+   // Cleanup old metrics
+   private cleanup(): void {
+    const cutoff = Date.now() - this.config.retentionPeriod;
+
+     // Limit total metrics
+    if (this.metrics.length > this.config.maxMetrics) {
+      this.metrics = this.metrics.slice(-this.config.maxMetrics);
 
   // Clear all metrics
   clear(): void {

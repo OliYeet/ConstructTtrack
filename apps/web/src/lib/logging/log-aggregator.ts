@@ -113,7 +113,11 @@ export class LogAggregator {
       return;
     }
 
-    const payload = this.formatPayload(
+    let payload = this.formatPayload(...);
+    if (this.config.enableCompression) {
+      const { gzipSync } = await import('node:zlib');
+      payload = gzipSync(Buffer.from(payload));
+    }
       { ...batch, entries: filteredEntries },
       endpoint.format
     );
@@ -132,8 +136,8 @@ export class LogAggregator {
       headers['Content-Encoding'] = 'gzip';
     }
 
-    let attempt = 0;
-    while (attempt <= this.config.retryAttempts) {
+ let attempt = 0;
+ while (attempt < this.config.retryAttempts) {
       try {
         const response = await fetch(endpoint.url, {
           method: 'POST',

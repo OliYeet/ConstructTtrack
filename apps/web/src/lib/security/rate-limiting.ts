@@ -130,12 +130,13 @@ export class RedisRateLimitStore implements RateLimitStore {
     const resetTime = now + ttl;
 
     try {
-      const multi = this.redis.multi();
-      multi.incr(key);
-      multi.expire(key, Math.ceil(ttl / 1000));
-      const results = await multi.exec();
-      
-      const count = results[0][1];
+      const script = `
+        local current = redis.call('HINCRBY', KEYS[1], 'count', 1)
+        redis.call('HSETNX', KEYS[1], 'resetTime', ARGV[1])
+        redis.call('PEXPIRE', KEYS[1], ARGV[2])
+        return current
+      `;
+      const count: number = await this.redis.eval(script, 1, key, resetTime, ttl);
       return { count, resetTime };
     } catch (error) {
       console.error('Redis increment error:', error);
@@ -310,7 +311,16 @@ export function createRateLimitMiddleware(
   configName: keyof typeof rateLimitConfigs | RateLimitConfig,
   store?: RateLimitStore
 ) {
-  const config = typeof configName === 'string' ? rateLimitConfigs[configName] : configName;
+  const config =
+    typeof configName === 'string'
+      ? rateLimitConfigs[configName]
+      : configName;
+
+  if (!config) {
+    throw new Error(
+      `Rate limit config '${String(configName)}' not found – check your call site.`
+    );
+  }
   const rateLimiter = new RateLimiter(config, store);
 
   return async function rateLimitMiddleware(request: NextRequest): Promise<{

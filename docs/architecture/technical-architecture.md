@@ -192,7 +192,7 @@ FOR SELECT USING (
   CASE auth.jwt() ->> 'role'
     WHEN 'admin' THEN true
     WHEN 'manager' THEN true
-    WHEN 'field_worker' THEN assigned_to = auth.uid()
+    WHEN 'field_worker' THEN assigned_to IS NOT NULL AND assigned_to = auth.uid()
     ELSE false
   END
 );

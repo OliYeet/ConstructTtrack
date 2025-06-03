@@ -43,18 +43,20 @@ class DatabaseSetup {
       try {
         // Skip non-portable RPC; use information_schema directly
         // If version RPC fails, try a simple query that should always work
-        const { error: fallbackError } = await supabase
-          .from('information_schema.tables')
-          .select('table_name')
-          .limit(1);
+// The special /rest/v1/ root returns 200 when the instance is up
+const { error: fallbackError } = await supabase
+  .rpc('version');               // ← or any cheap harmless RPC you define
         if (fallbackError) {
           throw new Error('Unable to connect to Supabase database');
         }
       } catch {
-        // Final fallback - just check if we can make any connection
-        const { error: basicError } = await supabase.auth.getSession();
-        if (basicError && basicError.message.includes('connection')) {
-          throw new Error('Unable to connect to Supabase');
+        // Final fallback - check database connectivity
+        const { error: basicError } = await supabase
+          .from('pg_catalog.pg_tables')
+          .select('schemaname')
+          .limit(1);
+        if (basicError) {
+          throw new Error('Unable to connect to Supabase database');
         }
       }
 

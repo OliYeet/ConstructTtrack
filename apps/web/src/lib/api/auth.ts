@@ -221,8 +221,20 @@ export async function verifyApiKey(
     throw new AuthenticationError('API key required');
   }
 
-  // TODO: Implement API key validation against database
-  // For now, we'll use a simple check
+  // TODO: Implement database-backed API key validation
+  // This requires creating an api_keys table with the following schema:
+  // - id: UUID primary key
+  // - key_prefix: VARCHAR(8) for quick lookup
+  // - hashed_key: VARCHAR(64) SHA-256 hash of the full key
+  // - permissions: JSONB array of allowed permissions
+  // - rate_limit: INTEGER requests per minute
+  // - expires_at: TIMESTAMP optional expiration
+  // - is_active: BOOLEAN
+  // - last_used_at: TIMESTAMP
+  // - created_at: TIMESTAMP
+  // - updated_at: TIMESTAMP
+
+  // For now, use environment variable validation
   const validApiKeys = process.env.VALID_API_KEYS?.split(',') || [];
 
   if (!validApiKeys.includes(apiKey)) {

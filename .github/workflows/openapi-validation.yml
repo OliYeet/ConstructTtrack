@@ -76,7 +76,8 @@ jobs:
   validate-api-implementation:
     name: Validate API Implementation
     runs-on: ubuntu-latest
-    if: ${{ !inputs.skip_implementation_tests }}
+    # Skip tests only when the workflow is manually dispatched *and* the flag is true
+    if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.skip_implementation_tests == true) }}
     needs: validate-openapi-spec
 
     services:

@@ -94,7 +94,7 @@ export function withApiMiddleware(
 ) {
   return async function handler(
     request: NextRequest,
-    context: { params: Promise<Record<string, string>> }
+    context: { params: Record<string, string> }
   ): Promise<NextResponse> {
     const startTime = Date.now();
     let requestContext: RequestContext | undefined;

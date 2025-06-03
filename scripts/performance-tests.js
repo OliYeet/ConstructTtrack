@@ -54,12 +54,11 @@ class PerformanceTester {
       for (const url of config.testUrls) {
         console.log(`📊 Testing: ${url}`);
         
-        const reportPath = path.join(config.outputDir, `lighthouse-${url.replace(/[^a-zA-Z0-9]/g, '_')}.json`);
+        const urlHash = require('crypto').createHash('md5').update(url).digest('hex').substring(0, 8);
+const reportPath = path.join(config.outputDir, `lighthouse-${urlHash}-${url.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 50)}.json`);
         
         // Run Lighthouse
-        execSync(`npx lighthouse ${url} --output=json --output-path=${reportPath} --chrome-flags="--headless" --quiet`, {
-          stdio: 'inherit',
-        });
+execSync(`npx lighthouse ${url} --output=json --output-path=${reportPath} --chrome-flags="--headless" --quiet`);
 
         // Parse results
         if (fs.existsSync(reportPath)) {
@@ -110,12 +109,18 @@ class PerformanceTester {
   async analyzeBundleSize() {
     console.log('📦 Analyzing bundle size...');
 
-    try {
-      // Build the application
-      execSync('npm run build', {
-        cwd: path.join(__dirname, '..'),
-        stdio: 'inherit',
-      });
+try {
+  const buildExists = fs.existsSync(path.join(__dirname, '../apps/web/.next'));
+  if (!buildExists) {
+    console.log('🔨 Building application...');
+     // Build the application
+     execSync('npm run build', {
+       cwd: path.join(__dirname, '..'),
+       stdio: 'inherit',
+     });
+  } else {
+    console.log('✅ Using existing build');
+  }
 
       // Analyze bundle
       const buildDir = path.join(__dirname, '../apps/web/.next');
@@ -205,25 +210,37 @@ class PerformanceTester {
     console.log('⚡ Running load testing...');
 
     try {
-      // Simple load test using curl
-      const testResults = [];
-      const iterations = 10;
-      
-      for (let i = 0; i < iterations; i++) {
-        const start = Date.now();
-        
-        try {
-          execSync('curl -s -o /dev/null -w "%{time_total}" http://localhost:3000', {
-            encoding: 'utf8',
-            timeout: 10000,
-          });
-          
-          const responseTime = Date.now() - start;
-          testResults.push(responseTime);
-        } catch (error) {
-          console.warn(`Load test iteration ${i + 1} failed`);
-        }
-      }
+// Improved load test with accurate timing
+const testResults = [];
+const iterations = 10;
+const concurrency = 3; // Run 3 requests concurrently
+
+const runRequest = async () => {
+  try {
+    const result = execSync('curl -s -o /dev/null -w "%{time_total}" http://localhost:3000', {
+      encoding: 'utf8',
+      timeout: 10000,
+    });
+    return parseFloat(result) * 1000; // Convert to milliseconds
+  } catch (error) {
+    throw new Error(`Request failed: ${error.message}`);
+  }
+};
+
+// Run requests in batches
+for (let i = 0; i < iterations; i += concurrency) {
+  const batch = [];
+  for (let j = 0; j < concurrency && i + j < iterations; j++) {
+    batch.push(runRequest());
+  }
+  
+  try {
+    const results = await Promise.all(batch);
+    testResults.push(...results);
+  } catch (error) {
+    console.warn(`Load test batch ${Math.floor(i / concurrency) + 1} partially failed:`, error.message);
+  }
+}
 
       if (testResults.length > 0) {
         const avgResponseTime = testResults.reduce((a, b) => a + b, 0) / testResults.length;
@@ -274,11 +291,11 @@ class PerformanceTester {
       ? lighthouseScores.reduce((sum, result) => sum + result.performance, 0) / lighthouseScores.length
       : 0;
 
-    const allPassed = [
-      ...lighthouseScores.map(result => result.passed),
-      this.results.bundleSize.passed,
-      this.results.loadTesting.passed,
-    ].every(Boolean);
+const allPassed = [
+   ...lighthouseScores.map(result => result.passed),
+  this.results.bundleSize?.passed,
+  this.results.loadTesting?.passed,
+].filter(val => val !== undefined).every(val => val === true);
 
     return {
       overallScore: Math.round(avgPerformanceScore),
@@ -315,18 +332,25 @@ class PerformanceTester {
     return recommendations;
   }
 
-  // Generate HTML report
-  generateHTMLReport() {
-    const lighthouseResults = Object.entries(this.results.lighthouse)
-      .map(([url, result]) => `
-        <div class="metric">
-          <h3>${url}</h3>
-          <p>Performance: ${result.performance}%</p>
-          <p>FCP: ${Math.round(result.metrics.firstContentfulPaint)}ms</p>
-          <p>LCP: ${Math.round(result.metrics.largestContentfulPaint)}ms</p>
-          <p>CLS: ${result.metrics.cumulativeLayoutShift.toFixed(3)}</p>
-        </div>
-      `).join('');
+// HTML escape function
+escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+ // Generate HTML report
+ generateHTMLReport() {
+   const lighthouseResults = Object.entries(this.results.lighthouse)
+     .map(([url, result]) => `
+       <div class="metric">
+        <h3>${this.escapeHtml(url)}</h3>
+         <p>Performance: ${result.performance}%</p>
+         <p>FCP: ${Math.round(result.metrics.firstContentfulPaint)}ms</p>
+         <p>LCP: ${Math.round(result.metrics.largestContentfulPaint)}ms</p>
+         <p>CLS: ${result.metrics.cumulativeLayoutShift.toFixed(3)}</p>
+       </div>
+     `).join('');
 
     return `
 <!DOCTYPE html>

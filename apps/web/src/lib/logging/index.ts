@@ -71,6 +71,10 @@ class EnhancedLoggerInstance {
     
     // Add file transport if enabled
     if (config.enableFileLogging && config.logFilePath) {
+      // Ensure directory exists to prevent ENOENT at first write
+      import('fs/promises')
+        .then(fs => fs.mkdir(require('path').dirname(config.logFilePath!), { recursive: true }))
+        .catch(() => {/* ignore – runtime will still fallback to console */});
       transports.push(new FileTransport(config.logFilePath));
     }
     
@@ -192,7 +196,14 @@ let globalLogger: EnhancedLoggerInstance;
 
 // Initialize logger
 export function initializeLogger(config?: Partial<EnhancedLoggerConfig>): EnhancedLoggerInstance {
-  const finalConfig = { ...defaultConfig, ...config };
+  const finalConfig = {
+    ...defaultConfig,
+    ...config,
+    aggregatorConfig: {
+      ...defaultConfig.aggregatorConfig,
+      ...config?.aggregatorConfig,
+    },
+  };
   globalLogger = new EnhancedLoggerInstance(finalConfig);
   return globalLogger;
 }

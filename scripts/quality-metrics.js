@@ -117,17 +117,31 @@ class QualityMetricsCollector {
   async collectComplexityMetrics() {
     console.log('🔍 Collecting code complexity metrics...');
 
-    try {
-      // Use ESLint complexity rules to analyze complexity
-      const complexityReport = execSync(
-        'npx eslint apps/web/src --format json --rule "complexity: [error, 10]" --rule "max-depth: [error, 4]" --rule "max-lines-per-function: [error, 50]"',
-        {
-          cwd: config.projectRoot,
-          encoding: 'utf8',
-        }
-      );
-
-      const eslintResults = JSON.parse(complexityReport);
+try {
+       // Use ESLint complexity rules to analyze complexity
+       const complexityReport = execSync(
+         'npx eslint apps/web/src --format json --rule "complexity: [error, 10]" --rule "max-depth: [error, 4]" --rule "max-lines-per-function: [error, 50]"',
+         {
+           cwd: config.projectRoot,
+           encoding: 'utf8',
+         }
+       );
+ 
+      let eslintResults;
+      try {
+        eslintResults = JSON.parse(complexityReport);
+      } catch (parseError) {
+        console.error('❌ Failed to parse ESLint output:', parseError.message);
+        this.metrics.complexity = {
+          totalFiles: 0,
+          totalIssues: 0,
+          highComplexityFiles: [],
+          averageIssuesPerFile: 0,
+          thresholds: thresholds.complexity,
+          passed: false,
+        };
+        return;
+      }
       
       let totalComplexityIssues = 0;
       let totalFiles = 0;
@@ -195,14 +209,27 @@ class QualityMetricsCollector {
           });
         }
 
-        // Simple function length analysis
-        const functionMatches = content.match(/function\s+\w+|const\s+\w+\s*=\s*\(/g) || [];
-        if (functionMatches.length > 10) {
-          longFunctions.push({
-            file: path.relative(config.projectRoot, filePath),
-            functions: functionMatches.length,
-          });
-        }
+// Simple function length analysis
+        const functionPatterns = [
+          /function\s+\w+/g,                    // Named functions
+          /const\s+\w+\s*=\s*\([^)]*\)\s*=>/g, // Arrow functions with params
+          /const\s+\w+\s*=\s*\w+\s*=>/g,       // Arrow functions without parens
+          /async\s+function\s+\w+/g,            // Async functions
+          /\w+\s*\([^)]*\)\s*{/g,              // Method declarations
+        ];
+        
+        let functionMatches = [];
+        functionPatterns.forEach(pattern => {
+          const matches = content.match(pattern) || [];
+          functionMatches = functionMatches.concat(matches);
+        });
+        
+         if (functionMatches.length > 10) {
+           longFunctions.push({
+             file: path.relative(config.projectRoot, filePath),
+             functions: functionMatches.length,
+           });
+         }
       });
 
       const averageLinesPerFile = totalFiles > 0 ? totalLines / totalFiles : 0;
@@ -289,31 +316,52 @@ class QualityMetricsCollector {
   }
 
   // Collect security metrics
-  async collectSecurityMetrics() {
-    console.log('🔒 Collecting security metrics...');
-
-    try {
-      // Run npm audit
-      const auditReport = execSync('npm audit --json', {
-        cwd: config.projectRoot,
-        encoding: 'utf8',
-      });
-
-      const auditResults = JSON.parse(auditReport);
-      
+async collectSecurityMetrics() {
+     console.log('🔒 Collecting security metrics...');
+ 
+    let auditResults;
+     try {
+       // Run npm audit
+      try {
+        const auditReport = execSync('npm audit --json', {
+          cwd: config.projectRoot,
+          encoding: 'utf8',
+          stdio: ['pipe', 'pipe', 'pipe'], // Capture stderr too
+        });
+        auditResults = JSON.parse(auditReport);
+      } catch (auditError) {
+        // npm audit exits with non-zero when vulnerabilities found
+        // but still outputs JSON to stdout
+        if (auditError.stdout) {
+          try {
+            auditResults = JSON.parse(auditError.stdout.toString());
+          } catch (parseError) {
+            console.error('❌ Failed to parse npm audit output');
+            auditResults = { metadata: { vulnerabilities: {}, dependencies: 0 } };
+          }
+        } else {
+          throw auditError;
+        }
+      }
+       
+       this.metrics.security = {
+         vulnerabilities: auditResults.metadata?.vulnerabilities || {},
+         totalVulnerabilities: Object.values(auditResults.metadata?.vulnerabilities || {}).reduce((a, b) => a + b, 0),
+         dependencies: auditResults.metadata?.dependencies || 0,
+         passed: Object.values(auditResults.metadata?.vulnerabilities || {}).reduce((a, b) => a + b, 0) === 0,
+       };
+ 
+       console.log('✅ Security metrics collected');
+     } catch (error) {
+      console.error('❌ Failed to collect security metrics:', error.message);
       this.metrics.security = {
-        vulnerabilities: auditResults.metadata?.vulnerabilities || {},
-        totalVulnerabilities: Object.values(auditResults.metadata?.vulnerabilities || {}).reduce((a, b) => a + b, 0),
-        dependencies: auditResults.metadata?.dependencies || 0,
-        passed: Object.values(auditResults.metadata?.vulnerabilities || {}).reduce((a, b) => a + b, 0) === 0,
+        vulnerabilities: {},
+        totalVulnerabilities: 0,
+        dependencies: 0,
+        passed: false,
       };
-
-      console.log('✅ Security metrics collected');
-    } catch (error) {
-      console.warn('⚠️ Security audit completed with issues');
-      // npm audit exits with non-zero when vulnerabilities are found
-    }
-  }
+     }
+   }
 
   // Get all source files
   getSourceFiles(dir) {
@@ -433,38 +481,50 @@ class QualityMetricsCollector {
     return recommendations;
   }
 
-  // Generate HTML report
-  generateHTMLReport(report) {
-    return `
-<!DOCTYPE html>
-<html>
-<head>
-    <title>ConstructTrack Quality Report</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        .header { background: #f5f5f5; padding: 20px; border-radius: 5px; }
-        .metric { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
-        .passed { border-left: 5px solid #4CAF50; }
-        .failed { border-left: 5px solid #f44336; }
-        .score { font-size: 24px; font-weight: bold; }
-        .recommendations { background: #fff3cd; padding: 15px; border-radius: 5px; }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <h1>ConstructTrack Quality Report</h1>
-        <p>Generated: ${report.timestamp}</p>
-        <div class="score">Overall Score: ${report.summary.overallScore}/100</div>
-        <p>Status: ${report.summary.passed ? '✅ PASSED' : '❌ FAILED'}</p>
-    </div>
+  // Helper function to escape HTML
+  escapeHtml(unsafe) {
+    return String(unsafe)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
 
-    <div class="metric ${report.coverage.passed ? 'passed' : 'failed'}">
-        <h2>Test Coverage</h2>
-        <p>Statements: ${report.coverage.summary?.statements || 0}%</p>
-        <p>Branches: ${report.coverage.summary?.branches || 0}%</p>
-        <p>Functions: ${report.coverage.summary?.functions || 0}%</p>
-        <p>Lines: ${report.coverage.summary?.lines || 0}%</p>
-    </div>
+   // Generate HTML report
+   generateHTMLReport(report) {
+     return `
+ <!DOCTYPE html>
+ <html>
+ <head>
+     <title>ConstructTrack Quality Report</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+     <style>
+         body { font-family: Arial, sans-serif; margin: 20px; }
+         .header { background: #f5f5f5; padding: 20px; border-radius: 5px; }
+         .metric { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+         .passed { border-left: 5px solid #4CAF50; }
+         .failed { border-left: 5px solid #f44336; }
+         .score { font-size: 24px; font-weight: bold; }
+         .recommendations { background: #fff3cd; padding: 15px; border-radius: 5px; }
+     </style>
+ </head>
+ <body>
+     <div class="header">
+         <h1>ConstructTrack Quality Report</h1>
+        <p>Generated: ${this.escapeHtml(report.timestamp)}</p>
+        <div class="score">Overall Score: ${this.escapeHtml(report.summary.overallScore)}/100</div>
+         <p>Status: ${report.summary.passed ? '✅ PASSED' : '❌ FAILED'}</p>
+     </div>
+ 
+     <div class="metric ${report.coverage.passed ? 'passed' : 'failed'}">
+         <h2>Test Coverage</h2>
+        <p>Statements: ${this.escapeHtml(report.coverage.summary?.statements || 0)}%</p>
+        <p>Branches: ${this.escapeHtml(report.coverage.summary?.branches || 0)}%</p>
+        <p>Functions: ${this.escapeHtml(report.coverage.summary?.functions || 0)}%</p>
+        <p>Lines: ${this.escapeHtml(report.coverage.summary?.lines || 0)}%</p>
+     </div>
 
     <div class="metric ${report.linting.passed ? 'passed' : 'failed'}">
         <h2>Code Quality</h2>

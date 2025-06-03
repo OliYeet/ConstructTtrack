@@ -178,11 +178,10 @@ jobs:
 
       - name: 🔍 CodeQL Analysis
         uses: github/codeql-action/init@v2
-        with:
-          languages: javascript
+        uses: github/codeql-action/init@v3
 
-      - name: 🔍 Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v2
+       - name: 🔍 Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
 
   # Job 5: API Documentation Check
   api-docs:
@@ -223,13 +222,13 @@ jobs:
           name: api-documentation
           path: docs/api/
 
-  # Job 6: Performance Testing
-  performance:
-    name: ⚡ Performance Testing
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    needs: dev-build
-    if: github.event_name == 'pull_request'
+# Job 6: Performance Testing
+   performance:
+     name: ⚡ Performance Testing
+     runs-on: ubuntu-latest
+     timeout-minutes: 15
+    needs: dev-checks
+    if: github.event_name == 'pull_request' || (github.event_name == 'push' && startsWith(github.ref, 'refs/heads/feature/'))
     
     steps:
       - name: 📥 Checkout code

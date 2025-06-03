@@ -51,17 +51,17 @@ export interface CorsConfig {
 export const defaultSecurityConfig: SecurityHeadersConfig = {
   contentSecurityPolicy: {
     enabled: true,
-    reportOnly: process.env.NODE_ENV === 'development',
-    directives: {
-      'default-src': ["'self'"],
-      'script-src': [
-        "'self'",
-        "'unsafe-inline'", // Required for Next.js in development
-        "'unsafe-eval'", // Required for Next.js in development
-        'https://api.mapbox.com',
-        'https://cdn.jsdelivr.net',
-        'https://unpkg.com',
-      ],
+reportOnly: process.env.NODE_ENV === 'development',
+ directives: {
+   'default-src': ["'self'"],
+   'script-src': [
+     "'self'",
+    process.env.NODE_ENV === 'development' ? "'unsafe-inline'" : undefined,
+    process.env.NODE_ENV === 'development' ? "'unsafe-eval'" : undefined,
+     'https://api.mapbox.com',
+     'https://cdn.jsdelivr.net',
+     'https://unpkg.com',
+  ].filter(Boolean),
       'style-src': [
         "'self'",
         "'unsafe-inline'", // Required for styled-components and CSS-in-JS
@@ -132,12 +132,14 @@ export const defaultSecurityConfig: SecurityHeadersConfig = {
 // Default CORS configuration
 export const defaultCorsConfig: CorsConfig = {
   enabled: true,
-  allowedOrigins: [
+allowedOrigins: [
+  ...(process.env.NODE_ENV === 'development' ? [
     'http://localhost:3000',
     'http://localhost:3001',
-    'https://constructtrack.vercel.app',
-    process.env.NEXT_PUBLIC_APP_URL || '',
-  ].filter(Boolean),
+  ] : []),
+   'https://constructtrack.vercel.app',
+   process.env.NEXT_PUBLIC_APP_URL || '',
+ ].filter(Boolean),
   allowedMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: [
     'Content-Type',
@@ -239,9 +241,7 @@ export function applyCorsHeaders(
   }
 
   // Check if origin is allowed
-  const isOriginAllowed = !origin || 
-    config.allowedOrigins.includes('*') ||
-    config.allowedOrigins.includes(origin);
+const isOriginAllowed = checkOriginAllowed(origin || '', config);
 
   if (isOriginAllowed) {
     // Set allowed origin

@@ -13,11 +13,17 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 CREATE OR REPLACE FUNCTION auth.user_role()
 RETURNS TEXT AS $$
 BEGIN
+  -- Set search_path to prevent privilege escalation
+  SET search_path = auth;
   RETURN auth.jwt() ->> 'role';
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Equipment RLS Policies
+
+-- Enable RLS on equipment table
+ALTER TABLE equipment ENABLE ROW LEVEL SECURITY;
+ALTER TABLE equipment FORCE ROW LEVEL SECURITY;
 
 -- Equipment: Organization isolation
 CREATE POLICY "equipment_organization_isolation" ON equipment
@@ -281,7 +287,9 @@ FOR SELECT USING (
 CREATE OR REPLACE FUNCTION set_organization_id()
 RETURNS TRIGGER AS $$
 BEGIN
-  NEW.organization_id = auth.user_organization_id();
+  IF NEW.organization_id IS NULL THEN
+    NEW.organization_id := auth.user_organization_id();
+  END IF;
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;

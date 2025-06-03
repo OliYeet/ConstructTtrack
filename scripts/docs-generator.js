@@ -200,8 +200,9 @@ class DocumentationGenerator {
 
     try {
       // Use Redoc to generate HTML documentation
-      execSync(`npx @redocly/cli build-docs ${config.specFile} --output ${config.htmlFile}`, {
+      execSync(`npx @redocly/cli build-docs "${config.specFile}" --output "${config.htmlFile}"`, {
         stdio: 'inherit',
+        timeout: 30000,
       });
       console.log('✅ HTML documentation generated:', config.htmlFile);
     } catch (error) {
@@ -444,8 +445,9 @@ For API support, please contact:
 
     try {
       // Validate OpenAPI spec
-      execSync(`npx swagger-cli validate ${config.specFile}`, {
+      execSync(`npx swagger-cli validate "${config.specFile}"`, {
         stdio: 'inherit',
+        timeout: 15000,
       });
       console.log('✅ OpenAPI specification is valid');
 

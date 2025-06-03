@@ -71,7 +71,7 @@ export class PerformanceMonitor {
   private config: PerformanceMonitorConfig;
   private metrics: PerformanceMetric[] = [];
   private timings: Map<string, number> = new Map();
-  private resourceTimer?: NodeJS.Timeout;
+  private resourceTimer?: ReturnType<typeof setInterval>;
   private isMonitoring = false;
 
   constructor(config: PerformanceMonitorConfig) {
@@ -227,11 +227,13 @@ export class PerformanceMonitor {
           percentage: (memUsage.rss / (memUsage.rss + memUsage.external)) * 100,
           heapUsed: memUsage.heapUsed,
           heapTotal: memUsage.heapTotal,
-        },
-        cpu: {
-          usage: (cpuUsage.user + cpuUsage.system) / 1000000, // Convert to seconds
-          loadAverage: process.platform !== 'win32' ? require('os').loadavg() : undefined,
-        },
+// At the top of the file
+import * as os from 'os';
+
+ // ... other code ...
+
+           usage: (cpuUsage.user + cpuUsage.system) / 1000000, // Convert to seconds
+          loadAverage: process.platform !== 'win32' ? os.loadavg() : undefined,
         timestamp: new Date().toISOString(),
       };
     } else if (typeof window !== 'undefined' && 'memory' in performance) {
@@ -255,35 +257,42 @@ export class PerformanceMonitor {
   }
 
   // Start resource monitoring
-  private startResourceMonitoring(): void {
-    this.resourceTimer = setInterval(() => {
-      const metrics = this.getResourceMetrics();
-      if (metrics) {
-        this.recordMetric(
-          'memory_usage',
-          metrics.memory.percentage,
-          'percent',
-          { type: 'memory' }
-        );
+private startResourceMonitoring(): void {
+     this.resourceTimer = setInterval(() => {
+      try {
+         const metrics = this.getResourceMetrics();
+         if (metrics) {
+           this.recordMetric(
+             'memory_usage',
+             metrics.memory.percentage,
+             'percent',
+             { type: 'memory' }
+           );
 
-        this.recordMetric(
-          'memory_used',
-          metrics.memory.used,
-          'bytes',
-          { type: 'memory' }
-        );
+           this.recordMetric(
+             'memory_used',
+             metrics.memory.used,
+             'bytes',
+             { type: 'memory' }
+           );
 
-        if (metrics.cpu.usage > 0) {
-          this.recordMetric(
-            'cpu_usage',
-            metrics.cpu.usage,
-            'seconds',
-            { type: 'cpu' }
-          );
-        }
+           if (metrics.cpu.usage > 0) {
+             this.recordMetric(
+               'cpu_usage',
+               metrics.cpu.usage,
+               'seconds',
+               { type: 'cpu' }
+             );
+           }
+         }
+      } catch (error) {
+        const logger = getLogger();
+        logger.error('Failed to collect resource metrics', error instanceof Error ? error : new Error(String(error)), {
+          metadata: { error: String(error) }
+        });
       }
-    }, this.config.metricsInterval);
-  }
+     }, this.config.metricsInterval);
+   }
 
   // Setup Web Vitals monitoring
   private setupWebVitalsMonitoring(): void {
@@ -317,8 +326,9 @@ export class PerformanceMonitor {
       new PerformanceObserver((list) => {
         let clsValue = 0;
         for (const entry of list.getEntries()) {
-          if (!(entry as any).hadRecentInput) {
-            clsValue += (entry as any).value;
+          const layoutShiftEntry = entry as LayoutShiftEntry;
+          if (!layoutShiftEntry.hadRecentInput) {
+            clsValue += layoutShiftEntry.value;
           }
         }
         this.recordMetric(

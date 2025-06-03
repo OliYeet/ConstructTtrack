@@ -105,7 +105,7 @@ export class GlobalErrorHandler {
   };
 
   // Handle unhandled promise rejections
-  private handleUnhandledRejection = (event: PromiseRejectionEvent | any): void => {
+  private handleUnhandledRejection = (event: { reason: unknown; preventDefault?: () => void }): void => {
     const error = event.reason instanceof Error ? 
       event.reason : 
       new Error(String(event.reason));
@@ -370,4 +370,5 @@ export const globalErrorHandler = new GlobalErrorHandler();
 // Initialize on import in browser environment
 if (typeof window !== 'undefined') {
   globalErrorHandler.initialize();
+}
 }

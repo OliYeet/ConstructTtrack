@@ -44,6 +44,8 @@ const listProjectsSchema = z.object({
     .optional(),
   managerId: commonSchemas.uuid.optional(),
   search: z.string().max(100).optional(),
+  sortBy: z.enum(['created_at', 'name', 'status', 'start_date', 'end_date']).optional(),
+  sortOrder: z.enum(['asc', 'desc']).optional(),
 });
 
 // Database row interface
@@ -127,12 +129,12 @@ async function handleGet(
   }
 
   if (queryParams.search) {
-    query = query.or(
-      `name.ilike.%${queryParams.search}%,description.ilike.%${queryParams.search}%`
-    );
+    query = query
+      .ilike('name', `%${queryParams.search}%`)
+      .ilike('description', `%${queryParams.search}%`);
   }
 
-  // Apply sorting
+  // Apply sorting with validated column
   const sortColumn = queryParams.sortBy || 'created_at';
   const sortOrder = queryParams.sortOrder || 'desc';
   query = query.order(sortColumn, { ascending: sortOrder === 'asc' });

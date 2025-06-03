@@ -274,13 +274,13 @@ export const defaultAlertRules: AlertRule[] = [
     name: 'Service Unavailable',
     description: 'Core service is not responding',
     enabled: true,
-    condition: {
-      metric: 'service_health_check',
-      operator: 'eq',
-      threshold: 'down',
-      duration: 2 * 60 * 1000, // 2 minutes
-      evaluationInterval: 30 * 1000, // 30 seconds
-    },
+condition: {
+       metric: 'service_health_check',
+      operator: 'eq', 
+      threshold: 0, // 0 for down, 1 for up
+       duration: 2 * 60 * 1000, // 2 minutes
+       evaluationInterval: 30 * 1000, // 30 seconds
+     },
     severity: AlertSeverity.EMERGENCY,
     category: 'availability',
     tags: ['service', 'availability', 'emergency'],
@@ -387,42 +387,65 @@ export function createAlertRule(
 
 // Validate alert rule
 export function validateAlertRule(rule: AlertRule): { valid: boolean; errors: string[] } {
-  const errors: string[] = [];
+   const errors: string[] = [];
+ 
+   if (!rule.id || rule.id.trim() === '') {
+     errors.push('Rule ID is required');
+   }
+ 
+   if (!rule.name || rule.name.trim() === '') {
+     errors.push('Rule name is required');
+   }
+ 
+   if (!rule.condition.metric || rule.condition.metric.trim() === '') {
+     errors.push('Condition metric is required');
+   }
+ 
+   if (typeof rule.condition.threshold === 'undefined') {
+     errors.push('Condition threshold is required');
+   }
 
-  if (!rule.id || rule.id.trim() === '') {
-    errors.push('Rule ID is required');
+  // Validate operator
+  const validOperators = ['gt', 'gte', 'lt', 'lte', 'eq', 'neq'];
+  if (!rule.condition.operator || !validOperators.includes(rule.condition.operator)) {
+    errors.push(`Condition operator must be one of: ${validOperators.join(', ')}`);
+  }
+ 
+   if (rule.condition.duration <= 0) {
+     errors.push('Condition duration must be positive');
+   }
+ 
+   if (rule.condition.evaluationInterval <= 0) {
+     errors.push('Evaluation interval must be positive');
+   }
+ 
+   if (rule.cooldownPeriod < 0) {
+     errors.push('Cooldown period cannot be negative');
+   }
+ 
+  if (!rule.severity || !Object.values(AlertSeverity).includes(rule.severity)) {
+     errors.push('Invalid alert severity');
+   }
+
+  // Validate notification channels
+  if (!rule.notificationChannels || rule.notificationChannels.length === 0) {
+    errors.push('At least one notification channel is required');
   }
 
-  if (!rule.name || rule.name.trim() === '') {
-    errors.push('Rule name is required');
+  // Validate escalation rules
+  if (rule.escalationRules) {
+    rule.escalationRules.forEach((escalation, index) => {
+      if (escalation.delay <= 0) {
+        errors.push(`Escalation rule ${index + 1}: delay must be positive`);
+      }
+      if (!escalation.channels || escalation.channels.length === 0) {
+        errors.push(`Escalation rule ${index + 1}: at least one channel is required`);
+      }
+    });
   }
-
-  if (!rule.condition.metric || rule.condition.metric.trim() === '') {
-    errors.push('Condition metric is required');
-  }
-
-  if (typeof rule.condition.threshold === 'undefined') {
-    errors.push('Condition threshold is required');
-  }
-
-  if (rule.condition.duration <= 0) {
-    errors.push('Condition duration must be positive');
-  }
-
-  if (rule.condition.evaluationInterval <= 0) {
-    errors.push('Evaluation interval must be positive');
-  }
-
-  if (rule.cooldownPeriod < 0) {
-    errors.push('Cooldown period cannot be negative');
-  }
-
-  if (!Object.values(AlertSeverity).includes(rule.severity)) {
-    errors.push('Invalid alert severity');
-  }
-
-  return {
-    valid: errors.length === 0,
-    errors,
-  };
-}
+ 
+   return {
+     valid: errors.length === 0,
+     errors,
+   };
+ }

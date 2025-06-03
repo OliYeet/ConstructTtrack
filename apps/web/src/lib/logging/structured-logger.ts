@@ -121,13 +121,14 @@ export class FileTransport implements LogTransport {
     this.level = level;
   }
 
-  async write(entry: StructuredLogEntry): Promise<void> {
-    if (entry.level > this.level) return;
+  // import once, reuse handle
+  private static fs = await import('fs/promises');
 
-    try {
-      const fs = await import('fs/promises');
-      const logLine = JSON.stringify(entry) + '\n';
-      await fs.appendFile(this.filePath, logLine);
+  async write(entry: StructuredLogEntry): Promise<void> {
+     if (entry.level > this.level) return;
+ 
+     try {
+      await FileTransport.fs.appendFile(this.filePath, JSON.stringify(entry) + '\n');
     } catch (error) {
       // Fallback to console if file writing fails
       console.error('Failed to write to log file:', error);
@@ -167,16 +168,15 @@ export class StructuredLogger {
   }
 
   private async writeToTransports(entry: StructuredLogEntry): Promise<void> {
-    const promises = this.transports.map(transport => {
-      try {
-        return transport.write(entry);
-      } catch (error) {
-        console.error(`Transport ${transport.name} failed:`, error);
-        return Promise.resolve();
-      }
-    });
-
-    await Promise.allSettled(promises);
+    await Promise.allSettled(
+      this.transports.map(async transport => {
+        try {
+          await transport.write(entry);
+        } catch (error) {
+          console.error(`Transport ${transport.name} failed:`, error);
+        }
+      }),
+    );
   }
 
   private createLogEntry(

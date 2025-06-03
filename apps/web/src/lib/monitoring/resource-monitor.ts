@@ -211,10 +211,19 @@ export class ResourceMonitor {
   }
 
   // Get CPU usage
-  private async getCpuUsage(): Promise<ResourceSnapshot['cpu']> {
-    if (typeof process !== 'undefined') {
-      // Node.js environment
-      const cpuUsage = process.cpuUsage();
+// keep last reading between snapshots
+private prevCpuUsage: NodeJS.CpuUsage | null = null;
+
+ private async getCpuUsage(): Promise<ResourceSnapshot['cpu']> {
+   if (typeof process !== 'undefined') {
+    const current = process.cpuUsage(this.prevCpuUsage ?? undefined);
+    this.prevCpuUsage = process.cpuUsage(); // store absolute for next call
+
+    // µs spent since last sample / (elapsed_ms * #cores * 10_000) → %
+    const elapsedMs = this.monitoringInterval ? this.monitoringInterval._idleTimeout : 60_000;
+    const cores = (await import('os')).cpus().length;
+    const usage =
+      ((current.user + current.system) / 10_000) / (elapsedMs * cores); // 0–1
       const usage = (cpuUsage.user + cpuUsage.system) / 1000000; // Convert to seconds
 
       let loadAverage: number[] | undefined;
@@ -359,7 +368,7 @@ export class ResourceMonitor {
 
     // CPU alerts
     if (this.alertConfig.cpu.enabled && snapshot.cpu.usage > 0) {
-      const cpuPercentage = snapshot.cpu.usage * 100; // Convert to percentage
+      const cpuPercentage = snapshot.cpu.usage; // Convert to percentage
       
       if (cpuPercentage > this.alertConfig.cpu.criticalThreshold) {
         logger.error('Critical CPU usage alert', undefined, {
@@ -468,7 +477,7 @@ export class ResourceMonitor {
     const first = values[0].value;
     const last = values[values.length - 1].value;
     const change = last - first;
-    const changePercentage = (change / first) * 100;
+    const changePercentage = first === 0 ? 0 : (change / first) * 100;
 
     // Calculate hourly change rate
     const timeSpan = new Date(values[values.length - 1].timestamp).getTime() - 

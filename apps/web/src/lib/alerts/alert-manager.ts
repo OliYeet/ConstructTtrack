@@ -82,9 +82,6 @@ export interface AlertManagerConfig {
   maxActiveAlerts: number;
   retentionPeriod: number; // milliseconds
   evaluationInterval: number; // milliseconds
-}
-
-// Alert manager class
 export class AlertManager {
   private config: AlertManagerConfig;
   private alerts: Map<string, Alert> = new Map();
@@ -92,20 +89,36 @@ export class AlertManager {
   private notificationService: NotificationService;
   private evaluationTimer?: NodeJS.Timeout;
   private lastEvaluations: Map<string, number> = new Map();
+ private escalationTimers: Map<string, NodeJS.Timeout[]> = new Map();
 
-  constructor(config: AlertManagerConfig, notificationService: NotificationService) {
-    this.config = config;
-    this.notificationService = notificationService;
+  // In scheduleEscalations method:
+  private scheduleEscalations(alert: Alert, rule: AlertRule): void {
+   const timers: NodeJS.Timeout[] = [];
+    for (const escalation of rule.escalationRules) {
+     const timer = setTimeout(async () => {
+        // ... existing code ...
+      }, escalation.delay);
+     timers.push(timer);
+    }
+   this.escalationTimers.set(alert.id, timers);
   }
 
-  // Start alert evaluation
-  start(): void {
-    if (!this.config.enableAlerts) {
-      return;
+  // In resolveAlert method:
+  async resolveAlert(alertId: string): Promise<boolean> {
+    const alert = this.alerts.get(alertId);
+    if (!alert) {
+      return false;
     }
 
-    this.evaluationTimer = setInterval(() => {
-      this.evaluateRules();
+    alert.status = AlertStatus.RESOLVED;
+    alert.resolvedAt = new Date().toISOString();
+    
+   // Clear any pending escalation timers
+   const timers = this.escalationTimers.get(alertId);
+   if (timers) {
+     timers.forEach(timer => clearTimeout(timer));
+     this.escalationTimers.delete(alertId);
+   }
     }, this.config.evaluationInterval);
 
     const logger = getLogger();
@@ -164,7 +177,7 @@ export class AlertManager {
     tags: string[] = []
   ): Promise<string> {
     const fingerprint = this.generateFingerprint(title, source, category);
-    const alertId = `alert_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const alertId = `alert_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
     const timestamp = new Date().toISOString();
 
     // Check if similar alert already exists
@@ -265,13 +278,11 @@ export class AlertManager {
     alert.resolvedAt = new Date().toISOString();
 
     const logger = getLogger();
-    logger.info('Alert resolved', {
+logger.info('Alert resolved', {
       metadata: {
         alertId,
         title: alert.title,
-        duration: alert.resolvedAt ? 
-          new Date(alert.resolvedAt).getTime() - new Date(alert.timestamp).getTime() :
-          0,
+       duration: new Date(alert.resolvedAt).getTime() - new Date(alert.timestamp).getTime(),
       },
     });
 

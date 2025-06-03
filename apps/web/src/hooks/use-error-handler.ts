@@ -47,7 +47,7 @@ export function useErrorHandler(options: ErrorHandlerOptions = {}) {
     error: Error,
     additionalContext?: Record<string, unknown>
   ) => {
-    const errorId = `err_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const errorId = `err_${Date.now()}_${crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substr(2, 9)}`;
     
     // Classify error
     const isRecoverable = isErrorRecoverable(error);
@@ -249,27 +249,41 @@ export function useFormErrorHandler(options: ErrorHandlerOptions = {}) {
 
 // Utility functions
 function isErrorRecoverable(error: Error): boolean {
-  const message = error.message.toLowerCase();
-  
-  // Network errors are usually recoverable
-  if (message.includes('fetch') || message.includes('network') || 
-      message.includes('connection') || message.includes('timeout')) {
+   const message = error.message.toLowerCase();
+   
+  // Check error name first for more accurate classification
+  if (error.name === 'NetworkError' || error.name === 'TimeoutError') {
     return true;
   }
 
-  // Validation errors are recoverable
-  if (message.includes('validation') || message.includes('invalid')) {
-    return true;
+  // Check for specific error codes if available
+  if ('code' in error) {
+    const errorCode = (error as any).code;
+    // Network-related error codes
+    if (['ECONNREFUSED', 'ETIMEDOUT', 'ENOTFOUND', 'ENETUNREACH'].includes(errorCode)) {
+      return true;
+    }
   }
 
-  // API errors might be recoverable
-  if (message.includes('api') || message.includes('http')) {
-    return true;
-  }
+   // Network errors are usually recoverable
+   if (message.includes('fetch') || message.includes('network') || 
+       message.includes('connection') || message.includes('timeout')) {
+     return true;
+   }
 
-  // JavaScript runtime errors are usually not recoverable
-  return false;
-}
+   // Validation errors are recoverable
+   if (message.includes('validation') || message.includes('invalid')) {
+     return true;
+   }
+
+   // API errors might be recoverable
+  if (message.includes('api') || /\b(4\d{2}|5\d{2})\b/.test(message)) {
+     return true;
+   }
+
+   // JavaScript runtime errors are usually not recoverable
+   return false;
+ }
 
 function classifyErrorType(error: Error): 'javascript' | 'network' | 'api' | 'validation' | 'security' | 'unknown' {
   const message = error.message.toLowerCase();

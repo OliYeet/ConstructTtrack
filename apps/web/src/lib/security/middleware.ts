@@ -71,9 +71,13 @@ export class SecurityMiddleware {
     try {
       // 1. Rate limiting check
       if (this.config.enableRateLimit && shouldRateLimit(request) && this.rateLimitMiddleware) {
-        const rateLimitResult = await this.rateLimitMiddleware(request);
-        
-        if (!rateLimitResult.allowed) {
+const rateLimitResult = await this.rateLimitMiddleware(request);
+ 
+if (!rateLimitResult) {
+  throw new Error('Rate limit middleware returned undefined result');
+}
+
+ if (!rateLimitResult.allowed) {
           context.securityFlags.rateLimited = true;
           
           if (this.config.enableSecurityLogging) {
@@ -209,7 +213,7 @@ export class SecurityMiddleware {
 
   // Create security context
   private createSecurityContext(request: NextRequest): SecurityContext {
-    const correlationId = `sec_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const correlationId = `sec_${Date.now()}_${crypto.randomUUID().substring(0, 9)}`;
     const requestId = request.headers.get('x-request-id') || correlationId;
 
     return {

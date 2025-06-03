@@ -14,16 +14,22 @@ export interface NotificationMessage {
   metadata?: Record<string, unknown>;
 }
 
-// Notification channel interface
-export interface NotificationChannel {
+// Base notification channel interface
+interface BaseNotificationChannel {
   id: string;
-  type: 'email' | 'sms' | 'webhook' | 'slack' | 'discord';
   name: string;
   enabled: boolean;
-  config: Record<string, unknown>;
   retryAttempts: number;
   retryDelay: number; // milliseconds
 }
+
+// Discriminated union for notification channels
+export type NotificationChannel =
+  | (BaseNotificationChannel & { type: 'email'; config: EmailConfig })
+  | (BaseNotificationChannel & { type: 'sms'; config: SmsConfig })
+  | (BaseNotificationChannel & { type: 'webhook'; config: WebhookConfig })
+  | (BaseNotificationChannel & { type: 'slack'; config: SlackConfig })
+  | (BaseNotificationChannel & { type: 'discord'; config: WebhookConfig });
 
 // Email configuration
 export interface EmailConfig {
@@ -146,22 +152,24 @@ export class NotificationService {
   private async sendToChannel(channel: NotificationChannel, message: NotificationMessage): Promise<void> {
     switch (channel.type) {
       case 'email':
-        await this.sendEmail(channel.config as EmailConfig, message);
+        await this.sendEmail(channel.config, message);
         break;
       case 'sms':
-        await this.sendSms(channel.config as SmsConfig, message);
+        await this.sendSms(channel.config, message);
         break;
       case 'webhook':
-        await this.sendWebhook(channel.config as WebhookConfig, message);
+        await this.sendWebhook(channel.config, message);
         break;
       case 'slack':
-        await this.sendSlack(channel.config as SlackConfig, message);
+        await this.sendSlack(channel.config, message);
         break;
       case 'discord':
-        await this.sendDiscord(channel.config as WebhookConfig, message);
+        await this.sendDiscord(channel.config, message);
         break;
       default:
-        throw new Error(`Unsupported channel type: ${channel.type}`);
+        // TypeScript will ensure this is never reached due to exhaustive checking
+        const _exhaustiveCheck: never = channel;
+        throw new Error(`Unsupported channel type: ${(_exhaustiveCheck as any).type}`);
     }
   }
 

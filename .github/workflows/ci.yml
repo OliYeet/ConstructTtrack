@@ -113,7 +113,7 @@ jobs:
           CI: true
 
       - name: 📊 Upload coverage to Codecov
-        if: matrix.test-group == 'unit'
+        if: ${{ matrix.test-group == 'unit' }}
         uses: codecov/codecov-action@v3
         with:
           file: ./coverage/lcov.info

@@ -127,7 +127,7 @@ export class PrivacyComplianceManager {
     dataCategories: DataCategory[],
     metadata: Record<string, unknown> = {}
   ): Promise<string> {
-    const consentId = `consent_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const consentId = `consent_${crypto.randomUUID()}`;
     
     const consent: ConsentRecord = {
       id: consentId,

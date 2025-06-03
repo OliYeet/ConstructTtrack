@@ -222,13 +222,13 @@ class SchemaValidator {
     const extendedSchema = fs.readFileSync(extendedSchemaPath, 'utf8');
     const combinedSchema = initialSchema + '\n' + extendedSchema;
 
-    // Extract table names
+    // Extract table names (including quoted identifiers)
     const tableMatches =
       combinedSchema.match(
-        /CREATE TABLE\s+(?:IF NOT EXISTS\s+)?(\w+(?:\.\w+)?)/gi
+        /CREATE TABLE\s+(?:IF NOT EXISTS\s+)?(?:"[^"]+"|[a-zA-Z_]\w*(?:\.[a-zA-Z_]\w*)?)/gi
       ) || [];
     const tables = tableMatches.map(match =>
-      match.replace(/CREATE TABLE\s+(?:IF NOT EXISTS\s+)?/i, '').toLowerCase()
+      match.replace(/CREATE TABLE\s+(?:IF NOT EXISTS\s+)?/i, '').replace(/"/g, '').toLowerCase()
     );
 
     logger.info(`Found ${tables.length} tables: ${tables.join(', ')}`);
@@ -342,9 +342,9 @@ async function main() {
   const success = await validator.validate();
   process.exit(success ? 0 : 1);
 }
-
-// Run if called directly
-if (import.meta.url === `file://${process.argv[1]}`) {
+import { fileURLToPath, pathToFileURL } from 'url';
+…
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   main().catch(error => {
     logger.error(`Validation failed: ${error.message}`);
     process.exit(1);

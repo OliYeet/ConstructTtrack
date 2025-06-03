@@ -123,28 +123,32 @@ const renderWithProviders = (ui, options = {}) => {
 };
 
 // Async utilities
-export const waitForLoadingToFinish = () => {
-  return waitFor(() => {
-    expect(screen.queryByTestId('loading')).not.toBeInTheDocument();
-  });
-};
+export const waitForLoadingToFinish = (testId = 'loading') => {
+   return waitFor(() => {
+    expect(screen.queryByTestId(testId)).not.toBeInTheDocument();
+   });
+ };
 
-export const waitForErrorToAppear = () => {
-  return waitFor(() => {
-    expect(screen.getByTestId('error')).toBeInTheDocument();
-  });
-};
+export const waitForErrorToAppear = (testId = 'error') => {
+   return waitFor(() => {
+    expect(screen.getByTestId(testId)).toBeInTheDocument();
+   });
+ };
 
 // Form testing utilities
 export const fillForm = async (formData) => {
-  const user = userEvent.setup();
-  
-  for (const [fieldName, value] of Object.entries(formData)) {
-    const field = screen.getByLabelText(new RegExp(fieldName, 'i'));
-    await user.clear(field);
-    await user.type(field, value);
-  }
-};
+   const user = userEvent.setup();
+   
+   for (const [fieldName, value] of Object.entries(formData)) {
+    try {
+      const field = screen.getByLabelText(new RegExp(fieldName, 'i'));
+      await user.clear(field);
+      await user.type(field, value);
+    } catch (error) {
+      throw new Error(`Failed to fill field "${fieldName}": ${error.message}`);
+    }
+   }
+ };
 
 export const submitForm = async () => {
   const user = userEvent.setup();
@@ -261,14 +265,14 @@ export const checkAccessibility = async (container) => {
 };
 
 // Error boundary testing
-export const TestErrorBoundary = ({ children, onError }) => {
-  try {
-    return children;
-  } catch (error) {
-    if (onError) onError(error);
-    return <div data-testid="error-boundary">Something went wrong</div>;
-  }
-};
+ export const TestErrorBoundary = ({ children, onError }) => {
+   try {
+     return children;
+   } catch (error) {
+     if (onError) onError(error);
+    return React.createElement('div', { 'data-testid': 'error-boundary' }, 'Something went wrong');
+   }
+ };
 
 // Custom matchers
 expect.extend({

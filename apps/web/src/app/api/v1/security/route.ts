@@ -8,7 +8,13 @@ import { withApiHandler } from '@/lib/api/middleware';
 import { createSuccessResponse, createErrorResponse } from '@/lib/api/response';
 import { securityScanner, defaultSecurityScanConfig } from '@/lib/security/vulnerability-scanner';
 import { privacyManager } from '@/lib/security/privacy-compliance';
-import { apiRateLimiter } from '@/lib/security/rate-limiting';
+import { z } from 'zod';
+
+// Validation schema for POST requests
+const securityActionSchema = z.object({
+  action: z.enum(['scan', 'privacy-request', 'reset-rate-limits', 'generate-report']),
+  parameters: z.record(z.unknown()).optional(),
+});
 
 // GET /api/v1/security - Get security status and metrics
 export const GET = withApiHandler(async (request: NextRequest) => {
@@ -75,7 +81,17 @@ export const GET = withApiHandler(async (request: NextRequest) => {
 export const POST = withApiHandler(async (request: NextRequest) => {
   try {
     const body = await request.json();
-    const { action, parameters } = body;
+
+    // Validate request body
+    const validationResult = securityActionSchema.safeParse(body);
+    if (!validationResult.success) {
+      return createErrorResponse(
+        new Error('Invalid request body: ' + validationResult.error.message),
+        400
+      );
+    }
+
+    const { action, parameters } = validationResult.data;
 
     let response: any = {};
 

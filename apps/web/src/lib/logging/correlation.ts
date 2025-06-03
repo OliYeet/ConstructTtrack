@@ -106,28 +106,29 @@ export const correlationStore = new CorrelationStore();
 
 // Correlation middleware helper
 export function withCorrelation<T>(
-  correlationId: string,
-  fn: () => T | Promise<T>
-): T | Promise<T> {
-  const previousId = correlationStore.getCurrent();
-  correlationStore.setCurrent(correlationId);
-  
+   correlationId: string,
+   fn: () => T | Promise<T>
+ ): T | Promise<T> {
+   const previousId = correlationStore.getCurrent();
+   correlationStore.setCurrent(correlationId);
+ 
+  let result: T | Promise<T>;
   try {
-    const result = fn();
-    
-    if (result instanceof Promise) {
-      return result.finally(() => {
-        if (previousId) {
-          correlationStore.setCurrent(previousId);
-        } else {
-          correlationStore.delete('current');
-        }
-      });
-    }
-    
-    return result;
+    result = fn();
+ 
+     if (result instanceof Promise) {
+       return result.finally(() => {
+@@
   } finally {
-    if (!(fn() instanceof Promise)) {
+    if (!(result instanceof Promise)) {
+       if (previousId) {
+         correlationStore.setCurrent(previousId);
+       } else {
+         correlationStore.delete('current');
+       }
+     }
+   }
+ }
       if (previousId) {
         correlationStore.setCurrent(previousId);
       } else {

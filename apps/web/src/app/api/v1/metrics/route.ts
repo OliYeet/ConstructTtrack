@@ -5,7 +5,7 @@
 
 import { NextRequest } from 'next/server';
 import { withApiHandler } from '@/lib/api/middleware';
-import { createSuccessResponse } from '@/lib/api/response';
+import { createSuccessResponse, createErrorResponse } from '@/lib/api/response';
 import { performanceMonitor } from '@/lib/monitoring/performance-monitor';
 import { apiMetricsTracker } from '@/lib/monitoring/api-metrics';
 import { resourceMonitor } from '@/lib/monitoring/resource-monitor';
@@ -90,8 +90,8 @@ export const POST = withApiHandler(async (request: NextRequest) => {
 
   // Validate required fields
   if (!name || typeof value !== 'number' || !unit) {
-    return createSuccessResponse(
-      { error: 'Missing required fields: name, value, unit' },
+    return createErrorResponse(
+      new Error('Missing required fields: name, value, unit'),
       400
     );
   }

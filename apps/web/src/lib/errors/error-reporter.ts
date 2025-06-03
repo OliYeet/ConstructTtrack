@@ -108,8 +108,10 @@ export class ErrorReporter {
     // Update aggregation
     this.updateAggregation(report);
 
-    // Add to queue for remote reporting
-    this.reportQueue.push(report);
+ // Add to queue only when it can eventually be drained
+ if (this.config.enableRemoteReporting) {
+   this.reportQueue.push(report);
+ }
 
     // Save to storage
     if (this.config.enableLocalStorage) {
@@ -153,7 +155,13 @@ export class ErrorReporter {
       error.name,
       error.message,
       context.source,
-      context.url ? new URL(context.url).pathname : '',
+      (() => {
+   try {
+     return context.url ? new URL(context.url, 'http://local').pathname : '';
+   } catch {
+     return '';
+   }
+ })(),
       error.stack ? error.stack.split('\n')[1] : '', // First stack frame
     ];
 

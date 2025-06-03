@@ -161,21 +161,18 @@ export const POST = withApiHandler(async (request: NextRequest) => {
   }
 });
 
-// PATCH /api/v1/errors/:fingerprint - Update error status
+// PATCH /api/v1/errors - Update error status
 export const PATCH = withApiHandler(async (request: NextRequest) => {
   try {
-    const url = new URL(request.url);
-    const fingerprint = url.pathname.split('/').pop();
-    
+    const body = await request.json();
+    const { fingerprint, action } = body;
+
     if (!fingerprint) {
       return createErrorResponse(
-        { message: 'Fingerprint required' },
+        { message: 'Fingerprint required in request body' },
         400
       );
     }
-
-    const body = await request.json();
-    const { action } = body;
 
     switch (action) {
       case 'resolve':

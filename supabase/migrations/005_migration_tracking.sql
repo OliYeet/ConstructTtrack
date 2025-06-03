@@ -89,7 +89,14 @@ BEGIN
         is_success,
         error_msg,
         rollback_script
-    ) RETURNING id INTO migration_id;
+    )
+    ON CONFLICT (filename) DO UPDATE SET
+        success = EXCLUDED.success,
+        error_message = EXCLUDED.error_message,
+        execution_time_ms = EXCLUDED.execution_time_ms,
+        rollback_sql = EXCLUDED.rollback_sql,
+        applied_at = NOW()
+    RETURNING id INTO migration_id;
     
     RETURN migration_id;
 END;

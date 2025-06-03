@@ -56,42 +56,57 @@ function ErrorDashboard() {
   }, [selectedTimeframe, selectedType]);
 
   const fetchErrorData = async () => {
+    const controller = new AbortController();
     setLoading(true);
     try {
-      // Fetch stats
-      const statsResponse = await fetch('/api/v1/errors?type=summary');
-      const statsData = await statsResponse.json();
-      setStats(statsData.data.stats);
+      const statsRes = await fetch('/api/v1/errors?type=summary', {
+        signal: controller.signal,
+      });
+      if (!statsRes.ok) throw new Error(`Stats request failed: ${statsRes.status}`);
+      const { data: { stats } } = await statsRes.json();
+      setStats(stats);
 
-      // Fetch aggregated errors
-      const errorsResponse = await fetch(
-        `/api/v1/errors?type=recent&timeframe=${selectedTimeframe}&limit=50`
+      const errsRes = await fetch(
+        `/api/v1/errors?type=recent&timeframe=${selectedTimeframe}&errorType=${selectedType}&limit=50`,
+        { signal: controller.signal }
       );
-      const errorsData = await errorsResponse.json();
-      setErrors(errorsData.data.errors);
-    } catch (error) {
-      console.error('Failed to fetch error data:', error);
+      if (!errsRes.ok) throw new Error(`Errors request failed: ${errsRes.status}`);
+      const { data: { errors } } = await errsRes.json();
+      setErrors(errors);
+    } catch (err) {
+      if ((err as DOMException).name !== 'AbortError') {
+        console.error('Failed to fetch error data:', err);
+      }
     } finally {
       setLoading(false);
     }
+    return () => controller.abort();
   };
 
   const handleResolveError = async (fingerprint: string) => {
     try {
-      await fetch(`/api/v1/errors/${fingerprint}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ action: 'resolve' }),
+      const res = await fetch(`/api/v1/errors/${fingerprint}`, {
+         method: 'PATCH',
+         headers: {
+           'Content-Type': 'application/json',
+         },
+         body: JSON.stringify({ action: 'resolve' }),
       });
-      
-      // Refresh data
-      fetchErrorData();
-    } catch (error) {
-      console.error('Failed to resolve error:', error);
-    }
-  };
+
+      if (!res.ok) {
+        throw new Error(`Failed with status ${res.status}`);
+      }
+
+      // Optimistically update local state
+      setErrors((prev) =>
+        prev.map((e) =>
+          e.fingerprint === fingerprint ? { ...e, sampleError: { ...e.sampleError, resolved: true } } : e
+        )
+      );
+     } catch (error) {
+       console.error('Failed to resolve error:', error);
+     }
+   };
 
   const getSeverityColor = (severity: string) => {
     switch (severity.toLowerCase()) {

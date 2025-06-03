@@ -177,10 +177,10 @@ const fs = require('fs');
         const reportPath = path.join(config.outputDir, `pa11y-${url.replace(/[^a-zA-Z0-9]/g, '_')}.json`);
         
         // Run Pa11y
-        const pa11yOutput = execSync(`npx pa11y ${url} --standard WCAG2AA --reporter json`, {
-          encoding: 'utf8',
-          timeout: 30000,
-        });
+const pa11yOutput = execSync(
+  `npx pa11y ${url} --standard WCAG2AA --reporter json`,
+  { encoding: 'utf8', timeout: 30000, maxBuffer: 10 * 1024 * 1024 }
+);
 
         const pa11yResults = JSON.parse(pa11yOutput);
         

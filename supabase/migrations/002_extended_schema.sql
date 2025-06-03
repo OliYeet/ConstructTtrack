@@ -3,6 +3,7 @@
 
 -- Ensure required extensions are available
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS postgis;
 
 -- Create additional custom types
 CREATE TYPE equipment_status AS ENUM ('available', 'in_use', 'maintenance', 'retired');
