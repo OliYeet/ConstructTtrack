@@ -19,7 +19,7 @@ export const GET = withApiHandler({
   const limit = parseInt(url.searchParams.get('limit') || '50', 10);
 
   try {
-    let response: any = {};
+    let response: Record<string, unknown> = {};
 
     switch (type) {
       case 'summary':
@@ -97,7 +97,7 @@ export const GET = withApiHandler({
     }
 
     return createSuccessResponse(response);
-  } catch (_error) {
+  } catch {
     return createErrorResponse(
       new BaseApiError('Failed to retrieve error data', 500, 'INTERNAL_ERROR'),
       'unknown'
@@ -157,7 +157,7 @@ export const POST = withApiHandler({
       reportId,
       timestamp: new Date().toISOString(),
     });
-  } catch (_error) {
+  } catch {
     return createErrorResponse(
       new BaseApiError('Failed to report error', 500, 'INTERNAL_ERROR'),
       'unknown'
@@ -195,7 +195,7 @@ export const PATCH = withApiHandler({
           'unknown'
         );
     }
-  } catch (_error) {
+  } catch {
     return createErrorResponse(
       new BaseApiError('Failed to update error', 500, 'INTERNAL_ERROR'),
       'unknown'

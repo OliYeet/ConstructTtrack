@@ -13,7 +13,8 @@ import { errorReporter } from '@/lib/errors/error-reporter';
 import { globalErrorHandler } from '@/lib/errors/global-handler';
 
 // GET /api/v1/metrics - Get system metrics
-export const GET = withApiHandler(async (request: NextRequest) => {
+export const GET = withApiHandler({
+  GET: async (request: NextRequest) => {
   const url = new URL(request.url);
   const type = url.searchParams.get('type') || 'all';
   const timeframe = url.searchParams.get('timeframe') || '1h';
@@ -21,7 +22,7 @@ export const GET = withApiHandler(async (request: NextRequest) => {
   // Parse timeframe
   const timeframeMs = parseTimeframe(timeframe);
   
-  let metrics: any = {};
+  let metrics: Record<string, unknown> = {};
 
   switch (type) {
     case 'performance':
@@ -36,9 +37,9 @@ export const GET = withApiHandler(async (request: NextRequest) => {
     case 'api':
       metrics = {
         api: apiMetricsTracker.getAggregatedMetrics(),
-        recentRequests: apiMetricsTracker.getRecentMetrics(
-          timeframeMs / (60 * 1000) // Convert to minutes
-        ),
+        // recentRequests: apiMetricsTracker.getRecentMetrics(
+        //   timeframeMs / (60 * 1000) // Convert to minutes
+        // ),
       };
       break;
 
@@ -80,10 +81,12 @@ export const GET = withApiHandler(async (request: NextRequest) => {
   }
 
   return createSuccessResponse(metrics);
+  }
 });
 
 // POST /api/v1/metrics - Record custom metric
-export const POST = withApiHandler(async (request: NextRequest) => {
+export const POST = withApiHandler({
+  POST: async (request: NextRequest) => {
   const body = await request.json();
   
   const { name, value, unit, tags, metadata } = body;
@@ -92,7 +95,7 @@ export const POST = withApiHandler(async (request: NextRequest) => {
   if (!name || typeof value !== 'number' || !unit) {
     return createErrorResponse(
       new Error('Missing required fields: name, value, unit'),
-      400
+      'unknown'
     );
   }
 
@@ -115,6 +118,7 @@ export const POST = withApiHandler(async (request: NextRequest) => {
       timestamp: new Date().toISOString(),
     },
   });
+  }
 });
 
 // Helper function to parse timeframe

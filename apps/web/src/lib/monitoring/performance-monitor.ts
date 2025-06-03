@@ -230,19 +230,26 @@ export class PerformanceMonitor {
         },
         cpu: {
           usage: (cpuUsage.user + cpuUsage.system) / 1000000, // Convert to seconds
-          loadAverage: process.platform !== 'win32' ? require('os').loadavg() : undefined,
+          loadAverage: process.platform !== 'win32' ? (() => {
+            try {
+              // eslint-disable-next-line @typescript-eslint/no-require-imports
+              return require('os').loadavg();
+            } catch {
+              return undefined;
+            }
+          })() : undefined,
         },
         timestamp: new Date().toISOString(),
       };
     } else if (typeof window !== 'undefined' && 'memory' in performance) {
       // Browser environment with memory API
-      const memory = (performance as any).memory;
-      
+      const memory = (performance as { memory?: { usedJSHeapSize: number; totalJSHeapSize: number; jsHeapSizeLimit: number } }).memory;
+
       return {
         memory: {
-          used: memory.usedJSHeapSize,
-          total: memory.totalJSHeapSize,
-          percentage: (memory.usedJSHeapSize / memory.totalJSHeapSize) * 100,
+          used: memory?.usedJSHeapSize || 0,
+          total: memory?.totalJSHeapSize || 0,
+          percentage: memory ? (memory.usedJSHeapSize / memory.totalJSHeapSize) * 100 : 0,
         },
         cpu: {
           usage: 0, // Not available in browser
