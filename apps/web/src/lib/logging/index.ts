@@ -69,11 +69,13 @@ class EnhancedLoggerInstance {
     // Create transports
     const transports = [new ConsoleTransport()];
     
-    // Add file transport if enabled
-    if (config.enableFileLogging && config.logFilePath) {
+    // Add file transport if enabled (only in Node.js environment)
+    if (config.enableFileLogging && config.logFilePath && typeof window === 'undefined') {
       // Ensure directory exists to prevent ENOENT at first write
       import('fs/promises')
-        .then(fs => fs.mkdir(require('path').dirname(config.logFilePath!), { recursive: true }))
+        .then(fs => import('path').then(path =>
+          fs.mkdir(path.dirname(config.logFilePath!), { recursive: true })
+        ))
         .catch(() => {/* ignore – runtime will still fallback to console */});
       transports.push(new FileTransport(config.logFilePath));
     }
@@ -250,7 +252,6 @@ export async function logPerformance(
 // Export types and utilities
 export {
   LogLevel,
-  StructuredLogEntry,
   StructuredLogger,
   ConsoleTransport,
   FileTransport,
@@ -264,7 +265,10 @@ export {
   withCorrelation,
 };
 
-export type { EnhancedLoggerConfig, LogAggregatorConfig };
+export type {
+  StructuredLogEntry,
+  LogAggregatorConfig
+};
 
 // Graceful shutdown handler
 process.on('SIGTERM', async () => {

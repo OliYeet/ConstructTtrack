@@ -124,7 +124,10 @@ export class FileTransport implements LogTransport {
 
   private async getFs() {
     if (!this.fs) {
-      this.fs = await import('fs/promises');
+      // Only import fs in Node.js environment
+      if (typeof window === 'undefined') {
+        this.fs = await import('fs/promises');
+      }
     }
     return this.fs;
   }
@@ -134,7 +137,12 @@ export class FileTransport implements LogTransport {
 
     try {
       const fs = await this.getFs();
-      await fs.appendFile(this.filePath, JSON.stringify(entry) + '\n');
+      if (fs) {
+        await fs.appendFile(this.filePath, JSON.stringify(entry) + '\n');
+      } else {
+        // Browser environment - fallback to console
+        console.log('Log entry:', entry);
+      }
     } catch (error) {
       // Fallback to console if file writing fails
       console.error('Failed to write to log file:', error);

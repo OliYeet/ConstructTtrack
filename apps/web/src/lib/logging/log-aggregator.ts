@@ -118,9 +118,14 @@ export class LogAggregator {
       endpoint.format
     );
 
-    if (this.config.enableCompression) {
-      const { gzipSync } = await import('node:zlib');
-      payload = gzipSync(Buffer.from(payload));
+    if (this.config.enableCompression && typeof window === 'undefined') {
+      try {
+        const { gzipSync } = await import('zlib');
+        payload = gzipSync(Buffer.from(payload));
+      } catch (error) {
+        // Compression failed, continue with uncompressed payload
+        console.warn('Failed to compress log payload:', error);
+      }
     }
 
     const headers: Record<string, string> = {

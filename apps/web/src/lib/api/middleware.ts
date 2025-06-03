@@ -306,3 +306,6 @@ export function withManager(
     requireRoles: ['admin', 'manager'],
   });
 }
+
+// Alias for backward compatibility
+export const withApiHandler = withApiMiddleware;
