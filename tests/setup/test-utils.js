@@ -3,12 +3,12 @@
  * Common utilities and helpers for all test types
  */
 
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { jest } from '@jest/globals';
-import userEvent from '@testing-library/user-event';
+const { render, screen, fireEvent, waitFor } = require('@testing-library/react');
+const { jest } = require('@jest/globals');
+const userEvent = require('@testing-library/user-event');
 
 // Mock implementations
-export const mockSupabaseClient = {
+const mockSupabaseClient = {
   auth: {
     getUser: jest.fn(),
     signIn: jest.fn(),
@@ -32,7 +32,7 @@ export const mockSupabaseClient = {
   },
 };
 
-export const mockMapboxGL = {
+const mockMapboxGL = {
   Map: jest.fn(() => ({
     on: jest.fn(),
     off: jest.fn(),
@@ -59,7 +59,7 @@ export const mockMapboxGL = {
 };
 
 // Test data factories
-export const createMockUser = (overrides = {}) => ({
+const createMockUser = (overrides = {}) => ({
   id: 'user-123',
   email: 'test@example.com',
   name: 'Test User',
@@ -69,7 +69,7 @@ export const createMockUser = (overrides = {}) => ({
   ...overrides,
 });
 
-export const createMockProject = (overrides = {}) => ({
+const createMockProject = (overrides = {}) => ({
   id: 'project-123',
   name: 'Test Fiber Project',
   description: 'Test project description',
@@ -81,7 +81,7 @@ export const createMockProject = (overrides = {}) => ({
   ...overrides,
 });
 
-export const createMockTask = (overrides = {}) => ({
+const createMockTask = (overrides = {}) => ({
   id: 'task-123',
   title: 'Test Task',
   description: 'Test task description',
@@ -96,7 +96,7 @@ export const createMockTask = (overrides = {}) => ({
   ...overrides,
 });
 
-export const createMockLocation = (overrides = {}) => ({
+const createMockLocation = (overrides = {}) => ({
   latitude: 40.7128,
   longitude: -74.0060,
   address: '123 Test Street, New York, NY',
@@ -104,7 +104,7 @@ export const createMockLocation = (overrides = {}) => ({
 });
 
 // Custom render function with providers
-export const renderWithProviders = (ui, options = {}) => {
+const renderWithProviders = (ui, options = {}) => {
   const {
     initialState = {},
     ...renderOptions
@@ -296,6 +296,33 @@ export const cleanup = () => {
 };
 
 // Export all testing library utilities
-export * from '@testing-library/react';
-export { userEvent };
-export { jest };
+module.exports = {
+  ...require('@testing-library/react'),
+  userEvent,
+  jest,
+  mockSupabaseClient,
+  mockMapboxGL,
+  createMockUser,
+  createMockProject,
+  createMockTask,
+  createMockLocation,
+  renderWithProviders,
+  waitForLoadingToFinish,
+  waitForErrorToAppear,
+  fillForm,
+  submitForm,
+  mockApiResponse,
+  mockApiError,
+  mockLocalStorage,
+  mockGeolocation,
+  createMockFile,
+  uploadFile,
+  mockDate,
+  restoreDate,
+  mockFetch,
+  restoreFetch,
+  measurePerformance,
+  checkAccessibility,
+  TestErrorBoundary,
+  cleanup,
+};
