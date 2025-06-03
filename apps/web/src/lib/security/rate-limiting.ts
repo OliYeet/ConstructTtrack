@@ -101,9 +101,9 @@ export class MemoryRateLimitStore implements RateLimitStore {
 
 // Redis rate limit store (for production)
 export class RedisRateLimitStore implements RateLimitStore {
-  private redis: any; // Redis client
+  private redis: unknown; // Redis client
 
-  constructor(redisClient: any) {
+  constructor(redisClient: unknown) {
     this.redis = redisClient;
   }
 
@@ -112,7 +112,8 @@ export class RedisRateLimitStore implements RateLimitStore {
       const data = await this.redis.get(key);
       return data ? JSON.parse(data) : null;
     } catch (error) {
-      console.error('Redis get error:', error);
+      const logger = getLogger();
+      logger.error('Redis get error', error);
       return null;
     }
   }
@@ -121,7 +122,8 @@ export class RedisRateLimitStore implements RateLimitStore {
     try {
       await this.redis.setex(key, Math.ceil(ttl / 1000), JSON.stringify(value));
     } catch (error) {
-      console.error('Redis set error:', error);
+      const logger = getLogger();
+      logger.error('Redis set error', error);
     }
   }
 
@@ -139,7 +141,8 @@ export class RedisRateLimitStore implements RateLimitStore {
       const count: number = await this.redis.eval(script, 1, key, resetTime, ttl);
       return { count, resetTime };
     } catch (error) {
-      console.error('Redis increment error:', error);
+      const logger = getLogger();
+      logger.error('Redis increment error', error);
       // Fallback to basic increment
       return { count: 1, resetTime };
     }
@@ -149,7 +152,8 @@ export class RedisRateLimitStore implements RateLimitStore {
     try {
       await this.redis.del(key);
     } catch (error) {
-      console.error('Redis delete error:', error);
+      const logger = getLogger();
+      logger.error('Redis delete error', error);
     }
   }
 
@@ -157,7 +161,8 @@ export class RedisRateLimitStore implements RateLimitStore {
     try {
       await this.redis.flushdb();
     } catch (error) {
-      console.error('Redis clear error:', error);
+      const logger = getLogger();
+      logger.error('Redis clear error', error);
     }
   }
 }
@@ -246,6 +251,7 @@ export const rateLimitConfigs = {
     maxRequests: 100,
     enableHeaders: true,
     message: 'Too many API requests, please try again later.',
+    statusCode: 429,
   },
 
   // Authentication endpoints
@@ -254,6 +260,7 @@ export const rateLimitConfigs = {
     maxRequests: 5,
     enableHeaders: true,
     message: 'Too many authentication attempts, please try again later.',
+    statusCode: 429,
     keyGenerator: (request: NextRequest) => {
       const ip = request.headers.get('x-forwarded-for')?.split(',')[0] || 'unknown';
       return `auth_limit:${ip}`;
@@ -266,6 +273,7 @@ export const rateLimitConfigs = {
     maxRequests: 3,
     enableHeaders: true,
     message: 'Too many password reset attempts, please try again later.',
+    statusCode: 429,
   },
 
   // File upload endpoints
@@ -274,6 +282,7 @@ export const rateLimitConfigs = {
     maxRequests: 10,
     enableHeaders: true,
     message: 'Too many upload requests, please try again later.',
+    statusCode: 429,
   },
 
   // Search endpoints
@@ -282,6 +291,7 @@ export const rateLimitConfigs = {
     maxRequests: 30,
     enableHeaders: true,
     message: 'Too many search requests, please try again later.',
+    statusCode: 429,
   },
 
   // Admin endpoints
@@ -290,6 +300,7 @@ export const rateLimitConfigs = {
     maxRequests: 20,
     enableHeaders: true,
     message: 'Too many admin requests, please try again later.',
+    statusCode: 429,
     keyGenerator: (request: NextRequest) => {
       const ip = request.headers.get('x-forwarded-for')?.split(',')[0] || 'unknown';
       const userId = request.headers.get('x-user-id') || 'anonymous';
@@ -303,6 +314,7 @@ export const rateLimitConfigs = {
     maxRequests: 5,
     enableHeaders: true,
     message: 'Rate limit exceeded for sensitive operation.',
+    statusCode: 429,
   },
 };
 
