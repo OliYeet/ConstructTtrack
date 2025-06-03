@@ -4,7 +4,6 @@
  */
 
 import { NextRequest } from 'next/server';
-import { withApiMiddleware } from '@/lib/api/middleware';
 import { createSuccessResponse } from '@/lib/api/response';
 import { validateRequestBody } from '@/lib/api/validation';
 import { z } from 'zod';
@@ -29,90 +28,34 @@ interface TestResponse {
 }
 
 // GET /api/v1/test - Public test endpoint
-async function handleGet(
-  request: NextRequest,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  _: { params: Promise<Record<string, string>> }
-) {
-  const context = (
-    request as NextRequest & {
-      context: {
-        requestId: string;
-        user?: { id: string; email: string; role: string };
-      };
-    }
-  ).context;
-
+export async function GET(request: NextRequest) {
   const testData: TestResponse = {
     message: 'API is working correctly!',
     timestamp: new Date().toISOString(),
-    requestId: context.requestId,
-    user: context.user,
+    requestId: 'test-request',
   };
 
   return createSuccessResponse(
     testData,
     'Test endpoint successful',
-    200,
-    context.requestId
+    200
   );
 }
 
 // POST /api/v1/test - Test with request body validation
-async function handlePost(
-  request: NextRequest,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  _: { params: Promise<Record<string, string>> }
-) {
-  const context = (
-    request as NextRequest & {
-      context: {
-        requestId: string;
-        user?: { id: string; email: string; role: string };
-      };
-    }
-  ).context;
+export async function POST(request: NextRequest) {
   const body = await validateRequestBody(request, testRequestSchema);
 
   const testData: TestResponse = {
     message: `Received: ${body.message}`,
     timestamp: new Date().toISOString(),
-    requestId: context.requestId,
-    user: context.user,
+    requestId: 'test-request',
     receivedData: body.data,
   };
 
   return createSuccessResponse(
     testData,
     'Test POST successful',
-    200,
-    context.requestId
+    200
   );
 }
-
-// Export route handlers
-export const GET = withApiMiddleware(
-  {
-    GET: handleGet,
-  },
-  {
-    requireAuth: false, // Public endpoint for testing
-    rateLimit: {
-      windowMs: 1 * 60 * 1000, // 1 minute
-      maxRequests: 30, // 30 requests per minute
-    },
-  }
-);
-
-export const POST = withApiMiddleware(
-  {
-    POST: handlePost,
-  },
-  {
-    requireAuth: false, // Public endpoint for testing
-    rateLimit: {
-      windowMs: 1 * 60 * 1000, // 1 minute
-      maxRequests: 20, // 20 requests per minute
-    },
-  }
-);

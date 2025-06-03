@@ -4,15 +4,7 @@
  */
 
 import { NextRequest } from 'next/server';
-import { withApiMiddleware } from '@/lib/api/middleware';
 import { createSuccessResponse } from '@/lib/api/response';
-
-// Extended NextRequest interface with context
-interface ExtendedNextRequest extends NextRequest {
-  context?: {
-    requestId?: string;
-  };
-}
 
 // Health check response interface
 interface HealthCheckResponse {
@@ -48,12 +40,7 @@ async function checkDatabase(): Promise<'healthy' | 'unhealthy'> {
 }
 
 // GET /api/v1/health
-async function handleGet(
-  request: ExtendedNextRequest,
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  _: { params: Record<string, string> }
-) {
+export async function GET(request: NextRequest) {
   const startTime = Date.now();
 
   // Check all services
@@ -86,21 +73,6 @@ async function handleGet(
   return createSuccessResponse(
     healthData,
     `System is ${overallStatus} (${responseTime}ms)`,
-    statusCode,
-    request.context?.requestId
+    statusCode
   );
 }
-
-// Export the route handler with middleware
-export const GET = withApiMiddleware(
-  {
-    GET: handleGet,
-  },
-  {
-    requireAuth: false, // Health check should be public
-    rateLimit: {
-      windowMs: 1 * 60 * 1000, // 1 minute
-      maxRequests: 60, // 60 requests per minute
-    },
-  }
-);
