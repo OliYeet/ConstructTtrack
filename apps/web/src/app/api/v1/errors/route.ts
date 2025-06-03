@@ -4,15 +4,13 @@
  */
 
 import { NextRequest } from 'next/server';
-import { withApiHandler } from '@/lib/api/middleware';
 import { createSuccessResponse, createErrorResponse } from '@/lib/api/response';
 import { BaseApiError } from '@/lib/errors/api-errors';
 import { errorReporter } from '@/lib/errors/error-reporter';
 import { globalErrorHandler } from '@/lib/errors/global-handler';
 
 // GET /api/v1/errors - Get error reports and statistics
-export const GET = withApiHandler({
-  GET: async (request: NextRequest, _context: { params: Record<string, string> }) => {
+export async function GET(request: NextRequest) {
   const url = new URL(request.url);
   const type = url.searchParams.get('type') || 'summary';
   const timeframe = url.searchParams.get('timeframe') || '24h';
@@ -103,12 +101,10 @@ export const GET = withApiHandler({
       'unknown'
     );
   }
-  }
-});
+}
 
 // POST /api/v1/errors - Report a new error
-export const POST = withApiHandler({
-  POST: async (request: NextRequest, _context: { params: Record<string, string> }) => {
+export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     
@@ -163,12 +159,10 @@ export const POST = withApiHandler({
       'unknown'
     );
   }
-  }
-});
+}
 
 // PATCH /api/v1/errors - Update error status
-export const PATCH = withApiHandler({
-  PATCH: async (request: NextRequest, _context: { params: Record<string, string> }) => {
+export async function PATCH(request: NextRequest) {
   try {
     const body = await request.json();
     const { fingerprint, action } = body;
@@ -201,8 +195,7 @@ export const PATCH = withApiHandler({
       'unknown'
     );
   }
-  }
-});
+}
 
 // Helper function to parse timeframe to hours
 function parseTimeframeToHours(timeframe: string): number {

@@ -4,7 +4,6 @@
  */
 
 import { NextRequest } from 'next/server';
-import { withApiHandler } from '@/lib/api/middleware';
 import { createSuccessResponse, createErrorResponse } from '@/lib/api/response';
 import { securityScanner, defaultSecurityScanConfig } from '@/lib/security/vulnerability-scanner';
 import { privacyManager } from '@/lib/security/privacy-compliance';
@@ -17,8 +16,7 @@ const securityActionSchema = z.object({
 });
 
 // GET /api/v1/security - Get security status and metrics
-export const GET = withApiHandler({
-  GET: async (request: NextRequest, _context: { params: Record<string, string> }) => {
+export async function GET(request: NextRequest) {
   const url = new URL(request.url);
   const type = url.searchParams.get('type') || 'overview';
 
@@ -76,12 +74,10 @@ export const GET = withApiHandler({
       'unknown'
     );
   }
-  }
-});
+}
 
 // POST /api/v1/security - Trigger security actions
-export const POST = withApiHandler({
-  POST: async (request: NextRequest, _context: { params: Record<string, string> }) => {
+export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
@@ -117,8 +113,8 @@ export const POST = withApiHandler({
 
       default:
         return createErrorResponse(
-          { message: 'Invalid security action' },
-          400
+          new Error('Invalid security action'),
+          'unknown'
         );
     }
 
@@ -129,8 +125,7 @@ export const POST = withApiHandler({
       'unknown'
     );
   }
-  }
-});
+}
 
 // Helper functions
 

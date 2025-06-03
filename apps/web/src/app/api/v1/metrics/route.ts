@@ -4,7 +4,6 @@
  */
 
 import { NextRequest } from 'next/server';
-import { withApiHandler } from '@/lib/api/middleware';
 import { createSuccessResponse, createErrorResponse } from '@/lib/api/response';
 import { performanceMonitor } from '@/lib/monitoring/performance-monitor';
 import { apiMetricsTracker } from '@/lib/monitoring/api-metrics';
@@ -13,8 +12,7 @@ import { errorReporter } from '@/lib/errors/error-reporter';
 import { globalErrorHandler } from '@/lib/errors/global-handler';
 
 // GET /api/v1/metrics - Get system metrics
-export const GET = withApiHandler({
-  GET: async (request: NextRequest, _context: { params: Record<string, string> }) => {
+export async function GET(request: NextRequest) {
   const url = new URL(request.url);
   const type = url.searchParams.get('type') || 'all';
   const timeframe = url.searchParams.get('timeframe') || '1h';
@@ -81,12 +79,10 @@ export const GET = withApiHandler({
   }
 
   return createSuccessResponse(metrics);
-  }
-});
+}
 
 // POST /api/v1/metrics - Record custom metric
-export const POST = withApiHandler({
-  POST: async (request: NextRequest, _context: { params: Record<string, string> }) => {
+export async function POST(request: NextRequest) {
   const body = await request.json();
   
   const { name, value, unit, tags, metadata } = body;
@@ -118,8 +114,7 @@ export const POST = withApiHandler({
       timestamp: new Date().toISOString(),
     },
   });
-  }
-});
+}
 
 // Helper function to parse timeframe
 function parseTimeframe(timeframe: string): number {
