@@ -85,6 +85,9 @@ export interface AlertManagerConfig {
 export class AlertManager {
   private config: AlertManagerConfig;
   private alerts: Map<string, Alert> = new Map();
+export class AlertManager {
+  private config: AlertManagerConfig;
+  private alerts: Map<string, Alert> = new Map();
   private rules: Map<string, AlertRule> = new Map();
   private notificationService: NotificationService;
   private evaluationTimer?: NodeJS.Timeout;
@@ -119,20 +122,30 @@ export class AlertManager {
      timers.forEach(timer => clearTimeout(timer));
      this.escalationTimers.delete(alertId);
    }
+    
+   // Clear any pending escalation timers
+   const timers = this.escalationTimers.get(alertId);
+   if (timers) {
+     timers.forEach(timer => clearTimeout(timer));
+     this.escalationTimers.delete(alertId);
+   }
     }, this.config.evaluationInterval);
 
     const logger = getLogger();
     logger.info('Alert manager started', {
       metadata: {
         rulesCount: this.rules.size,
-        evaluationInterval: this.config.evaluationInterval,
-      },
-    });
-  }
+start(): void {
+    if (!this.config.enableAlerts) {
+      return;
+    }
 
-  // Stop alert evaluation
-  stop(): void {
-    if (this.evaluationTimer) {
+    this.evaluationTimer = setInterval(() => {
+     this.evaluateRules().catch(error => {
+       const logger = getLogger();
+       logger.error('Unhandled error in rule evaluation', error);
+     });
+    }, this.config.evaluationInterval);
       clearInterval(this.evaluationTimer);
       this.evaluationTimer = undefined;
     }
@@ -177,7 +190,7 @@ export class AlertManager {
     tags: string[] = []
   ): Promise<string> {
     const fingerprint = this.generateFingerprint(title, source, category);
-    const alertId = `alert_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+   const alertId = `alert_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
     const timestamp = new Date().toISOString();
 
     // Check if similar alert already exists
@@ -285,8 +298,6 @@ logger.info('Alert resolved', {
        duration: new Date(alert.resolvedAt).getTime() - new Date(alert.timestamp).getTime(),
       },
     });
-
-    return true;
   }
 
   // Suppress alert

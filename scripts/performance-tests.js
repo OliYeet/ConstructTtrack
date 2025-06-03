@@ -55,12 +55,11 @@ class PerformanceTester {
         console.log(`📊 Testing: ${url}`);
         
         const urlHash = require('crypto').createHash('md5').update(url).digest('hex').substring(0, 8);
+const urlHash = require('crypto').createHash('md5').update(url).digest('hex').substring(0, 8);
 const reportPath = path.join(config.outputDir, `lighthouse-${urlHash}-${url.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 50)}.json`);
         
         // Run Lighthouse
 execSync(`npx lighthouse ${url} --output=json --output-path=${reportPath} --chrome-flags="--headless" --quiet`);
-
-        // Parse results
         if (fs.existsSync(reportPath)) {
           const report = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
           
@@ -113,12 +112,18 @@ try {
   const buildExists = fs.existsSync(path.join(__dirname, '../apps/web/.next'));
   if (!buildExists) {
     console.log('🔨 Building application...');
+try {
+  const buildExists = fs.existsSync(path.join(__dirname, '../apps/web/.next'));
+  if (!buildExists) {
+    console.log('🔨 Building application...');
      // Build the application
      execSync('npm run build', {
        cwd: path.join(__dirname, '..'),
        stdio: 'inherit',
      });
   } else {
+    console.log('✅ Using existing build');
+  }
     console.log('✅ Using existing build');
   }
 
@@ -241,6 +246,18 @@ for (let i = 0; i < iterations; i += concurrency) {
     console.warn(`Load test batch ${Math.floor(i / concurrency) + 1} partially failed:`, error.message);
   }
 }
+  const batch = [];
+  for (let j = 0; j < concurrency && i + j < iterations; j++) {
+    batch.push(runRequest());
+  }
+  
+  try {
+    const results = await Promise.all(batch);
+    testResults.push(...results);
+  } catch (error) {
+    console.warn(`Load test batch ${Math.floor(i / concurrency) + 1} partially failed:`, error.message);
+  }
+}
 
       if (testResults.length > 0) {
         const avgResponseTime = testResults.reduce((a, b) => a + b, 0) / testResults.length;
@@ -290,11 +307,11 @@ for (let i = 0; i < iterations; i += concurrency) {
     const avgPerformanceScore = lighthouseScores.length > 0 
       ? lighthouseScores.reduce((sum, result) => sum + result.performance, 0) / lighthouseScores.length
       : 0;
-
 const allPassed = [
    ...lighthouseScores.map(result => result.passed),
   this.results.bundleSize?.passed,
   this.results.loadTesting?.passed,
+].filter(val => val !== undefined).every(val => val === true);
 ].filter(val => val !== undefined).every(val => val === true);
 
     return {
@@ -331,6 +348,13 @@ const allPassed = [
 
     return recommendations;
   }
+
+// HTML escape function
+escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
 
 // HTML escape function
 escapeHtml(str) {

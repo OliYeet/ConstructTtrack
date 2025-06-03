@@ -86,7 +86,7 @@ export class LogAggregator {
 
   // Create log batch
   private createBatch(entries: StructuredLogEntry[]): LogBatch {
-    const batchId = `batch_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const batchId = `batch_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
     const totalSize = JSON.stringify(entries).length;
 
     return {
@@ -113,14 +113,15 @@ export class LogAggregator {
       return;
     }
 
-    let payload = this.formatPayload(...);
+    let payload: string | Buffer = this.formatPayload(
+      { ...batch, entries: filteredEntries },
+      endpoint.format
+    );
+
     if (this.config.enableCompression) {
       const { gzipSync } = await import('node:zlib');
       payload = gzipSync(Buffer.from(payload));
     }
-      { ...batch, entries: filteredEntries },
-      endpoint.format
-    );
 
     const headers: Record<string, string> = {
       'Content-Type': this.getContentType(endpoint.format),

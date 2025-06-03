@@ -142,6 +142,20 @@ try {
         };
         return;
       }
+      try {
+        eslintResults = JSON.parse(complexityReport);
+      } catch (parseError) {
+        console.error('❌ Failed to parse ESLint output:', parseError.message);
+        this.metrics.complexity = {
+          totalFiles: 0,
+          totalIssues: 0,
+          highComplexityFiles: [],
+          averageIssuesPerFile: 0,
+          thresholds: thresholds.complexity,
+          passed: false,
+        };
+        return;
+      }
       
       let totalComplexityIssues = 0;
       let totalFiles = 0;
@@ -220,6 +234,17 @@ try {
         
         let functionMatches = [];
         functionPatterns.forEach(pattern => {
+// Simple function length analysis
+        const functionPatterns = [
+          /function\s+\w+/g,                    // Named functions
+          /const\s+\w+\s*=\s*\([^)]*\)\s*=>/g, // Arrow functions with params
+          /const\s+\w+\s*=\s*\w+\s*=>/g,       // Arrow functions without parens
+          /async\s+function\s+\w+/g,            // Async functions
+          /\w+\s*\([^)]*\)\s*{/g,              // Method declarations
+        ];
+        
+        let functionMatches = [];
+        functionPatterns.forEach(pattern => {
           const matches = content.match(pattern) || [];
           functionMatches = functionMatches.concat(matches);
         });
@@ -228,6 +253,8 @@ try {
            longFunctions.push({
              file: path.relative(config.projectRoot, filePath),
              functions: functionMatches.length,
+           });
+         }
            });
          }
       });
@@ -330,6 +357,20 @@ async collectSecurityMetrics() {
         });
         auditResults = JSON.parse(auditReport);
       } catch (auditError) {
+async collectSecurityMetrics() {
+     console.log('🔒 Collecting security metrics...');
+ 
+    let auditResults;
+     try {
+       // Run npm audit
+      try {
+        const auditReport = execSync('npm audit --json', {
+          cwd: config.projectRoot,
+          encoding: 'utf8',
+          stdio: ['pipe', 'pipe', 'pipe'], // Capture stderr too
+        });
+        auditResults = JSON.parse(auditReport);
+      } catch (auditError) {
         // npm audit exits with non-zero when vulnerabilities found
         // but still outputs JSON to stdout
         if (auditError.stdout) {
@@ -355,6 +396,13 @@ async collectSecurityMetrics() {
      } catch (error) {
       console.error('❌ Failed to collect security metrics:', error.message);
       this.metrics.security = {
+        vulnerabilities: {},
+        totalVulnerabilities: 0,
+        dependencies: 0,
+        passed: false,
+      };
+     }
+   }
         vulnerabilities: {},
         totalVulnerabilities: 0,
         dependencies: 0,
@@ -492,6 +540,17 @@ async collectSecurityMetrics() {
   }
 
    // Generate HTML report
+  // Helper function to escape HTML
+  escapeHtml(unsafe) {
+    return String(unsafe)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+   // Generate HTML report
    generateHTMLReport(report) {
      return `
  <!DOCTYPE html>
@@ -524,6 +583,7 @@ async collectSecurityMetrics() {
         <p>Branches: ${this.escapeHtml(report.coverage.summary?.branches || 0)}%</p>
         <p>Functions: ${this.escapeHtml(report.coverage.summary?.functions || 0)}%</p>
         <p>Lines: ${this.escapeHtml(report.coverage.summary?.lines || 0)}%</p>
+     </div>
      </div>
 
     <div class="metric ${report.linting.passed ? 'passed' : 'failed'}">

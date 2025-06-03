@@ -59,7 +59,7 @@ export class ApiMetricsTracker {
 
   // Record API request start
   recordRequestStart(request: NextRequest, context?: RequestContext): string {
-    const requestId = context?.requestId || `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const requestId = context?.requestId || `req_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
     
     // Start performance timing
     performanceMonitor.startTiming(`api_${requestId}`);
@@ -324,62 +324,19 @@ export class ApiMetricsTracker {
   }
 
   // Get all metrics
-// API metrics configuration
-export interface ApiMetricsConfig {
-  maxMetrics?: number;
-  retentionPeriod?: number; // milliseconds
-  slowRequestThreshold?: number; // milliseconds
-  recentErrorWindow?: number; // milliseconds
-  aggregationWindow?: number; // milliseconds
-}
-
- // API metrics tracker
- export class ApiMetricsTracker {
-   private metrics: ApiMetric[] = [];
-  private config: Required<ApiMetricsConfig>;
-
-  constructor(config: ApiMetricsConfig = {}) {
-    this.config = {
-      maxMetrics: config.maxMetrics ?? 10000,
-      retentionPeriod: config.retentionPeriod ?? 24 * 60 * 60 * 1000, // 24 hours
-      slowRequestThreshold: config.slowRequestThreshold ?? 2000, // 2 seconds
-      recentErrorWindow: config.recentErrorWindow ?? 60000, // 1 minute
-      aggregationWindow: config.aggregationWindow ?? 60 * 60 * 1000, // 1 hour
-    };
+  getAllMetrics(): ApiMetric[] {
+    return [...this.metrics];
   }
 
-     // Log slow requests
-    if (responseTime > this.config.slowRequestThreshold) {
+  // Cleanup old metrics
+  private cleanup(): void {
+    const cutoff = Date.now() - this.retentionPeriod;
+    this.metrics = this.metrics.filter(m => new Date(m.timestamp).getTime() > cutoff);
 
-     // Recent errors
-     const recentErrors = filteredMetrics
-      .filter(m => m.error && new Date(m.timestamp).getTime() > Date.now() - this.config.recentErrorWindow)
-
-   // Get aggregated metrics
-   getAggregatedMetrics(): ApiMetricsAggregation {
-    const recentThreshold = Date.now() - this.config.aggregationWindow;
-
-   // Cleanup old metrics
-   private cleanup(): void {
-    const cutoff = Date.now() - this.config.retentionPeriod;
-
-     // Limit total metrics
-    if (this.metrics.length > this.config.maxMetrics) {
-      this.metrics = this.metrics.slice(-this.config.maxMetrics);
-
-  // Clear all metrics
-  clear(): void {
-    this.metrics = [];
-  }
-
-  // Export metrics for external analysis
-  exportMetrics(): string {
-    return JSON.stringify({
-      exportedAt: new Date().toISOString(),
-      totalMetrics: this.metrics.length,
-      metrics: this.metrics,
-      aggregation: this.getAggregatedMetrics(),
-    }, null, 2);
+    // Limit total metrics
+    if (this.metrics.length > this.maxMetrics) {
+      this.metrics = this.metrics.slice(-this.maxMetrics);
+    }
   }
 }
 

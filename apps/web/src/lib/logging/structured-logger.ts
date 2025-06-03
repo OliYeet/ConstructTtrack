@@ -115,20 +115,26 @@ export class FileTransport implements LogTransport {
   name = 'file';
   level: LogLevel;
   private filePath: string;
+  private fs: typeof import('fs/promises') | null = null;
 
   constructor(filePath: string, level: LogLevel = LogLevel.INFO) {
     this.filePath = filePath;
     this.level = level;
   }
 
-  // import once, reuse handle
-  private static fs = await import('fs/promises');
+  private async getFs() {
+    if (!this.fs) {
+      this.fs = await import('fs/promises');
+    }
+    return this.fs;
+  }
 
   async write(entry: StructuredLogEntry): Promise<void> {
-     if (entry.level > this.level) return;
- 
-     try {
-      await FileTransport.fs.appendFile(this.filePath, JSON.stringify(entry) + '\n');
+    if (entry.level > this.level) return;
+
+    try {
+      const fs = await this.getFs();
+      await fs.appendFile(this.filePath, JSON.stringify(entry) + '\n');
     } catch (error) {
       // Fallback to console if file writing fails
       console.error('Failed to write to log file:', error);
@@ -242,7 +248,7 @@ export class StructuredLogger {
   // Convenience methods for API logging
   async logRequest(
     request: NextRequest,
-    context?: RequestContext
+    context?: RequestContext & { correlationId?: string }
   ): Promise<void> {
     await this.info('API Request', {
       correlationId: context?.correlationId,
@@ -264,7 +270,7 @@ export class StructuredLogger {
     request: NextRequest,
     statusCode: number,
     duration: number,
-    context?: RequestContext
+    context?: RequestContext & { correlationId?: string }
   ): Promise<void> {
     const level = statusCode >= 500 ? LogLevel.ERROR :
                   statusCode >= 400 ? LogLevel.WARN :
@@ -292,7 +298,7 @@ export class StructuredLogger {
     message: string,
     error: Error | unknown,
     request?: NextRequest,
-    context?: RequestContext
+    context?: RequestContext & { correlationId?: string }
   ): Promise<void> {
     await this.error(message, error, {
       correlationId: context?.correlationId,

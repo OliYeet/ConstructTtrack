@@ -371,4 +371,3 @@ export const globalErrorHandler = new GlobalErrorHandler();
 if (typeof window !== 'undefined') {
   globalErrorHandler.initialize();
 }
-}

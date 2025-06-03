@@ -229,6 +229,10 @@ export class PerformanceMonitor {
           heapTotal: memUsage.heapTotal,
 // At the top of the file
 import * as os from 'os';
+// At the top of the file
+import * as os from 'os';
+// At the top of the file
+import * as os from 'os';
 
  // ... other code ...
 
@@ -293,6 +297,13 @@ private startResourceMonitoring(): void {
       }
      }, this.config.metricsInterval);
    }
+        const logger = getLogger();
+        logger.error('Failed to collect resource metrics', error instanceof Error ? error : new Error(String(error)), {
+          metadata: { error: String(error) }
+        });
+      }
+     }, this.config.metricsInterval);
+   }
 
   // Setup Web Vitals monitoring
   private setupWebVitalsMonitoring(): void {
@@ -326,6 +337,7 @@ private startResourceMonitoring(): void {
       new PerformanceObserver((list) => {
         let clsValue = 0;
         for (const entry of list.getEntries()) {
+          const layoutShiftEntry = entry as LayoutShiftEntry;
           const layoutShiftEntry = entry as LayoutShiftEntry;
           if (!layoutShiftEntry.hadRecentInput) {
             clsValue += layoutShiftEntry.value;

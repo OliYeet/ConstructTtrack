@@ -8,12 +8,12 @@ import { RequestContext } from '@/types/api';
 
 // Generate a unique correlation ID
 export function generateCorrelationId(): string {
-  return `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  return `req_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
 }
 
 // Generate a unique request ID
 export function generateRequestId(): string {
-  return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  return `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
 }
 
 // Extract correlation ID from request headers or generate new one
@@ -112,29 +112,35 @@ export function withCorrelation<T>(
    const previousId = correlationStore.getCurrent();
    correlationStore.setCurrent(correlationId);
  
-  let result: T | Promise<T>;
   try {
-    result = fn();
- 
-     if (result instanceof Promise) {
-       return result.finally(() => {
-@@
-  } finally {
-    if (!(result instanceof Promise)) {
-       if (previousId) {
-         correlationStore.setCurrent(previousId);
-       } else {
-         correlationStore.delete('current');
-       }
-     }
-   }
- }
-      if (previousId) {
-        correlationStore.setCurrent(previousId);
-      } else {
-        correlationStore.delete('current');
-      }
+    const result = fn();
+
+    if (result instanceof Promise) {
+      return result.finally(() => {
+        if (previousId) {
+          correlationStore.setCurrent(previousId);
+        } else {
+          correlationStore.delete('current');
+        }
+      });
     }
+
+    // For synchronous results, restore context immediately
+    if (previousId) {
+      correlationStore.setCurrent(previousId);
+    } else {
+      correlationStore.delete('current');
+    }
+
+    return result;
+  } catch (error) {
+    // Restore context on error
+    if (previousId) {
+      correlationStore.setCurrent(previousId);
+    } else {
+      correlationStore.delete('current');
+    }
+    throw error;
   }
 }
 
@@ -144,11 +150,12 @@ export function createEnhancedRequestContext(
   baseContext?: RequestContext
 ): RequestContext & { correlationId: string } {
   const { correlationId, requestId } = createCorrelationContext(request);
-  
+
   return {
     ...baseContext,
     correlationId,
     requestId,
+    timestamp: baseContext?.timestamp || new Date().toISOString(),
   };
 }
 
