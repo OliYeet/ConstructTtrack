@@ -321,6 +321,11 @@ DELETE FROM important_data;
           .filter(f => f.endsWith('.sql'))
           .slice(0, 2); // Just test with first 2 files
 
+        if (actualFiles.length === 0) {
+          console.warn('No actual migration files found for integration test');
+          return;
+        }
+
         actualFiles.forEach(file => {
           const source = path.join(actualMigrationsDir, file);
           const dest = path.join(testMigrationsDir, file);
@@ -329,6 +334,10 @@ DELETE FROM important_data;
 
         const result = await migrationManager.validateMigrations();
         expect(result).toBe(true);
+      } else {
+        console.warn(
+          'Actual migrations directory not found, skipping integration test'
+        );
       }
     });
   });

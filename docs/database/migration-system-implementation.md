@@ -58,18 +58,16 @@ validation, and safety features.
 
 ### Migration Manager Architecture
 
-```javascript
-class MigrationManager {
-  - initialize()           // Setup directories and connections
-  - createMigration()      // Generate new migration files
-  - listMigrations()       // List all migration files
-  - validateMigrations()   // Validate SQL syntax and safety
-  - runMigrations()        // Execute pending migrations
-  - getMigrationStatus()   // Check database migration status
-  - createBackup()         // Create database backups
-  - resetDatabase()        // Reset to initial state
-}
-```
+**MigrationManager Class Methods:**
+
+- `initialize()` - Setup directories and connections
+- `createMigration()` - Generate new migration files
+- `listMigrations()` - List all migration files
+- `validateMigrations()` - Validate SQL syntax and safety
+- `runMigrations()` - Execute pending migrations
+- `getMigrationStatus()` - Check database migration status
+- `createBackup()` - Create database backups
+- `resetDatabase()` - Reset to initial state
 
 ### Database Tracking System
 
@@ -92,13 +90,13 @@ schema_migrations (
 
 ```json
 {
-  "db:migrate:create": "Create new migration",
-  "db:migrate:list": "List all migrations",
-  "db:migrate:status": "Check migration status",
-  "db:migrate:run": "Execute migrations",
-  "db:migrate:validate": "Validate migration files",
-  "db:migrate:backup": "Create database backup",
-  "db:migrate:reset": "Reset database"
+  "db:migrate:create": "node scripts/migration-manager.js create",
+  "db:migrate:list": "node scripts/migration-manager.js list",
+  "db:migrate:status": "node scripts/migration-manager.js status",
+  "db:migrate:run": "node scripts/migration-manager.js up",
+  "db:migrate:validate": "node scripts/migration-manager.js validate",
+  "db:migrate:backup": "node scripts/migration-manager.js backup",
+  "db:migrate:reset": "node scripts/migration-manager.js reset"
 }
 ```
 

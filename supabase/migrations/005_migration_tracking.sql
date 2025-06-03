@@ -51,9 +51,9 @@ BEGIN
             created_at TIMESTAMPTZ DEFAULT NOW()
         );
         
-        CREATE INDEX idx_schema_migrations_filename ON schema_migrations(filename);
-        CREATE INDEX idx_schema_migrations_applied_at ON schema_migrations(applied_at);
-        CREATE INDEX idx_schema_migrations_success ON schema_migrations(success);
+        CREATE INDEX IF NOT EXISTS idx_schema_migrations_filename ON schema_migrations(filename);
+        CREATE INDEX IF NOT EXISTS idx_schema_migrations_applied_at ON schema_migrations(applied_at);
+        CREATE INDEX IF NOT EXISTS idx_schema_migrations_success ON schema_migrations(success);
         
         RETURN true;
     END IF;

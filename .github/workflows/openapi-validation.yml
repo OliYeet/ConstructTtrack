@@ -40,10 +40,7 @@ jobs:
           cache-dependency-path: 'package-lock.json'
 
       - name: Install dependencies
-        run: |
-          npm ci
-          # Install OpenAPI validation dependencies locally
-          npm install @apidevtools/swagger-cli @apidevtools/swagger-parser openapi-diff @redocly/cli
+        run: npm ci
 
       - name: Validate OpenAPI specification syntax
         run: |

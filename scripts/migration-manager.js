@@ -70,7 +70,17 @@ class MigrationManager {
   async ensureMigrationTable() {
     try {
       // Create migration tracking table if it doesn't exist
-      const { error } = await this.supabase.rpc('create_migration_table');
+      let { error } = await this.supabase.rpc('create_migration_table');
+      if (error && error.code === '42883') {
+        // function not found
+        ({ error } = await this.supabase.raw(`
+    create table if not exists schema_migrations(
+      filename text primary key,
+      applied_at timestamptz not null,
+      checksum text
+    );
+  `));
+      }
 
       if (error && !error.message.includes('already exists')) {
         throw error;
@@ -249,7 +259,10 @@ class MigrationManager {
 
       const timestamp = new Date().toISOString();
 
-      for (const migration of migrations) {
+      const applied = new Set(
+        (await this.getMigrationStatus())?.map(m => m.filename)
+      );
+      for (const migration of migrations.filter(m => !applied.has(m))) {
         const { error } = await this.supabase.from(this.migrationTable).upsert({
           filename: migration,
           applied_at: timestamp,

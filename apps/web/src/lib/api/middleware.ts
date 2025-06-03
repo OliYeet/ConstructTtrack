@@ -4,14 +4,16 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { ApiHandler, RequestContext, HttpMethod } from '@/types/api';
-import { BaseApiError, InternalServerError } from '@/lib/errors/api-errors';
+
+import { createRequestContext } from '@/lib/api/auth';
+import { logRequest, logResponse, logError } from '@/lib/api/logger';
 import {
   createErrorResponse,
   createMethodNotAllowedResponse,
   addCorsHeaders,
 } from '@/lib/api/response';
-import { logRequest, logResponse, logError } from '@/lib/api/logger';
+import { BaseApiError, InternalServerError } from '@/lib/errors/api-errors';
+import { ApiHandler, RequestContext, HttpMethod } from '@/types/api';
 
 // Rate limiting store (in-memory for development, use Redis in production)
 const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
@@ -39,11 +41,12 @@ function generateRateLimitKey(
   }
 
   // Use IP address as default key
-  const ip =
+  const ipHeader =
     request.headers.get('x-forwarded-for') ||
     request.headers.get('x-real-ip') ||
-    'unknown';
-  return `rate_limit:${ip}`;
+    '';
+  const clientIp = ipHeader.split(',')[0].trim() || 'unknown';
+  return `rate_limit:${clientIp}`;
 }
 
 // Check rate limit
@@ -94,11 +97,8 @@ export function withApiMiddleware(
     let requestContext: RequestContext | undefined;
 
     try {
-      // Create basic request context (without auth for now)
-      requestContext = {
-        requestId: `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        timestamp: new Date().toISOString(),
-      };
+      // Create request context with authentication
+      requestContext = await createRequestContext(request);
 
       // Log incoming request
       logRequest(request, requestContext);
@@ -149,26 +149,59 @@ export function withApiMiddleware(
         }
       }
 
-      // Authentication check (simplified for now)
+      // Authentication check
       if (options.requireAuth) {
-        // TODO: Implement proper authentication check
-        // For now, we'll skip authentication to get the basic API structure working
-        const response = createErrorResponse(
-          new BaseApiError(
-            'Authentication not yet implemented',
-            501,
-            'NOT_IMPLEMENTED'
-          ),
-          requestContext.requestId
-        );
+        if (!requestContext.user) {
+          const response = createErrorResponse(
+            new BaseApiError('Authentication required', 401, 'UNAUTHORIZED'),
+            requestContext.requestId
+          );
 
-        if (options.cors !== false) {
-          addCorsHeaders(response);
+          if (options.cors !== false) {
+            addCorsHeaders(response);
+          }
+
+          const duration = Date.now() - startTime;
+          logResponse(request, 401, duration, requestContext);
+          return response;
+        }
+      }
+
+      // Role-based authorization check
+      if (options.requireRoles && options.requireRoles.length > 0) {
+        if (!requestContext.user) {
+          const response = createErrorResponse(
+            new BaseApiError('Authentication required', 401, 'UNAUTHORIZED'),
+            requestContext.requestId
+          );
+
+          if (options.cors !== false) {
+            addCorsHeaders(response);
+          }
+
+          const duration = Date.now() - startTime;
+          logResponse(request, 401, duration, requestContext);
+          return response;
         }
 
-        const duration = Date.now() - startTime;
-        logResponse(request, 501, duration, requestContext);
-        return response;
+        if (!options.requireRoles.includes(requestContext.user.role)) {
+          const response = createErrorResponse(
+            new BaseApiError(
+              `Access denied. Required roles: ${options.requireRoles.join(', ')}`,
+              403,
+              'FORBIDDEN'
+            ),
+            requestContext.requestId
+          );
+
+          if (options.cors !== false) {
+            addCorsHeaders(response);
+          }
+
+          const duration = Date.now() - startTime;
+          logResponse(request, 403, duration, requestContext);
+          return response;
+        }
       }
 
       // Add context to request

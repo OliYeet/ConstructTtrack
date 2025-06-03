@@ -375,7 +375,8 @@ async function validateSchemas() {
     console.log(chalk.green('✅ Schema validation completed'));
 
     if (schemaIssues > 0) {
-      console.log(chalk.yellow(`⚠️  Found ${schemaIssues} schema warnings`));
+      results.schemaValidation.passed = false;
+      console.log(chalk.red(`❌ Found ${schemaIssues} schema issues`));
     }
   } catch (error) {
     results.schemaValidation.passed = false;

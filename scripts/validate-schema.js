@@ -87,13 +87,35 @@ class SchemaValidator {
 
     // Check for balanced parentheses
     let parenCount = 0;
+    let inString = false;
+    let inComment = false;
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
-      // Skip SQL comments
-      const cleanLine = line.replace(/--.*$/, '').replace(/\/\*.*?\*\//g, '');
-      // Simple check - doesn't handle strings perfectly but better than nothing
-      parenCount += (cleanLine.match(/\(/g) || []).length;
-      parenCount -= (cleanLine.match(/\)/g) || []).length;
+
+      for (let j = 0; j < line.length; j++) {
+        const char = line[j];
+        const nextChar = line[j + 1];
+
+        // Handle string literals
+        if (char === "'" && !inComment) {
+          inString = !inString;
+          continue;
+        }
+
+        // Handle comments
+        if (char === '-' && nextChar === '-' && !inString) {
+          inComment = true;
+          break; // Rest of line is comment
+        }
+
+        // Count parentheses only if not in string or comment
+        if (!inString && !inComment) {
+          if (char === '(') parenCount++;
+          if (char === ')') parenCount--;
+        }
+      }
+
+      inComment = false; // Reset comment flag for next line
     }
 
     if (parenCount !== 0) {
@@ -201,9 +223,12 @@ class SchemaValidator {
     const combinedSchema = initialSchema + '\n' + extendedSchema;
 
     // Extract table names
-    const tableMatches = combinedSchema.match(/CREATE TABLE\s+(\w+)/gi) || [];
+    const tableMatches =
+      combinedSchema.match(
+        /CREATE TABLE\s+(?:IF NOT EXISTS\s+)?(\w+(?:\.\w+)?)/gi
+      ) || [];
     const tables = tableMatches.map(match =>
-      match.replace(/CREATE TABLE\s+/i, '').toLowerCase()
+      match.replace(/CREATE TABLE\s+(?:IF NOT EXISTS\s+)?/i, '').toLowerCase()
     );
 
     logger.info(`Found ${tables.length} tables: ${tables.join(', ')}`);

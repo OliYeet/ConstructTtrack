@@ -4,6 +4,7 @@
  */
 
 import { NextRequest } from 'next/server';
+
 import {
   AuthenticationError,
   AuthorizationError,
@@ -18,9 +19,9 @@ export function extractToken(request: NextRequest): string | null {
     return null;
   }
 
-  // Support both "Bearer token" and "token" formats
-  if (authHeader.startsWith('Bearer ')) {
-    return authHeader.substring(7);
+  // Support both "Bearer token" and "token" formats (case-insensitive)
+  if (/^Bearer\s+/i.test(authHeader)) {
+    return authHeader.replace(/^Bearer\s+/i, '');
   }
 
   return authHeader;
@@ -56,7 +57,7 @@ export async function verifyToken(
 
     return {
       id: user.id,
-      email: user.email!,
+      email: user.email || '',
       role: profile.role,
       organizationId: profile.organization_id || undefined,
     };
@@ -87,7 +88,7 @@ export async function createRequestContext(
   return {
     user,
     organizationId: user?.organizationId,
-    requestId: `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    requestId: `req_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
     timestamp: new Date().toISOString(),
   };
 }
@@ -112,7 +113,7 @@ export async function requireRole(
 ): Promise<RequestContext> {
   const context = await requireAuth(request);
 
-  if (!allowedRoles.includes(context.user!.role)) {
+  if (!allowedRoles.includes(context.user?.role || '')) {
     throw new AuthorizationError(
       `Access denied. Required roles: ${allowedRoles.join(', ')}`
     );
@@ -130,14 +131,14 @@ export async function requireOrganization(
 
   // If no specific organization is required, user must belong to some organization
   if (!organizationId) {
-    if (!context.user!.organizationId) {
+    if (!context.user?.organizationId) {
       throw new AuthorizationError('Organization membership required');
     }
     return context;
   }
 
   // Check if user belongs to the specific organization
-  if (context.user!.organizationId !== organizationId) {
+  if (context.user?.organizationId !== organizationId) {
     throw new AuthorizationError('Access denied to this organization');
   }
 
@@ -235,7 +236,7 @@ export async function verifyApiKey(
       email: 'system@constructtrack.com',
       role: 'admin',
     },
-    requestId: `api_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    requestId: `api_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
     timestamp: new Date().toISOString(),
   };
 }

@@ -5,10 +5,10 @@
  * Sets up the complete database schema with all migrations
  */
 
-import { execSync } from 'child_process';
+import { execSync, spawnSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
+import { fileURLToPath, pathToFileURL } from 'url';
 
 import { createClient } from '@supabase/supabase-js';
 
@@ -41,16 +41,14 @@ class DatabaseSetup {
       const supabase = createClient(this.supabaseUrl, this.supabaseKey);
       // Use a simple version check that doesn't depend on specific tables or error codes
       try {
-        const { error } = await supabase.rpc('version');
-        if (error) {
-          // If version RPC fails, try a simple query that should always work
-          const { error: fallbackError } = await supabase
-            .from('information_schema.tables')
-            .select('table_name')
-            .limit(1);
-          if (fallbackError) {
-            throw new Error('Unable to connect to Supabase database');
-          }
+        // Skip non-portable RPC; use information_schema directly
+        // If version RPC fails, try a simple query that should always work
+        const { error: fallbackError } = await supabase
+          .from('information_schema.tables')
+          .select('table_name')
+          .limit(1);
+        if (fallbackError) {
+          throw new Error('Unable to connect to Supabase database');
         }
       } catch {
         // Final fallback - just check if we can make any connection
@@ -142,7 +140,12 @@ class DatabaseSetup {
       migrationFiles.forEach(file => logger.info(`  - ${file}`));
 
       // Run migrations using Supabase CLI
-      execSync('supabase db push', { stdio: 'inherit' });
+      const result = spawnSync('supabase', ['db', 'push'], {
+        stdio: 'inherit',
+      });
+      if (result.status !== 0) {
+        throw new Error(`Migration failed with exit code ${result.status}`);
+      }
 
       logger.success('All migrations applied successfully');
       return true;
@@ -235,7 +238,10 @@ class DatabaseSetup {
       const allTables = [...coreTables, ...extendedTables];
 
       for (const table of allTables) {
-        const { error } = await supabase.from(table).select('*').limit(0);
+        // Use count() instead of select() with limit(0) to avoid full scan
+        const { error } = await supabase
+          .from(table)
+          .select('*', { count: 'exact', head: true });
         if (error) {
           logger.error(`Table ${table} validation failed: ${error.message}`);
           return false;
@@ -363,7 +369,7 @@ Options:
 }
 
 // Run if called directly
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   main().catch(error => {
     logger.error(`Setup failed: ${error.message}`);
     process.exit(1);
