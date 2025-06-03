@@ -224,12 +224,55 @@ export default [
         clearTimeout: 'readonly',
         clearInterval: 'readonly',
         global: 'readonly',
+        __dirname: 'readonly',
+        __filename: 'readonly',
       },
     },
     rules: {
       'no-console': 'off', // Allow console in scripts
       '@typescript-eslint/no-var-requires': 'off', // Allow require in Node.js scripts
       'no-undef': 'off', // Node.js globals are handled above
+      'no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+    },
+  },
+
+  // Test files configuration (Jest environment)
+  {
+    files: ['tests/**/*.js', '**/*.test.js', '**/*.spec.js'],
+    languageOptions: {
+      ecmaVersion: 'latest',
+      sourceType: 'commonjs',
+      globals: {
+        // Node.js globals
+        process: 'readonly',
+        Buffer: 'readonly',
+        console: 'readonly',
+        setTimeout: 'readonly',
+        setInterval: 'readonly',
+        clearTimeout: 'readonly',
+        clearInterval: 'readonly',
+        global: 'readonly',
+        __dirname: 'readonly',
+        __filename: 'readonly',
+        require: 'readonly',
+        module: 'readonly',
+        exports: 'readonly',
+        // Jest globals
+        jest: 'readonly',
+        describe: 'readonly',
+        test: 'readonly',
+        it: 'readonly',
+        expect: 'readonly',
+        beforeAll: 'readonly',
+        afterAll: 'readonly',
+        beforeEach: 'readonly',
+        afterEach: 'readonly',
+      },
+    },
+    rules: {
+      'no-console': 'off', // Allow console in tests
+      'no-undef': 'off', // Jest and Node.js globals are handled above
+      'no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
     },
   },
 

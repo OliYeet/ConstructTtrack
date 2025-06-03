@@ -64,13 +64,13 @@ async function validateOpenAPI() {
     // Step 4: Validate schemas
     await validateSchemas();
 
-    // Step 5: Generate validation report
+    // Step 5: Compute summary & display results
+    displayResults(); // <- computes summary
+
+    // Step 6: Generate validation report (now has correct summary)
     if (CONFIG.generateReport) {
       await generateValidationReport();
     }
-
-    // Step 6: Display results
-    displayResults();
 
     // Exit with appropriate code
     process.exit(results.summary.passed ? 0 : 1);

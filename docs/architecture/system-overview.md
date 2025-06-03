@@ -181,7 +181,7 @@ focus on real-time collaboration, mobile-first design, and geospatial data manag
 ### Current Database Schema
 
 ```sql
--- Core Tables (Implemented)
+ -- Core Tables (Implemented)
 organizations     # Multi-tenant isolation
 profiles         # User management extending auth.users
 projects         # Project management with geospatial data
