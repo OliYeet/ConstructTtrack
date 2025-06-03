@@ -220,11 +220,9 @@ private prevCpuUsage: NodeJS.CpuUsage | null = null;
     this.prevCpuUsage = process.cpuUsage(); // store absolute for next call
 
     // µs spent since last sample / (elapsed_ms * #cores * 10_000) → %
-    const elapsedMs = this.monitoringInterval ? this.monitoringInterval._idleTimeout : 60_000;
+    const elapsedMs = 60000; // Default 60 second interval
     const cores = (await import('os')).cpus().length;
-    const usage =
-      ((current.user + current.system) / 10_000) / (elapsedMs * cores); // 0–1
-      const usage = (cpuUsage.user + cpuUsage.system) / 1000000; // Convert to seconds
+    const usage = ((current.user + current.system) / 1000000) / (elapsedMs * cores / 1000); // Convert to percentage
 
       let loadAverage: number[] | undefined;
       let processes: number | undefined;

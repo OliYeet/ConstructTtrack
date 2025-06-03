@@ -227,17 +227,11 @@ export class PerformanceMonitor {
           percentage: (memUsage.rss / (memUsage.rss + memUsage.external)) * 100,
           heapUsed: memUsage.heapUsed,
           heapTotal: memUsage.heapTotal,
-// At the top of the file
-import * as os from 'os';
-// At the top of the file
-import * as os from 'os';
-// At the top of the file
-import * as os from 'os';
-
- // ... other code ...
-
-           usage: (cpuUsage.user + cpuUsage.system) / 1000000, // Convert to seconds
-          loadAverage: process.platform !== 'win32' ? os.loadavg() : undefined,
+        },
+        cpu: {
+          usage: (cpuUsage.user + cpuUsage.system) / 1000000, // Convert to seconds
+          loadAverage: process.platform !== 'win32' ? require('os').loadavg() : undefined,
+        },
         timestamp: new Date().toISOString(),
       };
     } else if (typeof window !== 'undefined' && 'memory' in performance) {
@@ -297,13 +291,6 @@ private startResourceMonitoring(): void {
       }
      }, this.config.metricsInterval);
    }
-        const logger = getLogger();
-        logger.error('Failed to collect resource metrics', error instanceof Error ? error : new Error(String(error)), {
-          metadata: { error: String(error) }
-        });
-      }
-     }, this.config.metricsInterval);
-   }
 
   // Setup Web Vitals monitoring
   private setupWebVitalsMonitoring(): void {
@@ -337,8 +324,7 @@ private startResourceMonitoring(): void {
       new PerformanceObserver((list) => {
         let clsValue = 0;
         for (const entry of list.getEntries()) {
-          const layoutShiftEntry = entry as LayoutShiftEntry;
-          const layoutShiftEntry = entry as LayoutShiftEntry;
+          const layoutShiftEntry = entry as any;
           if (!layoutShiftEntry.hadRecentInput) {
             clsValue += layoutShiftEntry.value;
           }
@@ -359,21 +345,21 @@ private startResourceMonitoring(): void {
         
         this.recordMetric(
           'page_load_time',
-          navigation.loadEventEnd - navigation.navigationStart,
+          navigation.loadEventEnd - navigation.fetchStart,
           'ms',
           { type: 'navigation' }
         );
 
         this.recordMetric(
           'dom_content_loaded',
-          navigation.domContentLoadedEventEnd - navigation.navigationStart,
+          navigation.domContentLoadedEventEnd - navigation.fetchStart,
           'ms',
           { type: 'navigation' }
         );
 
         this.recordMetric(
           'first_byte',
-          navigation.responseStart - navigation.navigationStart,
+          navigation.responseStart - navigation.fetchStart,
           'ms',
           { type: 'navigation' }
         );
