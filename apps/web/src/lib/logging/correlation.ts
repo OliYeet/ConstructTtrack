@@ -175,9 +175,10 @@ export function extractUserContext(context?: RequestContext): {
 // Create correlation metadata for logging
 export function createCorrelationMetadata(
   request: NextRequest,
+  ids: { correlationId: string; requestId: string },
   context?: RequestContext
 ): Record<string, unknown> {
-  const { correlationId, requestId } = createCorrelationContext(request);
+  const { correlationId, requestId } = ids;
   const userContext = extractUserContext(context);
   
   return {

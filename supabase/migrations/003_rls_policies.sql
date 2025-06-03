@@ -11,13 +11,12 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Helper function to get user's role from JWT
 CREATE OR REPLACE FUNCTION auth.user_role()
-RETURNS TEXT AS $$
-BEGIN
-  -- Set search_path to prevent privilege escalation
-  SET search_path = auth;
-  RETURN auth.jwt() ->> 'role';
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+ RETURNS TEXT AS $$
+ BEGIN
+  -- Execute in a strictly-qualified context without mutating caller GUCs
+  RETURN (SELECT auth.jwt() ->> 'role');
+ END;
+ $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Equipment RLS Policies
 
@@ -146,7 +145,9 @@ CREATE POLICY "time_entries_field_worker_own_only" ON time_entries
 FOR SELECT USING (
   CASE auth.user_role()
     WHEN 'field_worker' THEN user_id = auth.uid()
-    ELSE true
+    WHEN 'admin'        THEN true
+    WHEN 'manager'      THEN true
+    ELSE false
   END
 );
 
@@ -154,12 +155,14 @@ FOR SELECT USING (
 
 -- Notifications: Organization isolation
 CREATE POLICY "notifications_organization_isolation" ON notifications
-FOR ALL USING (organization_id = auth.user_organization_id());
+FOR INSERT, UPDATE, DELETE
+USING (organization_id = auth.user_organization_id());
 
--- Notifications: Users can only see their own notifications
-CREATE POLICY "notifications_recipient_only" ON notifications
-FOR SELECT USING (recipient_id = auth.uid());
-
+CREATE POLICY "notifications_select_org_and_recipient" ON notifications
+FOR SELECT USING (
+  organization_id = auth.user_organization_id()
+  AND recipient_id = auth.uid()
+);
 -- Notifications: Only admins and managers can create notifications
 CREATE POLICY "notifications_create_admin_manager" ON notifications
 FOR INSERT WITH CHECK (

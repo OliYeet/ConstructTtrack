@@ -94,6 +94,14 @@ export class AlertManager {
   private lastEvaluations: Map<string, number> = new Map();
   private escalationTimers: Map<string, NodeJS.Timeout[]> = new Map();
 
+  // Circuit breaker state
+  private circuitBreakerState: 'CLOSED' | 'OPEN' | 'HALF_OPEN' = 'CLOSED';
+  private failureCount = 0;
+  private lastFailureTime = 0;
+  private nextRetryTime = 0;
+  private readonly maxFailures = 5;
+  private readonly circuitBreakerTimeout = 60000; // 1 minute
+
   constructor(config: AlertManagerConfig, notificationService: NotificationService) {
     this.config = config;
     this.notificationService = notificationService;
@@ -106,9 +114,9 @@ export class AlertManager {
     }
 
     this.evaluationTimer = setInterval(() => {
-      this.evaluateRules().catch((error: unknown) => {
+      this.evaluateRulesWithCircuitBreaker().catch((error: unknown) => {
         const logger = getLogger();
-        logger.error('Unhandled error in rule evaluation', error);
+        logger.error('Unhandled error in rule evaluation', error instanceof Error ? error : new Error(String(error)));
       });
     }, this.config.evaluationInterval);
 
@@ -300,6 +308,67 @@ export class AlertManager {
     return true;
   }
 
+  // Evaluate alert rules with circuit breaker and exponential backoff
+  private async evaluateRulesWithCircuitBreaker(): Promise<void> {
+    const now = Date.now();
+
+    // Check circuit breaker state
+    if (this.circuitBreakerState === 'OPEN') {
+      if (now < this.nextRetryTime) {
+        return; // Circuit breaker is open, skip evaluation
+      }
+      // Try to transition to half-open
+      this.circuitBreakerState = 'HALF_OPEN';
+    }
+
+    try {
+      await this.evaluateRules();
+
+      // Success - reset circuit breaker
+      if (this.circuitBreakerState === 'HALF_OPEN') {
+        this.circuitBreakerState = 'CLOSED';
+        this.failureCount = 0;
+      }
+    } catch (error) {
+      this.handleEvaluationFailure(error);
+      throw error;
+    }
+  }
+
+  // Handle evaluation failure with exponential backoff
+  private handleEvaluationFailure(error: unknown): void {
+    this.failureCount++;
+    this.lastFailureTime = Date.now();
+
+    const logger = getLogger();
+    logger.error('Rule evaluation failed', error instanceof Error ? error : new Error(String(error)), {
+      metadata: {
+        failureCount: this.failureCount,
+        circuitBreakerState: this.circuitBreakerState,
+      },
+    });
+
+    // Open circuit breaker if too many failures
+    if (this.failureCount >= this.maxFailures) {
+      this.circuitBreakerState = 'OPEN';
+
+      // Calculate exponential backoff delay (base 2 seconds, max 5 minutes)
+      const baseDelay = 2000; // 2 seconds
+      const maxDelay = 5 * 60 * 1000; // 5 minutes
+      const exponentialDelay = Math.min(baseDelay * Math.pow(2, this.failureCount - this.maxFailures), maxDelay);
+
+      this.nextRetryTime = this.lastFailureTime + exponentialDelay;
+
+      logger.warn('Circuit breaker opened due to repeated failures', {
+        metadata: {
+          failureCount: this.failureCount,
+          nextRetryTime: new Date(this.nextRetryTime).toISOString(),
+          delayMs: exponentialDelay,
+        },
+      });
+    }
+  }
+
   // Evaluate alert rules
   private async evaluateRules(): Promise<void> {
     for (const rule of this.rules.values()) {
@@ -371,11 +440,103 @@ export class AlertManager {
     }
   }
 
-  // Get metric value (placeholder - would integrate with actual metrics)
-  private async getMetricValue(_metric: string): Promise<number | string | null> {
-    // This would integrate with your actual metrics system
-    // For now, return null to indicate metric not found
-    return null;
+  // Get metric value from the metrics system
+  private async getMetricValue(metric: string): Promise<number | string | null> {
+    try {
+      // Import metrics modules dynamically to avoid circular dependencies
+      const { performanceMonitor } = await import('@/lib/monitoring/performance-monitor');
+      const { resourceMonitor } = await import('@/lib/monitoring/resource-monitor');
+      const { apiMetricsTracker } = await import('@/lib/monitoring/api-metrics');
+      const { errorReporter } = await import('@/lib/errors/error-reporter');
+
+      // Parse metric name to determine source and specific metric
+      const [source, metricName] = metric.split('.');
+
+      switch (source) {
+        case 'performance': {
+          const stats = performanceMonitor.getStats();
+          switch (metricName) {
+            case 'averageResponseTime':
+              return stats.averageResponseTime;
+            case 'currentMemoryUsage':
+              return stats.currentMemoryUsage;
+            case 'totalMetrics':
+              return stats.totalMetrics;
+            default:
+              // Look for specific metric by name
+              const metrics = performanceMonitor.getMetrics();
+              const latestMetric = metrics
+                .filter(m => m.name === metricName)
+                .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0];
+              return latestMetric?.value ?? null;
+          }
+        }
+
+        case 'resource': {
+          const current = resourceMonitor.getCurrentUsage();
+          if (!current) return null;
+
+          switch (metricName) {
+            case 'memory_percentage':
+              return current.memory.percentage;
+            case 'memory_used':
+              return current.memory.used;
+            case 'cpu_usage':
+              return current.cpu.usage;
+            case 'heap_usage':
+              return current.memory.heap ? (current.memory.heap.used / current.memory.heap.total) * 100 : null;
+            default:
+              return null;
+          }
+        }
+
+        case 'api': {
+          const apiStats = apiMetricsTracker.getAggregatedMetrics();
+          switch (metricName) {
+            case 'totalRequests':
+              return apiStats.totalRequests;
+            case 'averageResponseTime':
+              return apiStats.averageResponseTime;
+            case 'errorRate':
+              // Calculate error rate from available data
+              return apiStats.totalRequests > 0 ? apiStats.totalErrors / apiStats.totalRequests : 0;
+            case 'requestsPerMinute':
+              return apiStats.requestsPerMinute;
+            default:
+              return null;
+          }
+        }
+
+        case 'error': {
+          const errorStats = errorReporter.getStats();
+          switch (metricName) {
+            case 'totalErrors':
+              return errorStats.totalReports; // Use correct property name
+            case 'errorRate':
+              // Calculate error rate based on recent errors
+              return errorStats.recentErrors;
+            case 'uniqueErrors':
+              return errorStats.uniqueErrors;
+            default:
+              return null;
+          }
+        }
+
+        default:
+          // Try to find metric in performance monitor by full name
+          const metrics = performanceMonitor.getMetrics();
+          const latestMetric = metrics
+            .filter(m => m.name === metric)
+            .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0];
+          return latestMetric?.value ?? null;
+      }
+    } catch (error) {
+      const logger = getLogger();
+      logger.error('Failed to get metric value', error instanceof Error ? error : new Error(String(error)), {
+        metadata: { metric },
+      });
+      return null;
+    }
   }
 
   // Evaluate condition
@@ -447,17 +608,19 @@ export class AlertManager {
     }
   }
 
-  // Schedule escalation notifications
+  // Schedule escalations for an alert
   private scheduleEscalations(alert: Alert, rule: AlertRule): void {
+    const alertTimers: NodeJS.Timeout[] = [];
+
     for (const escalation of rule.escalationRules) {
-      setTimeout(async () => {
+      const timer = setTimeout(async () => {
         const currentAlert = this.alerts.get(alert.id);
         if (!currentAlert || currentAlert.status === AlertStatus.RESOLVED) {
           return;
         }
 
         // Check escalation condition
-        if (escalation.condition === 'unacknowledged' && 
+        if (escalation.condition === 'unacknowledged' &&
             currentAlert.status === AlertStatus.ACKNOWLEDGED) {
           return;
         }
@@ -477,7 +640,7 @@ export class AlertManager {
             });
           } catch (error) {
             const logger = getLogger();
-            logger.error('Failed to send escalation notification', error, {
+            logger.error('Failed to send escalation notification', error instanceof Error ? error : new Error(String(error)), {
               metadata: {
                 alertId: alert.id,
                 escalationLevel: escalation.level,
@@ -487,7 +650,11 @@ export class AlertManager {
           }
         }
       }, escalation.delay);
+
+      alertTimers.push(timer);
     }
+
+    this.escalationTimers.set(alert.id, alertTimers);
   }
 
   // Generate alert fingerprint
@@ -501,8 +668,8 @@ export class AlertManager {
     const toDelete: string[] = [];
 
     this.alerts.forEach((alert, id) => {
-      if (alert.status === AlertStatus.RESOLVED && 
-          new Date(alert.resolvedAt!).getTime() < cutoff) {
+      if (alert.status === AlertStatus.RESOLVED &&
+         alert.resolvedAt && new Date(alert.resolvedAt).getTime() < cutoff) {
         toDelete.push(id);
       }
     });

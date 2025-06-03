@@ -264,7 +264,7 @@ export class GlobalErrorHandler {
         ...context,
         classification,
         priority: 'CRITICAL',
-        requiresImmedateAttention: true,
+        requiresImmediateAttention: true,
       },
     });
 
@@ -281,13 +281,22 @@ export class GlobalErrorHandler {
   ): Promise<void> {
     const logger = getLogger();
 
-    switch (classification.type) {
-      case 'network':
-        // Could implement retry logic, offline mode, etc.
-        await logger.info('Attempting network error recovery', {
-          metadata: { ...context, recoveryType: 'network' },
-        });
-        break;
+switch (classification.type) {
+       case 'network':
+         await logger.info('Attempting network error recovery', {
+           metadata: { ...context, recoveryType: 'network' },
+         });
+        // Implement retry with exponential backoff
+        if (context.additionalData?.retryable) {
+          const retryCount = context.additionalData.retryCount as number || 0;
+          if (retryCount < 3) {
+            setTimeout(() => {
+              // Trigger retry logic
+              this.emit('retry', { error, context, retryCount: retryCount + 1 });
+            }, Math.pow(2, retryCount) * 1000);
+          }
+        }
+         break;
 
       case 'api':
         // Could implement API retry, fallback endpoints, etc.

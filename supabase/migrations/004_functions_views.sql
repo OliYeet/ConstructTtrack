@@ -17,6 +17,9 @@ RETURNS TABLE (
   manager_name TEXT
 ) AS $$
 BEGIN
+  -- Set secure search_path to prevent privilege escalation
+  PERFORM set_config('search_path', 'pg_catalog, public', true);
+
   RETURN QUERY
   SELECT 
     p.id,
@@ -303,5 +306,23 @@ BEGIN
   ) RETURNING id INTO audit_id;
   
   RETURN audit_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Function: Check if table has RLS enabled (for testing)
+CREATE OR REPLACE FUNCTION check_table_rls_status(table_name TEXT)
+RETURNS BOOLEAN AS $$
+DECLARE
+  rls_enabled BOOLEAN;
+BEGIN
+  -- Set secure search_path to prevent privilege escalation
+  PERFORM set_config('search_path', 'pg_catalog, public', true);
+
+  SELECT relrowsecurity
+  INTO rls_enabled
+  FROM pg_catalog.pg_class
+  WHERE relname = table_name;
+
+  RETURN COALESCE(rls_enabled, false);
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;

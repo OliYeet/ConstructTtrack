@@ -49,16 +49,16 @@ function ErrorDashboard() {
   const [loading, setLoading] = useState(true);
   const [selectedTimeframe, setSelectedTimeframe] = useState('24h');
   const [selectedType, setSelectedType] = useState('all');
-
-  // Fetch error data
-  useEffect(() => {
+useEffect(() => {
+   const controller = new AbortController();
     fetchErrorData();
+   return () => controller.abort();
   }, [selectedTimeframe, selectedType]);
 
   const fetchErrorData = async () => {
-    const controller = new AbortController();
     setLoading(true);
-    try {
+    // ... rest of the function
+  };
       const statsRes = await fetch('/api/v1/errors?type=summary', {
         signal: controller.signal,
       });

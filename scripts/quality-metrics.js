@@ -117,31 +117,17 @@ class QualityMetricsCollector {
   async collectComplexityMetrics() {
     console.log('🔍 Collecting code complexity metrics...');
 
-try {
-       // Use ESLint complexity rules to analyze complexity
-       const complexityReport = execSync(
-         'npx eslint apps/web/src --format json --rule "complexity: [error, 10]" --rule "max-depth: [error, 4]" --rule "max-lines-per-function: [error, 50]"',
-         {
-           cwd: config.projectRoot,
-           encoding: 'utf8',
-         }
-       );
- 
+    try {
+      // Use ESLint complexity rules to analyze complexity
+      const complexityReport = execSync(
+        'npx eslint apps/web/src --format json --rule "complexity: [error, 10]" --rule "max-depth: [error, 4]" --rule "max-lines-per-function: [error, 50]"',
+        {
+          cwd: config.projectRoot,
+          encoding: 'utf8',
+        }
+      );
+
       let eslintResults;
-      try {
-        eslintResults = JSON.parse(complexityReport);
-      } catch (parseError) {
-        console.error('❌ Failed to parse ESLint output:', parseError.message);
-        this.metrics.complexity = {
-          totalFiles: 0,
-          totalIssues: 0,
-          highComplexityFiles: [],
-          averageIssuesPerFile: 0,
-          thresholds: thresholds.complexity,
-          passed: false,
-        };
-        return;
-      }
       try {
         eslintResults = JSON.parse(complexityReport);
       } catch (parseError) {
@@ -223,7 +209,7 @@ try {
           });
         }
 
-// Simple function length analysis
+        // Simple function length analysis
         const functionPatterns = [
           /function\s+\w+/g,                    // Named functions
           /const\s+\w+\s*=\s*\([^)]*\)\s*=>/g, // Arrow functions with params
@@ -231,32 +217,19 @@ try {
           /async\s+function\s+\w+/g,            // Async functions
           /\w+\s*\([^)]*\)\s*{/g,              // Method declarations
         ];
-        
-        let functionMatches = [];
-        functionPatterns.forEach(pattern => {
-// Simple function length analysis
-        const functionPatterns = [
-          /function\s+\w+/g,                    // Named functions
-          /const\s+\w+\s*=\s*\([^)]*\)\s*=>/g, // Arrow functions with params
-          /const\s+\w+\s*=\s*\w+\s*=>/g,       // Arrow functions without parens
-          /async\s+function\s+\w+/g,            // Async functions
-          /\w+\s*\([^)]*\)\s*{/g,              // Method declarations
-        ];
-        
+
         let functionMatches = [];
         functionPatterns.forEach(pattern => {
           const matches = content.match(pattern) || [];
           functionMatches = functionMatches.concat(matches);
         });
-        
-         if (functionMatches.length > 10) {
-           longFunctions.push({
-             file: path.relative(config.projectRoot, filePath),
-             functions: functionMatches.length,
-           });
-         }
-           });
-         }
+
+        if (functionMatches.length > 10) {
+          longFunctions.push({
+            file: path.relative(config.projectRoot, filePath),
+            functions: functionMatches.length,
+          });
+        }
       });
 
       const averageLinesPerFile = totalFiles > 0 ? totalLines / totalFiles : 0;
@@ -301,10 +274,11 @@ try {
 
     try {
       const lintReport = execSync(
-        'npx eslint apps/web/src packages/*/src --format json',
+        'npx eslint apps/web/src --format json',
         {
           cwd: config.projectRoot,
           encoding: 'utf8',
+          maxBuffer: 10 * 1024 * 1024, // 10 MB
         }
       );
 
@@ -357,20 +331,6 @@ async collectSecurityMetrics() {
         });
         auditResults = JSON.parse(auditReport);
       } catch (auditError) {
-async collectSecurityMetrics() {
-     console.log('🔒 Collecting security metrics...');
- 
-    let auditResults;
-     try {
-       // Run npm audit
-      try {
-        const auditReport = execSync('npm audit --json', {
-          cwd: config.projectRoot,
-          encoding: 'utf8',
-          stdio: ['pipe', 'pipe', 'pipe'], // Capture stderr too
-        });
-        auditResults = JSON.parse(auditReport);
-      } catch (auditError) {
         // npm audit exits with non-zero when vulnerabilities found
         // but still outputs JSON to stdout
         if (auditError.stdout) {
@@ -384,16 +344,16 @@ async collectSecurityMetrics() {
           throw auditError;
         }
       }
-       
-       this.metrics.security = {
-         vulnerabilities: auditResults.metadata?.vulnerabilities || {},
-         totalVulnerabilities: Object.values(auditResults.metadata?.vulnerabilities || {}).reduce((a, b) => a + b, 0),
-         dependencies: auditResults.metadata?.dependencies || 0,
-         passed: Object.values(auditResults.metadata?.vulnerabilities || {}).reduce((a, b) => a + b, 0) === 0,
-       };
- 
-       console.log('✅ Security metrics collected');
-     } catch (error) {
+
+      this.metrics.security = {
+        vulnerabilities: auditResults.metadata?.vulnerabilities || {},
+        totalVulnerabilities: Object.values(auditResults.metadata?.vulnerabilities || {}).reduce((a, b) => a + b, 0),
+        dependencies: auditResults.metadata?.dependencies || 0,
+        passed: Object.values(auditResults.metadata?.vulnerabilities || {}).reduce((a, b) => a + b, 0) === 0,
+      };
+
+      console.log('✅ Security metrics collected');
+    } catch (error) {
       console.error('❌ Failed to collect security metrics:', error.message);
       this.metrics.security = {
         vulnerabilities: {},
@@ -401,15 +361,8 @@ async collectSecurityMetrics() {
         dependencies: 0,
         passed: false,
       };
-     }
-   }
-        vulnerabilities: {},
-        totalVulnerabilities: 0,
-        dependencies: 0,
-        passed: false,
-      };
-     }
-   }
+    }
+  }
 
   // Get all source files
   getSourceFiles(dir) {
@@ -539,19 +492,8 @@ async collectSecurityMetrics() {
       .replace(/'/g, "&#039;");
   }
 
-   // Generate HTML report
-  // Helper function to escape HTML
-  escapeHtml(unsafe) {
-    return String(unsafe)
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#039;");
-  }
-
-   // Generate HTML report
-   generateHTMLReport(report) {
+  // Generate HTML report
+  generateHTMLReport(report) {
      return `
  <!DOCTYPE html>
  <html>

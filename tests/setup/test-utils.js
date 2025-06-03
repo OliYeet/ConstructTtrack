@@ -3,9 +3,9 @@
  * Common utilities and helpers for all test types
  */
 
-const { render, screen, fireEvent, waitFor } = require('@testing-library/react');
-const { jest } = require('@jest/globals');
-const userEvent = require('@testing-library/user-event');
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { jest } from '@jest/globals';
+import userEvent from '@testing-library/user-event';
 
 // Mock implementations
 const mockSupabaseClient = {
@@ -123,20 +123,20 @@ const renderWithProviders = (ui, options = {}) => {
 };
 
 // Async utilities
-export const waitForLoadingToFinish = (testId = 'loading') => {
+const waitForLoadingToFinish = (testId = 'loading') => {
    return waitFor(() => {
     expect(screen.queryByTestId(testId)).not.toBeInTheDocument();
    });
  };
 
-export const waitForErrorToAppear = (testId = 'error') => {
+const waitForErrorToAppear = (testId = 'error') => {
    return waitFor(() => {
     expect(screen.getByTestId(testId)).toBeInTheDocument();
    });
  };
 
 // Form testing utilities
-export const fillForm = async (formData) => {
+const fillForm = async (formData) => {
    const user = userEvent.setup();
    
    for (const [fieldName, value] of Object.entries(formData)) {
@@ -150,7 +150,7 @@ export const fillForm = async (formData) => {
    }
  };
 
-export const submitForm = async () => {
+const submitForm = async () => {
   const user = userEvent.setup();
   const submitButton = screen.getByRole('button', { name: /submit/i });
   await user.click(submitButton);
@@ -235,7 +235,7 @@ export const restoreDate = () => {
 };
 
 // Network request mocking
-export const mockFetch = (responses = []) => {
+const mockFetch = (responses = []) => {
   let callCount = 0;
   
   global.fetch = jest.fn(() => {
@@ -245,8 +245,10 @@ export const mockFetch = (responses = []) => {
   });
 };
 
-export const restoreFetch = () => {
-  global.fetch.mockRestore();
+const restoreFetch = () => {
+  if (global.fetch && global.fetch.mockRestore) {
+    global.fetch.mockRestore();
+  }
 };
 
 // Performance testing utilities
@@ -265,14 +267,29 @@ export const checkAccessibility = async (container) => {
 };
 
 // Error boundary testing
- export const TestErrorBoundary = ({ children, onError }) => {
-   try {
-     return children;
-   } catch (error) {
-     if (onError) onError(error);
-    return React.createElement('div', { 'data-testid': 'error-boundary' }, 'Something went wrong');
-   }
- };
+class TestErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    if (this.props.onError) {
+      this.props.onError(error, errorInfo);
+    }
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return React.createElement('div', { 'data-testid': 'error-boundary' }, 'Something went wrong');
+    }
+    return this.props.children;
+  }
+}
 
 // Custom matchers
 expect.extend({

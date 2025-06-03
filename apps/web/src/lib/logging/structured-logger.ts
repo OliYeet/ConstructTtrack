@@ -168,7 +168,7 @@ export class StructuredLogger {
   }) {
     this.service = options.service;
     this.environment = options.environment || process.env.NODE_ENV || 'development';
-    this.version = options.version || process.env.npm_package_version || '1.0.0';
+    this.version = options.version || process.env.npm_package_version || process.env.NEXT_PUBLIC_VERSION || '1.0.0';
     this.transports = options.transports || [new ConsoleTransport()];
     this.defaultMetadata = options.defaultMetadata || {};
   }
@@ -321,20 +321,20 @@ export class StructuredLogger {
   }
 
   // Performance logging
-  async logPerformance(
-    operation: string,
-    duration: number,
-    context?: Partial<StructuredLogEntry>
-  ): Promise<void> {
-    await this.info(`Performance: ${operation}`, {
-      ...context,
-      performance: {
-        duration,
-        memoryUsage: process.memoryUsage(),
-        ...context?.performance,
-      },
-    });
-  }
+async logPerformance(
+  operation: string,
+  duration: number,
+  context?: Partial<StructuredLogEntry>
+): Promise<void> {
+  await this.info(`Performance: ${operation}`, {
+    ...context,
+    performance: {
+      duration,
+     memoryUsage: typeof process !== 'undefined' && process.memoryUsage ? process.memoryUsage() : undefined,
+      ...context?.performance,
+    },
+  });
+}
 
   // Create child logger with additional context
   child(additionalMetadata: Record<string, unknown>): StructuredLogger {

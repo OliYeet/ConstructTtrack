@@ -1,6 +1,9 @@
 -- Spatial Indexes Migration
 -- Creates spatial indexes for geometry columns to optimize spatial queries
 
+-- Enable btree_gist extension for composite GIST indexes
+CREATE EXTENSION IF NOT EXISTS btree_gist;
+
 -- Create spatial index on projects.location column
 CREATE INDEX IF NOT EXISTS idx_projects_location 
 ON projects USING GIST (location);

@@ -138,13 +138,16 @@ export class NotificationService {
             error: error instanceof Error ? error.message : String(error),
           },
         });
-
-        if (attempt <= channel.retryAttempts) {
-          await this.delay(channel.retryDelay * attempt);
-        }
-      }
+ let attempt = 0;
+ while (attempt < channel.retryAttempts) {
+    …
+   if (attempt < channel.retryAttempts) {
+     // Exponential back-off with ±10 % jitter
+     const backoff = channel.retryDelay * 2 ** (attempt - 1);
+     const jitter  = backoff * 0.1 * (Math.random() - 0.5);
+     await this.delay(backoff + jitter);
     }
-
+ }
     return false;
   }
 

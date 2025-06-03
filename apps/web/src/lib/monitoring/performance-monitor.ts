@@ -282,10 +282,14 @@ private startResourceMonitoring(): void {
            );
 
            if (metrics.cpu.usage > 0) {
+             // Convert CPU usage from seconds to percentage
+             // Note: This is a simplified conversion. For accurate CPU percentage,
+             // consider using a library like pidusage or implementing proper CPU sampling
+             const cpuPercentage = Math.min((metrics.cpu.usage / 1000) * 100, 100);
              this.recordMetric(
                'cpu_usage',
-               metrics.cpu.usage,
-               'seconds',
+               cpuPercentage,
+               'percent',
                { type: 'cpu' }
              );
            }
@@ -418,6 +422,27 @@ private startResourceMonitoring(): void {
           metadata: {
             metric,
             threshold: this.config.thresholds.memoryUsage.warning,
+            severity: 'warning',
+          },
+        });
+      }
+    }
+
+    // Check CPU usage thresholds
+    if (metric.name === 'cpu_usage') {
+      if (metric.value > this.config.thresholds.cpuUsage.critical) {
+        logger.error('Critical CPU usage threshold exceeded', undefined, {
+          metadata: {
+            metric,
+            threshold: this.config.thresholds.cpuUsage.critical,
+            severity: 'critical',
+          },
+        });
+      } else if (metric.value > this.config.thresholds.cpuUsage.warning) {
+        logger.warn('CPU usage threshold warning', {
+          metadata: {
+            metric,
+            threshold: this.config.thresholds.cpuUsage.warning,
             severity: 'warning',
           },
         });

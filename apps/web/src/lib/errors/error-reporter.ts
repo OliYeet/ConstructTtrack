@@ -112,6 +112,11 @@ export class ErrorReporter {
  // Add to queue only when it can eventually be drained
  if (this.config.enableRemoteReporting) {
    this.reportQueue.push(report);
+  
+  // Limit queue size to prevent memory issues
+  if (this.reportQueue.length > this.config.maxReports) {
+    this.reportQueue.shift(); // Remove oldest
+  }
  }
 
     // Save to storage
@@ -156,11 +161,11 @@ export class ErrorReporter {
       error.name,
       error.message,
       context.source,
-      (() => {
+(() => {
    try {
      return context.url ? new URL(context.url, 'http://local').pathname : '';
    } catch {
-     return '';
+    return context.url || ''; // Use raw URL as fallback
    }
  })(),
       error.stack ? error.stack.split('\n')[1] : '', // First stack frame
@@ -256,10 +261,17 @@ export class ErrorReporter {
           'Content-Type': 'application/json',
           ...(this.config.apiKey && { 'Authorization': `Bearer ${this.config.apiKey}` }),
         },
-        body: JSON.stringify({
-          report,
-          aggregation: this.aggregations.get(report.fingerprint),
-        }),
+body: JSON.stringify({
+   report,
+  aggregation: (() => {
+    const agg = this.aggregations.get(report.fingerprint);
+    if (!agg) return null;
+    return {
+      ...agg,
+      affectedUsers: Array.from(agg.affectedUsers)
+    };
+  })(),
+ }),
       });
 
       if (!response.ok) {

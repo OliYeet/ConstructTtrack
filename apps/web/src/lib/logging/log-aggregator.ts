@@ -138,7 +138,17 @@ export class LogAggregator {
       headers['Authorization'] = `Bearer ${endpoint.apiKey}`;
     }
 
-    if (this.config.enableCompression) {
+    let compressed = false;
+    if (this.config.enableCompression && typeof payload !== 'object') {
+      try {
+        const { gzipSync } = await import('zlib');
+        payload = gzipSync(Buffer.from(payload));
+        compressed = true;
+      } catch (error) {
+        console.warn('Failed to compress log payload:', error);
+      }
+    }
+    if (compressed) {
       headers['Content-Encoding'] = 'gzip';
     }
 

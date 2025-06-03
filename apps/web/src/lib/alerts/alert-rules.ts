@@ -371,6 +371,13 @@ export function createAlertRule(
   } = {}
 ): AlertRule {
   return {
+    // guard against duplicate IDs in runtime
+    ...(() => {
+      if (process.env.NODE_ENV !== 'production' && defaultAlertRules.some(r => r.id === id)) {
+        throw new Error(`Duplicate alert rule id detected: ${id}`);
+      }
+      return {};
+    })(),
     id,
     name,
     description,

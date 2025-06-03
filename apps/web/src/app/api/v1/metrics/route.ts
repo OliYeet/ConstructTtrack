@@ -87,11 +87,27 @@ export async function POST(request: NextRequest) {
   
   const { name, value, unit, tags, metadata } = body;
 
-  // Validate required fields
-  if (!name || typeof value !== 'number' || !unit) {
+// Validate required fields
+   if (!name || typeof value !== 'number' || !unit) {
+     return createErrorResponse(
+       new Error('Missing required fields: name, value, unit'),
+       'unknown'
+     );
+   }
+
+  // Validate metric name format (alphanumeric with dots/underscores)
+  if (!/^[a-zA-Z0-9._]+$/.test(name)) {
     return createErrorResponse(
-      new Error('Missing required fields: name, value, unit'),
-      'unknown'
+      new Error('Invalid metric name format. Use only alphanumeric characters, dots, and underscores'),
+      'validation_error'
+    );
+  }
+
+  // Validate value is finite
+  if (!isFinite(value)) {
+    return createErrorResponse(
+      new Error('Metric value must be a finite number'),
+      'validation_error'
     );
   }
 
@@ -117,11 +133,12 @@ export async function POST(request: NextRequest) {
 }
 
 // Helper function to parse timeframe
-function parseTimeframe(timeframe: string): number {
-  const match = timeframe.match(/^(\d+)([smhd])$/);
-  if (!match) {
-    return 60 * 60 * 1000; // Default to 1 hour
-  }
+ function parseTimeframe(timeframe: string): number {
+  const match = timeframe.trim().toLowerCase().match(/^(\d+)([smhd])$/);
+   if (!match) {
+    console.warn(`Invalid timeframe format: ${timeframe}. Using default 1 hour.`);
+     return 60 * 60 * 1000; // Default to 1 hour
+   }
 
   const value = parseInt(match[1], 10);
   const unit = match[2];
@@ -198,18 +215,18 @@ async function getHealthMetrics() {
     score: healthScore,
     status,
     checks: {
-      memory: {
-        status: !currentResources ? 'unknown' :
-                currentResources.memory.percentage > 90 ? 'critical' :
-                currentResources.memory.percentage > 80 ? 'warning' : 'healthy',
-        usage: currentResources?.memory.percentage || 0,
-      },
-      cpu: {
-        status: !currentResources ? 'unknown' :
-                currentResources.cpu.usage > 0.9 ? 'critical' :
-                currentResources.cpu.usage > 0.7 ? 'warning' : 'healthy',
-        usage: currentResources ? currentResources.cpu.usage * 100 : 0,
-      },
+memory: {
+         status: !currentResources ? 'unknown' :
+                 currentResources.memory.percentage > 90 ? 'critical' :
+                 currentResources.memory.percentage > 80 ? 'warning' : 'healthy',
+        usage: currentResources?.memory?.percentage ?? 0,
+       },
+       cpu: {
+         status: !currentResources ? 'unknown' :
+                 currentResources.cpu.usage > 0.9 ? 'critical' :
+                 currentResources.cpu.usage > 0.7 ? 'warning' : 'healthy',
+        usage: currentResources?.cpu?.usage ? currentResources.cpu.usage * 100 : 0,
+       },
       api: {
         status: apiStats.averageResponseTime > 5000 ? 'critical' :
                 apiStats.averageResponseTime > 2000 ? 'warning' : 'healthy',

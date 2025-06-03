@@ -99,7 +99,10 @@ expect.extend({
 });
 
 // Mock fetch for tests
-global.fetch = jest.fn();
+global.fetch = jest.fn().mockResolvedValue({
+  ok: true,
+  json: async () => ({}),
+});
 
 // Mock Supabase client
 jest.mock('@constructtrack/supabase/client', () => ({
@@ -172,11 +175,11 @@ export const createMockRequest = (
   const request = {
     method,
     url,
-    headers: new Map(
+    headers: new Headers(
       Object.entries({
         'content-type': 'application/json',
         ...headers,
-      })
+      }).map(([k, v]) => [k.toLowerCase(), v]),
     ),
     json: jest.fn().mockResolvedValue(body),
   };

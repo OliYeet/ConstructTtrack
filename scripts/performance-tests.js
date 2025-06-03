@@ -53,13 +53,13 @@ class PerformanceTester {
     try {
       for (const url of config.testUrls) {
         console.log(`📊 Testing: ${url}`);
-        
+
         const urlHash = require('crypto').createHash('md5').update(url).digest('hex').substring(0, 8);
-const urlHash = require('crypto').createHash('md5').update(url).digest('hex').substring(0, 8);
-const reportPath = path.join(config.outputDir, `lighthouse-${urlHash}-${url.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 50)}.json`);
-        
+        const reportPath = path.join(config.outputDir, `lighthouse-${urlHash}-${url.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 50)}.json`);
+
         // Run Lighthouse
-execSync(`npx lighthouse ${url} --output=json --output-path=${reportPath} --chrome-flags="--headless" --quiet`);
+        execSync(`npx lighthouse ${url} --output=json --output-path=${reportPath} --chrome-flags="--headless" --quiet`);
+
         if (fs.existsSync(reportPath)) {
           const report = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
           
@@ -108,32 +108,26 @@ execSync(`npx lighthouse ${url} --output=json --output-path=${reportPath} --chro
   async analyzeBundleSize() {
     console.log('📦 Analyzing bundle size...');
 
-try {
-  const buildExists = fs.existsSync(path.join(__dirname, '../apps/web/.next'));
-  if (!buildExists) {
-    console.log('🔨 Building application...');
-try {
-  const buildExists = fs.existsSync(path.join(__dirname, '../apps/web/.next'));
-  if (!buildExists) {
-    console.log('🔨 Building application...');
-     // Build the application
-     execSync('npm run build', {
-       cwd: path.join(__dirname, '..'),
-       stdio: 'inherit',
-     });
-  } else {
-    console.log('✅ Using existing build');
-  }
-    console.log('✅ Using existing build');
-  }
-
-      // Analyze bundle
+    try {
       const buildDir = path.join(__dirname, '../apps/web/.next');
+      const buildExists = fs.existsSync(buildDir);
+
+      if (!buildExists) {
+        console.log('🔨 Building application...');
+        // Build the application
+        execSync('npm run build', {
+          cwd: path.join(__dirname, '..'),
+          stdio: 'inherit',
+        });
+      } else {
+        console.log('✅ Using existing build');
+      }
+
       const staticDir = path.join(buildDir, 'static');
 
       if (fs.existsSync(staticDir)) {
         const bundleStats = this.getBundleStats(staticDir);
-        
+
         this.results.bundleSize = {
           ...bundleStats,
           budgets: {
@@ -215,55 +209,43 @@ try {
     console.log('⚡ Running load testing...');
 
     try {
-// Improved load test with accurate timing
-const testResults = [];
-const iterations = 10;
-const concurrency = 3; // Run 3 requests concurrently
+      // Improved load test with accurate timing
+      const testResults = [];
+      const iterations = 10;
+      const concurrency = 3; // Run 3 requests concurrently
 
-const runRequest = async () => {
-  try {
-    const result = execSync('curl -s -o /dev/null -w "%{time_total}" http://localhost:3000', {
-      encoding: 'utf8',
-      timeout: 10000,
-    });
-    return parseFloat(result) * 1000; // Convert to milliseconds
-  } catch (error) {
-    throw new Error(`Request failed: ${error.message}`);
-  }
-};
+      const runRequest = async () => {
+        try {
+          const result = execSync('curl -s -o /dev/null -w "%{time_total}" http://localhost:3000', {
+            encoding: 'utf8',
+            timeout: 10000,
+          });
+          return parseFloat(result) * 1000; // Convert to milliseconds
+        } catch (error) {
+          throw new Error(`Request failed: ${error.message}`);
+        }
+      };
 
-// Run requests in batches
-for (let i = 0; i < iterations; i += concurrency) {
-  const batch = [];
-  for (let j = 0; j < concurrency && i + j < iterations; j++) {
-    batch.push(runRequest());
-  }
-  
-  try {
-    const results = await Promise.all(batch);
-    testResults.push(...results);
-  } catch (error) {
-    console.warn(`Load test batch ${Math.floor(i / concurrency) + 1} partially failed:`, error.message);
-  }
-}
-  const batch = [];
-  for (let j = 0; j < concurrency && i + j < iterations; j++) {
-    batch.push(runRequest());
-  }
-  
-  try {
-    const results = await Promise.all(batch);
-    testResults.push(...results);
-  } catch (error) {
-    console.warn(`Load test batch ${Math.floor(i / concurrency) + 1} partially failed:`, error.message);
-  }
-}
+      // Run requests in batches
+      for (let i = 0; i < iterations; i += concurrency) {
+        const batch = [];
+        for (let j = 0; j < concurrency && i + j < iterations; j++) {
+          batch.push(runRequest());
+        }
+
+        try {
+          const results = await Promise.all(batch);
+          testResults.push(...results);
+        } catch (error) {
+          console.warn(`Load test batch ${Math.floor(i / concurrency) + 1} partially failed:`, error.message);
+        }
+      }
 
       if (testResults.length > 0) {
         const avgResponseTime = testResults.reduce((a, b) => a + b, 0) / testResults.length;
         const minResponseTime = Math.min(...testResults);
         const maxResponseTime = Math.max(...testResults);
-        
+
         this.results.loadTesting = {
           iterations: testResults.length,
           averageResponseTime: Math.round(avgResponseTime),
@@ -304,15 +286,15 @@ for (let i = 0; i < iterations; i += concurrency) {
   // Calculate summary
   calculateSummary() {
     const lighthouseScores = Object.values(this.results.lighthouse);
-    const avgPerformanceScore = lighthouseScores.length > 0 
+    const avgPerformanceScore = lighthouseScores.length > 0
       ? lighthouseScores.reduce((sum, result) => sum + result.performance, 0) / lighthouseScores.length
       : 0;
-const allPassed = [
-   ...lighthouseScores.map(result => result.passed),
-  this.results.bundleSize?.passed,
-  this.results.loadTesting?.passed,
-].filter(val => val !== undefined).every(val => val === true);
-].filter(val => val !== undefined).every(val => val === true);
+
+    const allPassed = [
+      ...lighthouseScores.map(r => r.passed),
+      this.results.bundleSize?.passed,
+      this.results.loadTesting?.passed,
+    ].filter(Boolean).every(Boolean);
 
     return {
       overallScore: Math.round(avgPerformanceScore),
@@ -349,22 +331,18 @@ const allPassed = [
     return recommendations;
   }
 
-// HTML escape function
-escapeHtml(str) {
-  const div = document.createElement('div');
-  div.textContent = str;
-  return div.innerHTML;
-}
+  // HTML escape function
+  escapeHtml(str = '') {
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
 
-// HTML escape function
-escapeHtml(str) {
-  const div = document.createElement('div');
-  div.textContent = str;
-  return div.innerHTML;
-}
-
- // Generate HTML report
- generateHTMLReport() {
+  // Generate HTML report
+  generateHTMLReport() {
    const lighthouseResults = Object.entries(this.results.lighthouse)
      .map(([url, result]) => `
        <div class="metric">

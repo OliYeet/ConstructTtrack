@@ -35,9 +35,7 @@ BEGIN
     IF NOT EXISTS (
         SELECT 1 FROM information_schema.tables 
         WHERE table_name = 'schema_migrations' 
-        AND table_schema = 'public'
-    ) THEN
-        CREATE TABLE schema_migrations (
+        PERFORM 1; -- no-op, table is already created by this migration
             id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
             filename TEXT NOT NULL UNIQUE,
             checksum TEXT,
@@ -94,6 +92,7 @@ BEGIN
         success = EXCLUDED.success,
         error_message = EXCLUDED.error_message,
         execution_time_ms = EXCLUDED.execution_time_ms,
+        checksum          = EXCLUDED.checksum,
         rollback_sql = EXCLUDED.rollback_sql,
         applied_at = NOW()
     RETURNING id INTO migration_id;

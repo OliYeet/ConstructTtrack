@@ -7,7 +7,7 @@
 
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
+import { fileURLToPath, pathToFileURL } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -289,10 +289,17 @@ class SchemaValidator {
 
     // Check for organization_id indexes (important for multi-tenancy)
     const orgIndexes = content.match(/organization_id/gi) || [];
+    logger.info(`Found ${orgIndexes.length} organization_id indexes`);
+
+    // Validate that essential indexes exist
+    if (spatialIndexes.length === 0) {
+      logger.error('No spatial indexes found - these are critical for geometry queries');
+      return false;
+    }
+
     if (orgIndexes.length === 0) {
-      logger.warn(
-        'No organization_id indexes found - this may impact multi-tenant performance'
-      );
+      logger.error('No organization_id indexes found - these are critical for multi-tenant performance');
+      return false;
     }
 
     logger.success('Database indexes validated');
@@ -343,7 +350,7 @@ async function main() {
   process.exit(success ? 0 : 1);
 }
 import { fileURLToPath, pathToFileURL } from 'url';
-…
+
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   main().catch(error => {
     logger.error(`Validation failed: ${error.message}`);

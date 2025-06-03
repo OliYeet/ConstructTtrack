@@ -220,10 +220,15 @@ private prevCpuUsage: NodeJS.CpuUsage | null = null;
     this.prevCpuUsage = process.cpuUsage(); // store absolute for next call
 
     // µs spent since last sample / (elapsed_ms * #cores * 10_000) → %
-    const elapsedMs = 60000; // Default 60 second interval
-    const cores = (await import('os')).cpus().length;
-    const usage = ((current.user + current.system) / 1000000) / (elapsedMs * cores / 1000); // Convert to percentage
-
+    const now = Date.now();
+    const elapsedMs = this.prevCpuTimestamp
+      ? now - this.prevCpuTimestamp
+      : intervalMs; // fall back to configured interval
+    this.prevCpuTimestamp = now;
+...
+    const usagePct = (((current.user + current.system) / 1_000) / elapsedMs) /
+                     cores;          // 0-1
+    const usage = usagePct * 100;    // percentage
       let loadAverage: number[] | undefined;
       let processes: number | undefined;
 

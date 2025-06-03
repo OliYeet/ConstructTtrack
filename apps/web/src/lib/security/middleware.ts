@@ -71,10 +71,22 @@ export class SecurityMiddleware {
     try {
       // 1. Rate limiting check
       if (this.config.enableRateLimit && shouldRateLimit(request) && this.rateLimitMiddleware) {
-const rateLimitResult = await this.rateLimitMiddleware(request);
- 
-if (!rateLimitResult) {
-  throw new Error('Rate limit middleware returned undefined result');
+let rateLimitResult;
+try {
+  rateLimitResult = await this.rateLimitMiddleware(request);
+} catch (error) {
+  logger.error('Rate limit middleware error', error, {
+    correlationId: context.correlationId,
+  });
+  // Fail open - allow the request but log the error
+  rateLimitResult = { allowed: true };
+}
+
+if (!rateLimitResult || typeof rateLimitResult.allowed === 'undefined') {
+  logger.warn('Invalid rate limit result, failing open', {
+    correlationId: context.correlationId,
+  });
+  rateLimitResult = { allowed: true };
 }
 
  if (!rateLimitResult.allowed) {
@@ -213,7 +225,10 @@ if (!rateLimitResult) {
 
   // Create security context
   private createSecurityContext(request: NextRequest): SecurityContext {
-    const correlationId = `sec_${Date.now()}_${crypto.randomUUID().substring(0, 9)}`;
+    const uuid = typeof crypto.randomUUID === 'function' 
+  ? crypto.randomUUID().substring(0, 9)
+  : Math.random().toString(36).substring(2, 11);
+const correlationId = `sec_${Date.now()}_${uuid}`;
     const requestId = request.headers.get('x-request-id') || correlationId;
 
     return {
@@ -282,18 +297,26 @@ if (!rateLimitResult) {
       }
     }
 
-    // Check for suspicious user agents
-    const suspiciousUserAgents = [
-      'sqlmap', 'nikto', 'nmap', 'masscan', 'zap', 'burp',
-      'wget', 'curl', 'python-requests', 'go-http-client'
-    ];
+// Check for suspicious user agents
+const maliciousUserAgents = ['sqlmap', 'nikto', 'nmap', 'masscan', 'zap', 'burp'];
+const automatedUserAgents = ['wget', 'curl', 'python-requests', 'go-http-client'];
 
-    for (const suspicious of suspiciousUserAgents) {
-      if (userAgent.includes(suspicious)) {
-        indicators.push('suspicious_user_agent');
-        break;
-      }
+for (const malicious of maliciousUserAgents) {
+  if (userAgent.includes(malicious)) {
+    indicators.push('malicious_user_agent');
+    break;
+  }
+}
+
+// Only flag automated agents if combined with other suspicious patterns
+if (indicators.length > 0) {
+  for (const automated of automatedUserAgents) {
+    if (userAgent.includes(automated)) {
+      indicators.push('automated_user_agent');
+      break;
     }
+  }
+}
 
     // Check for unusual request patterns
     if (url.pathname.includes('..')) {
@@ -304,11 +327,12 @@ if (!rateLimitResult) {
       indicators.push('oversized_parameters');
     }
 
-    // Check for common vulnerability scanning patterns
-    const scanningPaths = [
-      '/admin', '/wp-admin', '/.env', '/config', '/backup',
-      '/phpmyadmin', '/adminer', '/.git', '/robots.txt'
-    ];
+// Check for common vulnerability scanning patterns
+const scanningPaths = [
+  '/admin', '/wp-admin', '/.env', '/config', '/backup',
+  '/phpmyadmin', '/adminer', '/.git', '/.svn', '/.hg',
+  '/wp-config.php', '/web.config', '/database.yml'
+];
 
     for (const path of scanningPaths) {
       if (url.pathname.includes(path)) {

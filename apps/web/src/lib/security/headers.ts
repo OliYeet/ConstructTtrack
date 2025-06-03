@@ -345,23 +345,24 @@ export const developmentSecurityConfig: Partial<SecurityHeadersConfig> = {
 };
 
 export const productionSecurityConfig: Partial<SecurityHeadersConfig> = {
-  contentSecurityPolicy: {
-    enabled: true,
-    reportOnly: false,
-    directives: {
-      ...defaultSecurityConfig.contentSecurityPolicy.directives,
-      'script-src': [
-        "'self'",
-        'https://api.mapbox.com',
-        'https://cdn.jsdelivr.net',
-      ],
-      'style-src': [
-        "'self'",
-        'https://api.mapbox.com',
-        'https://fonts.googleapis.com',
-      ],
-    },
-  },
+   contentSecurityPolicy: {
+     enabled: true,
+     reportOnly: false,
+     directives: {
+       ...defaultSecurityConfig.contentSecurityPolicy.directives,
+       'script-src': [
+         "'self'",
+         'https://api.mapbox.com',
+         'https://cdn.jsdelivr.net',
+       ],
+       'style-src': [
+         "'self'",
+        "'unsafe-inline'", // Required for styled-components and CSS-in-JS
+         'https://api.mapbox.com',
+         'https://fonts.googleapis.com',
+       ],
+     },
+   },
   strictTransportSecurity: {
     enabled: true,
     maxAge: 31536000,

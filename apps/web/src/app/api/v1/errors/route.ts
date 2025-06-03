@@ -8,9 +8,12 @@ import { createSuccessResponse, createErrorResponse } from '@/lib/api/response';
 import { BaseApiError } from '@/lib/errors/api-errors';
 import { errorReporter } from '@/lib/errors/error-reporter';
 import { globalErrorHandler } from '@/lib/errors/global-handler';
+import { getLogger } from '@/lib/logging';
+import { withAuth } from '@/lib/api/middleware';
 
-// GET /api/v1/errors - Get error reports and statistics
-export async function GET(request: NextRequest) {
+// GET /api/v1/errors - Get error reports and statistics (Admin only)
+export const GET = withAuth({
+  GET: async (request: NextRequest) => {
   const url = new URL(request.url);
   const type = url.searchParams.get('type') || 'summary';
   const timeframe = url.searchParams.get('timeframe') || '24h';
@@ -101,10 +104,12 @@ export async function GET(request: NextRequest) {
       'unknown'
     );
   }
-}
+  },
+}, { requireRoles: ['admin'] });
 
-// POST /api/v1/errors - Report a new error
-export async function POST(request: NextRequest) {
+// POST /api/v1/errors - Report a new error (Authenticated users)
+export const POST = withAuth({
+  POST: async (request: NextRequest) => {
   try {
     const body = await request.json();
     
@@ -153,16 +158,20 @@ export async function POST(request: NextRequest) {
       reportId,
       timestamp: new Date().toISOString(),
     });
-  } catch {
-    return createErrorResponse(
-      new BaseApiError('Failed to report error', 500, 'INTERNAL_ERROR'),
-      'unknown'
-    );
-  }
-}
+  } catch (error) {
+    const logger = getLogger();
+    await logger.error('Failed to report error', error instanceof Error ? error : new Error(String(error)));
+     return createErrorResponse(
+       new BaseApiError('Failed to report error', 500, 'INTERNAL_ERROR'),
+       'unknown'
+     );
+   }
+  },
+});
 
-// PATCH /api/v1/errors - Update error status
-export async function PATCH(request: NextRequest) {
+// PATCH /api/v1/errors - Update error status (Admin only)
+export const PATCH = withAuth({
+  PATCH: async (request: NextRequest) => {
   try {
     const body = await request.json();
     const { fingerprint, action } = body;
@@ -189,13 +198,16 @@ export async function PATCH(request: NextRequest) {
           'unknown'
         );
     }
-  } catch {
-    return createErrorResponse(
-      new BaseApiError('Failed to update error', 500, 'INTERNAL_ERROR'),
-      'unknown'
-    );
-  }
-}
+  } catch (error) {
+    const logger = getLogger();
+    await logger.error('Failed to update error', error instanceof Error ? error : new Error(String(error)));
+     return createErrorResponse(
+       new BaseApiError('Failed to update error', 500, 'INTERNAL_ERROR'),
+       'unknown'
+     );
+   }
+  },
+}, { requireRoles: ['admin'] });
 
 // Helper function to parse timeframe to hours
 function parseTimeframeToHours(timeframe: string): number {

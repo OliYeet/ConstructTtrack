@@ -200,7 +200,7 @@ class DocumentationGenerator {
 
     try {
       // Use Redoc to generate HTML documentation
-      execSync(`npx @redocly/cli build-docs "${config.specFile}" --output "${config.htmlFile}"`, {
+      execSync(`npx @redocly/cli build-docs "${config.specFile}" --output "${config.outputDir}"`, {
         stdio: 'inherit',
         timeout: 30000,
       });

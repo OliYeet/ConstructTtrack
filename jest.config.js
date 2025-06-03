@@ -62,7 +62,7 @@ const baseConfig = {
   setupFilesAfterEnv: ['<rootDir>/tests/setup.js'],
 
   // Module name mapping
-  moduleNameMapping: {
+  moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/apps/web/src/$1',
     '^@constructtrack/ui/(.*)$': '<rootDir>/packages/ui/src/$1',
     '^@constructtrack/supabase/(.*)$': '<rootDir>/packages/supabase/$1',

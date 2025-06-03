@@ -155,7 +155,9 @@ const sanitize = {
 // Required security headers
 const SECURITY_HEADERS = {
   'Strict-Transport-Security': 'max-age=31536000; includeSubDomains; preload',
-  'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline'",
+  // Prefer nonces or hashes for inline scripts to retain strict CSP
+  'Content-Security-Policy':
+    "default-src 'self'; script-src 'self' 'strict-dynamic'; object-src 'none'; base-uri 'none'",
   'X-Frame-Options': 'DENY',
   'X-Content-Type-Options': 'nosniff',
   'Referrer-Policy': 'strict-origin-when-cross-origin',

@@ -65,6 +65,7 @@ export class MemoryRateLimitStore implements RateLimitStore {
       // Increment existing entry
       existing.count++;
       this.store.set(key, existing);
+      // consider: this.setExpiration(key, ttl); // makes window sliding
       return existing;
     }
   }
@@ -109,8 +110,8 @@ export class RedisRateLimitStore implements RateLimitStore {
 
   async get(key: string): Promise<{ count: number; resetTime: number } | null> {
     try {
-      const data = await this.redis.get(key);
-      return data ? JSON.parse(data) : null;
+  const data = await this.redis.hgetall(key);
+  return Object.keys(data).length ? { count: +data.count, resetTime: +data.resetTime } : null;
     } catch (error) {
       const logger = getLogger();
       logger.error('Redis get error', error);

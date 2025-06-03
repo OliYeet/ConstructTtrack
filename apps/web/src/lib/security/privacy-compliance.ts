@@ -107,6 +107,7 @@ export interface PrivacyConfig {
   enableAuditLogging: boolean;
   enableDataMinimization: boolean;
   enablePseudonymization: boolean;
+ defaultProcessingLocation?: string;
 }
 
 // Privacy compliance manager
@@ -259,7 +260,7 @@ export class PrivacyComplianceManager {
     requestType: DataSubjectRight,
     requestDetails: Record<string, unknown> = {}
   ): Promise<string> {
-    const requestId = `dsr_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const requestId = `dsr_${crypto.randomUUID()}`;
 
     const request: DataSubjectRequest = {
       id: requestId,
@@ -290,11 +291,15 @@ export class PrivacyComplianceManager {
     return requestId;
   }
 
-  async processDataSubjectRequest(requestId: string): Promise<Record<string, unknown> | null> {
-    // Find the request across all users
-    for (const [userId, requests] of this.dataSubjectRequests.entries()) {
-      const request = requests.find(r => r.id === requestId);
-      if (!request) continue;
+async processDataSubjectRequest(requestId: string): Promise<Record<string, unknown> | null> {
+ const userId = this.requestIdToUserId.get(requestId);
+ if (!userId) return null;
+ 
+ const requests = this.dataSubjectRequests.get(userId);
+ if (!requests) return null;
+ 
+ const request = requests.find(r => r.id === requestId);
+ if (!request) return null;
 
       request.status = 'processing';
 

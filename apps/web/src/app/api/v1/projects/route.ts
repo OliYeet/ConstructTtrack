@@ -129,9 +129,8 @@ async function handleGet(
   }
 
   if (queryParams.search) {
-    query = query
-      .ilike('name', `%${queryParams.search}%`)
-      .ilike('description', `%${queryParams.search}%`);
+    const term = `%${queryParams.search}%`;
+    query = query.or(`name.ilike.${term},description.ilike.${term}`);
   }
 
   // Apply sorting with validated column

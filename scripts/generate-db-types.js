@@ -48,17 +48,23 @@ async function generateDatabaseTypes() {
 
     logger.info('Generating types from local Supabase instance...');
 
-    try {
-      execSync('supabase gen types typescript --local', {
-        stdio: ['inherit', fs.openSync(outputPath, 'w'), 'inherit'],
-      });
+try {
+     const output = execSync('supabase gen types typescript --local', {
+       encoding: 'utf8',
+       stdio: ['inherit', 'pipe', 'inherit'],
+     });
+     fs.writeFileSync(outputPath, output);
       logger.success(`Types generated successfully at: ${outputPath}`);
-    } catch {
+   } catch (error) {
       logger.warn('Local generation failed, trying with project reference...');
+     if (process.env.NODE_ENV === 'development') {
+       logger.warn(`Local error details: ${error.message}`);
+     }
 
       // Fallback: try with project reference if available
       try {
-        execSync('supabase gen types typescript --project-id constructtrack', {
+        const projectId = process.env.SUPABASE_PROJECT_ID || 'constructtrack';
+       execSync(`supabase gen types typescript --project-id ${projectId}`, {
           stdio: ['inherit', fs.openSync(outputPath, 'w'), 'inherit'],
         });
         logger.success(`Types generated successfully at: ${outputPath}`);

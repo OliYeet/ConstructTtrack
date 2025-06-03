@@ -81,9 +81,9 @@ export class ApiMetricsTracker {
       status: response.status.toString(),
     });
 
-    if (responseTime === null) {
-      return;
-    }
+    if (responseTime == null) { // covers null OR undefined
+       return;
+     }
 
     // Extract request/response sizes
     const requestSize = this.getRequestSize(request);
@@ -142,15 +142,17 @@ export class ApiMetricsTracker {
     // Log slow requests
     if (responseTime > 2000) { // 2 seconds
       const logger = getLogger();
-      logger.warn('Slow API request detected', {
-        metadata: {
-          endpoint: metric.endpoint,
-          method: metric.method,
-          responseTime,
-          statusCode: metric.statusCode,
-          requestId,
+      logger.warn(
+        'Slow API request detected',
+        undefined,
+        {
+           endpoint: metric.endpoint,
+           method: metric.method,
+           responseTime,
+           statusCode: metric.statusCode,
+           requestId,
         },
-      });
+      );
     }
 
     // Log errors
@@ -219,7 +221,8 @@ export class ApiMetricsTracker {
 
     // Calculate requests per minute
     const timeSpan = Date.now() - new Date(filteredMetrics[0].timestamp).getTime();
-    const requestsPerMinute = (filteredMetrics.length / (timeSpan / 60000));
+    const minuteWindow = Math.max(timeSpan, 60_000); // ≥ 1 min to avoid div-by-zero & spikes
+    const requestsPerMinute = filteredMetrics.length / (minuteWindow / 60_000);
 
     // Status code distribution
     const statusCodes: Record<number, number> = {};

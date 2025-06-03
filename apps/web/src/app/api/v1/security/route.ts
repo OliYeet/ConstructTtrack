@@ -10,10 +10,33 @@ import { privacyManager } from '@/lib/security/privacy-compliance';
 import { z } from 'zod';
 
 // Validation schema for POST requests
-const securityActionSchema = z.object({
-  action: z.enum(['scan', 'privacy-request', 'reset-rate-limits', 'generate-report']),
-  parameters: z.record(z.unknown()).optional(),
-});
+const securityActionSchema = z.discriminatedUnion('action', [
+  z.object({
+    action: z.literal('scan'),
+    parameters: z.object({
+      scanType: z.enum(['vulnerability', 'compliance']),
+    }),
+  }),
+  z.object({
+    action: z.literal('privacy-request'),
+    parameters: z.object({
+      requestType: z.enum(['data-export', 'data-deletion', 'consent-withdrawal']),
+      userId: z.string().uuid(),
+      details: z.record(z.unknown()).optional(),
+    }),
+  }),
+  z.object({
+    action: z.literal('reset-rate-limits'),
+    parameters: z.object({ target: z.string().optional() }).optional(),
+  }),
+  z.object({
+    action: z.literal('generate-report'),
+    parameters: z.object({
+      format: z.enum(['json', 'csv', 'pdf']).optional(),
+      includeDetails: z.boolean().optional(),
+    }).optional(),
+  }),
+]);
 
 // GET /api/v1/security - Get security status and metrics
 export async function GET(request: NextRequest) {
@@ -68,12 +91,12 @@ export async function GET(request: NextRequest) {
     }
 
     return createSuccessResponse(response);
-  } catch {
+  } catch (err: unknown) {
     return createErrorResponse(
-      new Error('Failed to retrieve security information'),
-      'unknown'
+      err instanceof Error ? err : new Error(String(err)),
+      context?.requestId ?? 'unknown'
     );
-  }
+   }
 }
 
 // POST /api/v1/security - Trigger security actions

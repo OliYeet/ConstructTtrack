@@ -73,10 +73,17 @@ validation, and safety features.
 
 ```sql
 -- Core tracking table
-schema_migrations (
-  id, filename, checksum, applied_at, applied_by,
-  execution_time_ms, success, error_message, rollback_sql
-)
+CREATE TABLE schema_migrations (
+  id SERIAL PRIMARY KEY,
+  filename TEXT NOT NULL UNIQUE,
+  checksum TEXT NOT NULL,
+  applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  applied_by TEXT,
+  execution_time_ms INTEGER,
+  success BOOLEAN NOT NULL DEFAULT TRUE,
+  error_message TEXT,
+  rollback_sql TEXT
+);
 
 -- Helper functions
 - create_migration_table()

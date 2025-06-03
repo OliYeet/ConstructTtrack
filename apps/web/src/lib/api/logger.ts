@@ -32,7 +32,7 @@ interface LogEntry {
 // Simple logger class
 class ApiLogger {
   private isDevelopment = process.env.NODE_ENV === 'development';
-  private logLevel = process.env.LOG_LEVEL || 'INFO';
+  private logLevel = (process.env.LOG_LEVEL ?? 'INFO').toUpperCase();
 
   private shouldLog(level: LogLevel): boolean {
     const levels = [

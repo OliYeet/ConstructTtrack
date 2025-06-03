@@ -113,7 +113,7 @@ export class ExternalServiceError extends BaseApiError {
 }
 
 // Error Factory Functions
-export const createValidationError = (field: string, message: string) => {
+export const createValidationError = (message: string, field?: string) => {
   return new ValidationError(message, undefined, field);
 };
 

@@ -62,8 +62,12 @@ jobs:
       - name: 🔍 Type checking
         run: pnpm type-check
 
-      - name: 🛡️ Security scan
-        run: pnpm security:scan
+      - name: 🛡️ Security scan with Snyk
+        uses: snyk/actions/node@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high
         continue-on-error: true
 
   # Job 2: Unit & Integration Tests
@@ -201,17 +205,20 @@ jobs:
           vercel-args: '--prod'
           working-directory: ./apps/web
 
-      - name: 🔔 Notify deployment success
-        if: success()
-        run: |
-          echo "✅ Production deployment successful"
-          # Add Slack/Discord notification here
+         if: success()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: success
+          text: '✅ Production deployment successful'
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
 
-      - name: 🚨 Notify deployment failure
-        if: failure()
-        run: |
-          echo "❌ Production deployment failed"
-          # Add Slack/Discord notification here
+       - name: 🚨 Notify deployment failure
+         if: failure()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: failure
+          text: '❌ Production deployment failed'
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
 
   # Job 5: Database Migrations (Production)
   migrate:
@@ -271,14 +278,15 @@ jobs:
           uploadArtifacts: true
           temporaryPublicStorage: true
 
-      - name: 🛡️ Security scan (production)
-        run: |
-          # Run security scans against production deployment
-          echo "Running security scans..."
-          # Add OWASP ZAP or similar security scanning
+      -        uses: zaproxy/action-full-scan@v0.7.0
+        with:
+          target: ${{ secrets.PRODUCTION_URL }}
+          rules_file_name: '.zap/rules.tsv'
+          cmd_options: '-a'
 
-      - name: 📊 Performance monitoring
-        run: |
-          # Send performance metrics to monitoring service
-          echo "Collecting performance metrics..."
-          # Add performance monitoring integration
+      -        run: |
+          # Send metrics to DataDog, New Relic, or similar
+          curl -X POST https://api.datadoghq.com/api/v1/series \
+            -H "DD-API-KEY: ${{ secrets.DD_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d @metrics.json
