@@ -40,7 +40,7 @@
 
 ### 📖 🏗️ Story 0.2: Core Architecture & API Design
 
-🔴 **Status**: Not started | **Progress**: ░░░░░░░░░░ 0%
+🟡 **Status**: In Progress | **Progress**: ██████░░░░ 63% (12/19 points)
 
 **Story Details:**
 
@@ -77,7 +77,7 @@
 | **🔧 Configure development environment (ESLint, Prettier, Husky)** | Frontend  | 2      | 🟢 Done      | Setup ESLint, Prettier, and Husky for code quality and consistency         |
 | **📦 Setup package management and dependency strategy**            | Backend   | 1      | 🟢 Done      | Comprehensive package management strategy with monorepo optimization       |
 | **🌿 Initialize Git repository with branching strategy**           | DevOps    | 1      | 🟢 Done      | _No description_                                                           |
-| **🔐 Setup environment variable management**                       | DevOps    | 2      | � Done       | Comprehensive environment management with validation and setup scripts     |
+| **🔐 Setup environment variable management**                       | DevOps    | 2      | 🟢 Done      | Comprehensive environment management with validation and setup scripts     |
 | **📚 Create project documentation structure**                      | Backend   | 1      | 🟢 Done      | Comprehensive documentation structure with guides, API docs, and templates |
 
 ---
