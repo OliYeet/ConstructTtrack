@@ -17,12 +17,13 @@ const securityActionSchema = z.object({
 });
 
 // GET /api/v1/security - Get security status and metrics
-export const GET = withApiHandler(async (request: NextRequest) => {
+export const GET = withApiHandler({
+  GET: async (request: NextRequest) => {
   const url = new URL(request.url);
   const type = url.searchParams.get('type') || 'overview';
 
   try {
-    let response: any = {};
+    let response: Record<string, unknown> = {};
 
     switch (type) {
       case 'overview':
@@ -69,11 +70,12 @@ export const GET = withApiHandler(async (request: NextRequest) => {
     }
 
     return createSuccessResponse(response);
-  } catch (error) {
+  } catch {
     return createErrorResponse(
-      { message: 'Failed to retrieve security information' },
-      500
+      new Error('Failed to retrieve security information'),
+      'unknown'
     );
+  }
   }
 });
 
