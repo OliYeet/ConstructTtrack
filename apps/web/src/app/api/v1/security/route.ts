@@ -18,7 +18,7 @@ const securityActionSchema = z.object({
 
 // GET /api/v1/security - Get security status and metrics
 export const GET = withApiHandler({
-  GET: async (request: NextRequest) => {
+  GET: async (request: NextRequest, _context: { params: Record<string, string> }) => {
   const url = new URL(request.url);
   const type = url.searchParams.get('type') || 'overview';
 
@@ -64,8 +64,8 @@ export const GET = withApiHandler({
 
       default:
         return createErrorResponse(
-          { message: 'Invalid security report type' },
-          400
+          new Error('Invalid security report type'),
+          'unknown'
         );
     }
 
@@ -80,7 +80,8 @@ export const GET = withApiHandler({
 });
 
 // POST /api/v1/security - Trigger security actions
-export const POST = withApiHandler(async (request: NextRequest) => {
+export const POST = withApiHandler({
+  POST: async (request: NextRequest, _context: { params: Record<string, string> }) => {
   try {
     const body = await request.json();
 
@@ -89,7 +90,7 @@ export const POST = withApiHandler(async (request: NextRequest) => {
     if (!validationResult.success) {
       return createErrorResponse(
         new Error('Invalid request body: ' + validationResult.error.message),
-        400
+        'unknown'
       );
     }
 
@@ -122,11 +123,12 @@ export const POST = withApiHandler(async (request: NextRequest) => {
     }
 
     return createSuccessResponse(response);
-  } catch (error) {
+  } catch {
     return createErrorResponse(
-      { message: 'Failed to execute security action' },
-      500
+      new Error('Failed to execute security action'),
+      'unknown'
     );
+  }
   }
 });
 
@@ -177,7 +179,7 @@ async function getRateLimitStatus() {
 }
 
 async function triggerSecurityScan(parameters: any) {
-  const { scanType, target } = parameters;
+  const { scanType } = parameters;
 
   switch (scanType) {
     case 'vulnerability':

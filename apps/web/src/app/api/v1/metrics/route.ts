@@ -14,7 +14,7 @@ import { globalErrorHandler } from '@/lib/errors/global-handler';
 
 // GET /api/v1/metrics - Get system metrics
 export const GET = withApiHandler({
-  GET: async (request: NextRequest) => {
+  GET: async (request: NextRequest, _context: { params: Record<string, string> }) => {
   const url = new URL(request.url);
   const type = url.searchParams.get('type') || 'all';
   const timeframe = url.searchParams.get('timeframe') || '1h';
@@ -86,7 +86,7 @@ export const GET = withApiHandler({
 
 // POST /api/v1/metrics - Record custom metric
 export const POST = withApiHandler({
-  POST: async (request: NextRequest) => {
+  POST: async (request: NextRequest, _context: { params: Record<string, string> }) => {
   const body = await request.json();
   
   const { name, value, unit, tags, metadata } = body;

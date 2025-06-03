@@ -12,7 +12,7 @@ import { globalErrorHandler } from '@/lib/errors/global-handler';
 
 // GET /api/v1/errors - Get error reports and statistics
 export const GET = withApiHandler({
-  GET: async (request: NextRequest) => {
+  GET: async (request: NextRequest, _context: { params: Record<string, string> }) => {
   const url = new URL(request.url);
   const type = url.searchParams.get('type') || 'summary';
   const timeframe = url.searchParams.get('timeframe') || '24h';
@@ -108,7 +108,7 @@ export const GET = withApiHandler({
 
 // POST /api/v1/errors - Report a new error
 export const POST = withApiHandler({
-  POST: async (request: NextRequest) => {
+  POST: async (request: NextRequest, _context: { params: Record<string, string> }) => {
   try {
     const body = await request.json();
     
@@ -168,7 +168,7 @@ export const POST = withApiHandler({
 
 // PATCH /api/v1/errors - Update error status
 export const PATCH = withApiHandler({
-  PATCH: async (request: NextRequest) => {
+  PATCH: async (request: NextRequest, _context: { params: Record<string, string> }) => {
   try {
     const body = await request.json();
     const { fingerprint, action } = body;
