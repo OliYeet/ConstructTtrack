@@ -9,7 +9,7 @@ import { createRequestContext } from '@/lib/api/auth';
 import { logRequest, logResponse, logError } from '@/lib/api/logger';
 import { logRequest as enhancedLogRequest, logResponse as enhancedLogResponse, logError as enhancedLogError } from '@/lib/logging';
 import { apiMetricsTracker } from '@/lib/monitoring/api-metrics';
-import { performanceMonitor } from '@/lib/monitoring/performance-monitor';
+// import { performanceMonitor } from '@/lib/monitoring/performance-monitor';
 import {
   createErrorResponse,
   createMethodNotAllowedResponse,

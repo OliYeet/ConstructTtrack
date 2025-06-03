@@ -4,7 +4,8 @@
  */
 
 import { getLogger } from '@/lib/logging';
-import { ErrorSeverity, ErrorClassification } from './global-handler';
+import { ErrorClassification } from './global-handler';
+// import { ErrorSeverity } from './global-handler';
 
 // Error report interface
 export interface ErrorReport {
@@ -142,7 +143,7 @@ export class ErrorReporter {
 
   // Generate unique report ID
   private generateReportId(): string {
-    return `err_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return `err_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
   }
 
   // Generate error fingerprint for deduplication
@@ -222,7 +223,7 @@ export class ErrorReporter {
       }
 
       // Update hourly occurrences
-      const hour = new Date(report.timestamp).toISOString().substr(0, 13);
+      const hour = new Date(report.timestamp).toISOString().substring(0, 13);
       existing.occurrencesByHour[hour] = (existing.occurrencesByHour[hour] || 0) + 1;
     } else {
       const aggregation: ErrorAggregation = {
@@ -232,7 +233,7 @@ export class ErrorReporter {
         lastSeen: report.timestamp,
         affectedUsers: new Set(report.context.userId ? [report.context.userId] : []),
         occurrencesByHour: {
-          [new Date(report.timestamp).toISOString().substr(0, 13)]: 1,
+          [new Date(report.timestamp).toISOString().substring(0, 13)]: 1,
         },
         classification: report.classification,
         sampleError: report,

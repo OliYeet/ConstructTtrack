@@ -6,11 +6,13 @@
 import { NextRequest } from 'next/server';
 import { withApiHandler } from '@/lib/api/middleware';
 import { createSuccessResponse, createErrorResponse } from '@/lib/api/response';
+import { BaseApiError } from '@/lib/errors/api-errors';
 import { errorReporter } from '@/lib/errors/error-reporter';
 import { globalErrorHandler } from '@/lib/errors/global-handler';
 
 // GET /api/v1/errors - Get error reports and statistics
-export const GET = withApiHandler(async (request: NextRequest) => {
+export const GET = withApiHandler({
+  GET: async (request: NextRequest) => {
   const url = new URL(request.url);
   const type = url.searchParams.get('type') || 'summary';
   const timeframe = url.searchParams.get('timeframe') || '24h';
@@ -63,8 +65,8 @@ export const GET = withApiHandler(async (request: NextRequest) => {
         const fingerprint = url.searchParams.get('fingerprint');
         if (!fingerprint) {
           return createErrorResponse(
-            { message: 'Fingerprint parameter required for details view' },
-            400
+            new BaseApiError('Fingerprint parameter required for details view', 400, 'VALIDATION_ERROR'),
+            'unknown'
           );
         }
 
@@ -74,8 +76,8 @@ export const GET = withApiHandler(async (request: NextRequest) => {
 
         if (!errorDetails) {
           return createErrorResponse(
-            { message: 'Error not found' },
-            404
+            new BaseApiError('Error not found', 404, 'NOT_FOUND'),
+            'unknown'
           );
         }
 
@@ -89,22 +91,24 @@ export const GET = withApiHandler(async (request: NextRequest) => {
 
       default:
         return createErrorResponse(
-          { message: 'Invalid type parameter' },
-          400
+          new BaseApiError('Invalid type parameter', 400, 'VALIDATION_ERROR'),
+          'unknown'
         );
     }
 
     return createSuccessResponse(response);
-  } catch (error) {
+  } catch (_error) {
     return createErrorResponse(
-      { message: 'Failed to retrieve error data' },
-      500
+      new BaseApiError('Failed to retrieve error data', 500, 'INTERNAL_ERROR'),
+      'unknown'
     );
+  }
   }
 });
 
 // POST /api/v1/errors - Report a new error
-export const POST = withApiHandler(async (request: NextRequest) => {
+export const POST = withApiHandler({
+  POST: async (request: NextRequest) => {
   try {
     const body = await request.json();
     
@@ -119,8 +123,8 @@ export const POST = withApiHandler(async (request: NextRequest) => {
     // Validate required fields
     if (!title || !description || !error) {
       return createErrorResponse(
-        { message: 'Missing required fields: title, description, error' },
-        400
+        new BaseApiError('Missing required fields: title, description, error', 400, 'VALIDATION_ERROR'),
+        'unknown'
       );
     }
 
@@ -153,24 +157,26 @@ export const POST = withApiHandler(async (request: NextRequest) => {
       reportId,
       timestamp: new Date().toISOString(),
     });
-  } catch (error) {
+  } catch (_error) {
     return createErrorResponse(
-      { message: 'Failed to report error' },
-      500
+      new BaseApiError('Failed to report error', 500, 'INTERNAL_ERROR'),
+      'unknown'
     );
+  }
   }
 });
 
 // PATCH /api/v1/errors - Update error status
-export const PATCH = withApiHandler(async (request: NextRequest) => {
+export const PATCH = withApiHandler({
+  PATCH: async (request: NextRequest) => {
   try {
     const body = await request.json();
     const { fingerprint, action } = body;
 
     if (!fingerprint) {
       return createErrorResponse(
-        { message: 'Fingerprint required in request body' },
-        400
+        new BaseApiError('Fingerprint required in request body', 400, 'VALIDATION_ERROR'),
+        'unknown'
       );
     }
 
@@ -185,15 +191,16 @@ export const PATCH = withApiHandler(async (request: NextRequest) => {
 
       default:
         return createErrorResponse(
-          { message: 'Invalid action' },
-          400
+          new BaseApiError('Invalid action', 400, 'VALIDATION_ERROR'),
+          'unknown'
         );
     }
-  } catch (error) {
+  } catch (_error) {
     return createErrorResponse(
-      { message: 'Failed to update error' },
-      500
+      new BaseApiError('Failed to update error', 500, 'INTERNAL_ERROR'),
+      'unknown'
     );
+  }
   }
 });
 
@@ -235,7 +242,7 @@ function getErrorTrends(timeframe: string) {
   const hourlyData: Record<string, { count: number; types: Record<string, number> }> = {};
   
   recentErrors.forEach(error => {
-    const hour = new Date(error.lastSeen).toISOString().substr(0, 13);
+    const hour = new Date(error.lastSeen).toISOString().substring(0, 13);
     
     if (!hourlyData[hour]) {
       hourlyData[hour] = { count: 0, types: {} };

@@ -82,9 +82,9 @@ export interface AlertManagerConfig {
   maxActiveAlerts: number;
   retentionPeriod: number; // milliseconds
   evaluationInterval: number; // milliseconds
-export class AlertManager {
-  private config: AlertManagerConfig;
-  private alerts: Map<string, Alert> = new Map();
+}
+
+// Alert manager class
 export class AlertManager {
   private config: AlertManagerConfig;
   private alerts: Map<string, Alert> = new Map();
@@ -92,60 +92,38 @@ export class AlertManager {
   private notificationService: NotificationService;
   private evaluationTimer?: NodeJS.Timeout;
   private lastEvaluations: Map<string, number> = new Map();
- private escalationTimers: Map<string, NodeJS.Timeout[]> = new Map();
+  private escalationTimers: Map<string, NodeJS.Timeout[]> = new Map();
 
-  // In scheduleEscalations method:
-  private scheduleEscalations(alert: Alert, rule: AlertRule): void {
-   const timers: NodeJS.Timeout[] = [];
-    for (const escalation of rule.escalationRules) {
-     const timer = setTimeout(async () => {
-        // ... existing code ...
-      }, escalation.delay);
-     timers.push(timer);
-    }
-   this.escalationTimers.set(alert.id, timers);
+  constructor(config: AlertManagerConfig, notificationService: NotificationService) {
+    this.config = config;
+    this.notificationService = notificationService;
   }
 
-  // In resolveAlert method:
-  async resolveAlert(alertId: string): Promise<boolean> {
-    const alert = this.alerts.get(alertId);
-    if (!alert) {
-      return false;
+  // Start alert manager
+  start(): void {
+    if (!this.config.enableAlerts) {
+      return;
     }
 
-    alert.status = AlertStatus.RESOLVED;
-    alert.resolvedAt = new Date().toISOString();
-    
-   // Clear any pending escalation timers
-   const timers = this.escalationTimers.get(alertId);
-   if (timers) {
-     timers.forEach(timer => clearTimeout(timer));
-     this.escalationTimers.delete(alertId);
-   }
-    
-   // Clear any pending escalation timers
-   const timers = this.escalationTimers.get(alertId);
-   if (timers) {
-     timers.forEach(timer => clearTimeout(timer));
-     this.escalationTimers.delete(alertId);
-   }
+    this.evaluationTimer = setInterval(() => {
+      this.evaluateRules().catch((error: unknown) => {
+        const logger = getLogger();
+        logger.error('Unhandled error in rule evaluation', error);
+      });
     }, this.config.evaluationInterval);
 
     const logger = getLogger();
     logger.info('Alert manager started', {
       metadata: {
         rulesCount: this.rules.size,
-start(): void {
-    if (!this.config.enableAlerts) {
-      return;
-    }
+        evaluationInterval: this.config.evaluationInterval,
+      },
+    });
+  }
 
-    this.evaluationTimer = setInterval(() => {
-     this.evaluateRules().catch(error => {
-       const logger = getLogger();
-       logger.error('Unhandled error in rule evaluation', error);
-     });
-    }, this.config.evaluationInterval);
+  // Stop alert manager
+  stop(): void {
+    if (this.evaluationTimer) {
       clearInterval(this.evaluationTimer);
       this.evaluationTimer = undefined;
     }
@@ -291,13 +269,15 @@ start(): void {
     alert.resolvedAt = new Date().toISOString();
 
     const logger = getLogger();
-logger.info('Alert resolved', {
+    logger.info('Alert resolved', {
       metadata: {
         alertId,
         title: alert.title,
-       duration: new Date(alert.resolvedAt).getTime() - new Date(alert.timestamp).getTime(),
+        duration: new Date(alert.resolvedAt).getTime() - new Date(alert.timestamp).getTime(),
       },
     });
+
+    return true;
   }
 
   // Suppress alert
@@ -392,7 +372,7 @@ logger.info('Alert resolved', {
   }
 
   // Get metric value (placeholder - would integrate with actual metrics)
-  private async getMetricValue(metric: string): Promise<number | string | null> {
+  private async getMetricValue(_metric: string): Promise<number | string | null> {
     // This would integrate with your actual metrics system
     // For now, return null to indicate metric not found
     return null;

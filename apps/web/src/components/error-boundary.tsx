@@ -116,7 +116,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
             </div>
             
             <p className="text-sm text-gray-600 mb-4">
-              We're sorry, but something unexpected happened. Please try refreshing the page.
+              We&apos;re sorry, but something unexpected happened. Please try refreshing the page.
             </p>
 
             {showDetails && error && (
@@ -164,7 +164,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
                 Section Error
               </h3>
               <div className="mt-2 text-sm text-red-700">
-                <p>This section couldn't load properly.</p>
+                <p>This section couldn&apos;t load properly.</p>
               </div>
               <div className="mt-3">
                 <button
@@ -224,7 +224,7 @@ export function withErrorBoundary<P extends object>(
 
 // Hook for error boundary context
 export function useErrorHandler() {
-  const handleError = React.useCallback((error: Error, errorInfo?: any) => {
+  const handleError = React.useCallback((error: Error, errorInfo?: React.ErrorInfo) => {
     const logger = getLogger();
     
     logger.error('Manual error report', error, {
