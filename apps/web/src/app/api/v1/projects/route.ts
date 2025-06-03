@@ -101,7 +101,7 @@ function transformProject(row: ProjectRow): ProjectResponse {
 async function handleGet(
   request: NextRequest,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  _: { params: Promise<Record<string, string>> }
+  _: { params: Record<string, string> }
 ) {
   const context = (
     request as NextRequest & {
@@ -167,7 +167,7 @@ async function handleGet(
 async function handlePost(
   request: NextRequest,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  _: { params: Promise<Record<string, string>> }
+  _: { params: Record<string, string> }
 ) {
   const context = (
     request as NextRequest & {
