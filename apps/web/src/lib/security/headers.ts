@@ -51,17 +51,18 @@ export interface CorsConfig {
 export const defaultSecurityConfig: SecurityHeadersConfig = {
   contentSecurityPolicy: {
     enabled: true,
-reportOnly: process.env.NODE_ENV === 'development',
- directives: {
-   'default-src': ["'self'"],
-   'script-src': [
-     "'self'",
-    process.env.NODE_ENV === 'development' ? "'unsafe-inline'" : undefined,
-    process.env.NODE_ENV === 'development' ? "'unsafe-eval'" : undefined,
-     'https://api.mapbox.com',
-     'https://cdn.jsdelivr.net',
-     'https://unpkg.com',
-  ].filter(Boolean),
+    reportOnly: process.env.NODE_ENV === 'development',
+    directives: {
+      'default-src': ["'self'"],
+      'script-src': [
+        "'self'",
+        ...(process.env.NODE_ENV === 'development'
+          ? ["'unsafe-inline'", "'unsafe-eval'"]
+          : []),
+        'https://api.mapbox.com',
+        'https://cdn.jsdelivr.net',
+        'https://unpkg.com',
+      ],
       'style-src': [
         "'self'",
         "'unsafe-inline'", // Required for styled-components and CSS-in-JS
@@ -76,19 +77,17 @@ reportOnly: process.env.NODE_ENV === 'development',
         'https://api.mapbox.com',
         'https://*.tiles.mapbox.com',
       ],
-      'font-src': [
-        "'self'",
-        'data:',
-        'https://fonts.gstatic.com',
-      ],
+      'font-src': ["'self'", 'data:', 'https://fonts.gstatic.com'],
       'connect-src': [
         "'self'",
         'https://api.mapbox.com',
         'https://events.mapbox.com',
-        process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+        ...(process.env.NEXT_PUBLIC_SUPABASE_URL
+          ? [process.env.NEXT_PUBLIC_SUPABASE_URL]
+          : []),
         'wss:',
         'ws:',
-      ].filter(Boolean),
+      ],
       'worker-src': ["'self'", 'blob:'],
       'child-src': ["'self'", 'blob:'],
       'frame-ancestors': ["'none'"],
@@ -117,14 +116,14 @@ reportOnly: process.env.NODE_ENV === 'development',
   permissionsPolicy: {
     enabled: true,
     directives: {
-      'camera': ["'self'"],
-      'microphone': ["'self'"],
-      'geolocation': ["'self'"],
-      'payment': ["'none'"],
-      'usb': ["'none'"],
-      'magnetometer': ["'none'"],
-      'gyroscope': ["'none'"],
-      'accelerometer': ["'self'"],
+      camera: ["'self'"],
+      microphone: ["'self'"],
+      geolocation: ["'self'"],
+      payment: ["'none'"],
+      usb: ["'none'"],
+      magnetometer: ["'none'"],
+      gyroscope: ["'none'"],
+      accelerometer: ["'self'"],
     },
   },
 };
@@ -132,14 +131,15 @@ reportOnly: process.env.NODE_ENV === 'development',
 // Default CORS configuration
 export const defaultCorsConfig: CorsConfig = {
   enabled: true,
-allowedOrigins: [
-  ...(process.env.NODE_ENV === 'development' ? [
-    'http://localhost:3000',
-    'http://localhost:3001',
-  ] : []),
-   'https://constructtrack.vercel.app',
-   process.env.NEXT_PUBLIC_APP_URL || '',
- ].filter(Boolean),
+  allowedOrigins: [
+    ...(process.env.NODE_ENV === 'development'
+      ? ['http://localhost:3000', 'http://localhost:3001']
+      : []),
+    'https://constructtrack.vercel.app',
+    ...(process.env.NEXT_PUBLIC_APP_URL
+      ? [process.env.NEXT_PUBLIC_APP_URL]
+      : []),
+  ],
   allowedMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: [
     'Content-Type',
@@ -170,7 +170,9 @@ export function applySecurityHeaders(
 ): NextResponse {
   // Content Security Policy
   if (config.contentSecurityPolicy.enabled) {
-    const cspDirectives = Object.entries(config.contentSecurityPolicy.directives)
+    const cspDirectives = Object.entries(
+      config.contentSecurityPolicy.directives
+    )
       .map(([directive, sources]) => {
         if (sources.length === 0) {
           return directive;
@@ -182,7 +184,7 @@ export function applySecurityHeaders(
     const headerName = config.contentSecurityPolicy.reportOnly
       ? 'Content-Security-Policy-Report-Only'
       : 'Content-Security-Policy';
-    
+
     response.headers.set(headerName, cspDirectives);
   }
 
@@ -215,10 +217,12 @@ export function applySecurityHeaders(
 
   // Permissions Policy
   if (config.permissionsPolicy.enabled) {
-    const permissionsDirectives = Object.entries(config.permissionsPolicy.directives)
+    const permissionsDirectives = Object.entries(
+      config.permissionsPolicy.directives
+    )
       .map(([directive, allowlist]) => `${directive}=(${allowlist.join(' ')})`)
       .join(', ');
-    
+
     response.headers.set('Permissions-Policy', permissionsDirectives);
   }
 
@@ -241,9 +245,9 @@ export function applyCorsHeaders(
   }
 
   // Check if origin is allowed
-const isOriginAllowed = checkOriginAllowed(origin || '', config);
+  const originAllowed = isOriginAllowed(origin || '', config);
 
-  if (isOriginAllowed) {
+  if (originAllowed) {
     // Set allowed origin
     if (origin && config.allowedOrigins.includes(origin)) {
       response.headers.set('Access-Control-Allow-Origin', origin);
@@ -252,11 +256,20 @@ const isOriginAllowed = checkOriginAllowed(origin || '', config);
     }
 
     // Set other CORS headers
-    response.headers.set('Access-Control-Allow-Methods', config.allowedMethods.join(', '));
-    response.headers.set('Access-Control-Allow-Headers', config.allowedHeaders.join(', '));
-    
+    response.headers.set(
+      'Access-Control-Allow-Methods',
+      config.allowedMethods.join(', ')
+    );
+    response.headers.set(
+      'Access-Control-Allow-Headers',
+      config.allowedHeaders.join(', ')
+    );
+
     if (config.exposedHeaders.length > 0) {
-      response.headers.set('Access-Control-Expose-Headers', config.exposedHeaders.join(', '));
+      response.headers.set(
+        'Access-Control-Expose-Headers',
+        config.exposedHeaders.join(', ')
+      );
     }
 
     if (config.credentials) {
@@ -270,13 +283,18 @@ const isOriginAllowed = checkOriginAllowed(origin || '', config);
 }
 
 // Validate origin against allowed origins
-export function isOriginAllowed(origin: string, config: CorsConfig = defaultCorsConfig): boolean {
+export function isOriginAllowed(
+  origin: string,
+  config: CorsConfig = defaultCorsConfig
+): boolean {
   if (!config.enabled) {
     return true;
   }
 
-  return config.allowedOrigins.includes('*') || 
-         config.allowedOrigins.includes(origin);
+  return (
+    config.allowedOrigins.includes('*') ||
+    config.allowedOrigins.includes(origin)
+  );
 }
 
 // Create security headers middleware
@@ -287,10 +305,13 @@ export function createSecurityHeadersMiddleware(
   const finalSecurityConfig = { ...defaultSecurityConfig, ...securityConfig };
   const finalCorsConfig = { ...defaultCorsConfig, ...corsConfig };
 
-  return function securityMiddleware(response: NextResponse, origin?: string): NextResponse {
+  return function securityMiddleware(
+    response: NextResponse,
+    origin?: string
+  ): NextResponse {
     // Apply security headers
     applySecurityHeaders(response, finalSecurityConfig);
-    
+
     // Apply CORS headers
     applyCorsHeaders(response, origin, finalCorsConfig);
 
