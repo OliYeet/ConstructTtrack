@@ -25,8 +25,12 @@ const logger = {
 class DatabaseSetup {
   constructor() {
     this.supabaseUrl = process.env.SUPABASE_URL || 'http://localhost:54321';
-    this.supabaseKey =
-      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
+    this.supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!this.supabaseKey) {
+      throw new Error(
+        'SUPABASE_SERVICE_ROLE_KEY is required for setup tasks (inserts, migrations)'
+      );
+    }
     this.migrationsDir = path.join(__dirname, '../supabase/migrations');
   }
 
@@ -35,14 +39,25 @@ class DatabaseSetup {
       logger.info('Checking Supabase connection...');
 
       const supabase = createClient(this.supabaseUrl, this.supabaseKey);
-      const { error } = await supabase
-        .from('organizations')
-        .select('count')
-        .limit(1);
-
-      if (error && error.code !== 'PGRST116') {
-        // PGRST116 is "relation does not exist" which is expected
-        throw error;
+      // Use a simple version check that doesn't depend on specific tables or error codes
+      try {
+        const { error } = await supabase.rpc('version');
+        if (error) {
+          // If version RPC fails, try a simple query that should always work
+          const { error: fallbackError } = await supabase
+            .from('information_schema.tables')
+            .select('table_name')
+            .limit(1);
+          if (fallbackError) {
+            throw new Error('Unable to connect to Supabase database');
+          }
+        }
+      } catch {
+        // Final fallback - just check if we can make any connection
+        const { error: basicError } = await supabase.auth.getSession();
+        if (basicError && basicError.message.includes('connection')) {
+          throw new Error('Unable to connect to Supabase');
+        }
       }
 
       logger.success('Supabase connection established');
@@ -68,11 +83,41 @@ class DatabaseSetup {
   async startLocalSupabase() {
     try {
       logger.info('Starting local Supabase...');
-      execSync('supabase start', { stdio: 'inherit' });
-      logger.success('Local Supabase started');
-      return true;
-    } catch {
-      logger.error('Failed to start local Supabase');
+      logger.warn('⚠️  Please start Supabase manually in a separate terminal:');
+      logger.warn('   supabase start');
+      logger.info('Waiting for Supabase to be available...');
+
+      // Poll for Supabase availability instead of blocking
+      let attempts = 0;
+      const maxAttempts = 30; // 30 seconds
+
+      while (attempts < maxAttempts) {
+        try {
+          const supabase = createClient(this.supabaseUrl, this.supabaseKey);
+          const { error } = await supabase.auth.getSession();
+          if (!error || !error.message.includes('connection')) {
+            logger.success('Local Supabase is available');
+            return true;
+          }
+        } catch {
+          // Continue polling
+        }
+
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        attempts++;
+
+        if (attempts % 5 === 0) {
+          logger.info(
+            `Still waiting for Supabase... (${attempts}/${maxAttempts})`
+          );
+        }
+      }
+
+      logger.error('Timeout waiting for Supabase to start');
+      logger.error('Please ensure Supabase is running: supabase start');
+      return false;
+    } catch (error) {
+      logger.error(`Failed to start local Supabase: ${error.message}`);
       return false;
     }
   }

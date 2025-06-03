@@ -31,8 +31,12 @@ class MigrationManager {
 
     // Supabase connection
     this.supabaseUrl = process.env.SUPABASE_URL || 'http://localhost:54321';
-    this.supabaseKey =
-      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
+    this.supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!this.supabaseKey) {
+      throw new Error(
+        'SUPABASE_SERVICE_ROLE_KEY is required for the migration manager'
+      );
+    }
 
     this.supabase = null;
     this.migrationTable = 'schema_migrations';

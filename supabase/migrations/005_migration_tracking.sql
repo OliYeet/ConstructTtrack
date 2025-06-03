@@ -2,6 +2,9 @@
 -- Description: Creates infrastructure for tracking database migrations
 -- Created: 2025-01-30
 
+-- Ensure required extensions are available
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
 -- Create schema_migrations table to track applied migrations
 CREATE TABLE IF NOT EXISTS schema_migrations (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -57,7 +60,7 @@ BEGIN
     
     RETURN false;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Function to record migration execution
 CREATE OR REPLACE FUNCTION record_migration(
@@ -90,7 +93,7 @@ BEGIN
     
     RETURN migration_id;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Function to get migration status
 CREATE OR REPLACE FUNCTION get_migration_status()
@@ -110,7 +113,7 @@ BEGIN
     FROM schema_migrations sm
     ORDER BY sm.applied_at ASC;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Function to check if migration was applied
 CREATE OR REPLACE FUNCTION is_migration_applied(migration_filename TEXT)
@@ -126,7 +129,7 @@ BEGIN
     
     RETURN migration_exists;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Function to get pending migrations (requires file system access, so mainly for documentation)
 CREATE OR REPLACE FUNCTION get_migration_summary()
@@ -145,7 +148,7 @@ BEGIN
         MAX(applied_at) as last_migration_date
     FROM schema_migrations;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Create a view for easy migration monitoring
 CREATE OR REPLACE VIEW migration_status_view AS

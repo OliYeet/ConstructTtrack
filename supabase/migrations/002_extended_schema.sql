@@ -1,11 +1,23 @@
 -- ConstructTrack Extended Database Schema Migration
 -- Adds comprehensive tables for equipment, materials, work areas, forms, and more
 
+-- Ensure required extensions are available
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
 -- Create additional custom types
 CREATE TYPE equipment_status AS ENUM ('available', 'in_use', 'maintenance', 'retired');
 CREATE TYPE work_area_status AS ENUM ('planned', 'in_progress', 'completed', 'blocked');
 CREATE TYPE notification_type AS ENUM ('task_assigned', 'project_update', 'equipment_due', 'form_required', 'system_alert');
 CREATE TYPE document_type AS ENUM ('drawing', 'permit', 'contract', 'report', 'photo', 'other');
+
+-- Create updated_at trigger function if it doesn't exist
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
 
 -- Equipment Management Tables
 

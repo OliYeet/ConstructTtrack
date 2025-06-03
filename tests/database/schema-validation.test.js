@@ -13,8 +13,14 @@ const {
 const { createClient } = require('@supabase/supabase-js');
 
 // Test configuration
-const supabaseUrl = process.env.SUPABASE_URL || 'http://localhost:54321';
-const supabaseKey = process.env.SUPABASE_ANON_KEY || 'your-anon-key';
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseKey) {
+  throw new Error(
+    'SUPABASE_URL and SUPABASE_ANON_KEY environment variables are required for testing'
+  );
+}
 
 let supabase;
 
@@ -76,12 +82,15 @@ describe('Database Schema Validation', () => {
 
   describe('Custom Types Validation', () => {
     test('should have equipment_status enum', async () => {
-      const { error } = await supabase.rpc('get_enum_values', {
-        enum_name: 'equipment_status',
-      });
+      // Query system tables directly to check enum existence
+      const { data, error } = await supabase
+        .from('pg_type')
+        .select('typname')
+        .eq('typname', 'equipment_status')
+        .single();
 
-      // Just check that the function exists (enum validation would need actual DB)
-      expect(error).toBeDefined(); // Expected since function doesn't exist in test
+      expect(error).toBeNull();
+      expect(data?.typname).toBe('equipment_status');
     });
 
     test('should have work_area_status enum', async () => {
@@ -198,9 +207,17 @@ describe('Database Schema Validation', () => {
         'documents',
       ];
 
-      // Test that updated_at is automatically set
-      // This would require actual data manipulation
-      expect(tablesWithUpdatedAt.length).toBeGreaterThan(0);
+      // Query system tables to verify triggers exist
+      for (const tableName of tablesWithUpdatedAt) {
+        const { data, error } = await supabase
+          .from('information_schema.triggers')
+          .select('trigger_name')
+          .eq('event_object_table', tableName)
+          .like('trigger_name', '%updated_at%');
+
+        expect(error).toBeNull();
+        expect(data).toBeTruthy();
+      }
     });
   });
 

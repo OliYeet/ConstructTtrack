@@ -275,8 +275,9 @@ supabase db push --file supabase/backups/backup_YYYYMMDDHHMMSS.sql
 #### Migration Tracking Issues
 
 ```sql
--- Manually mark migration as applied (use with caution)
-SELECT record_migration('filename.sql', 'checksum', 1000, true);
+-- ⚠️ WARNING: Only use this if you're absolutely certain the migration was applied
+-- but not recorded. Incorrect usage can lead to database inconsistencies.
+ SELECT record_migration('filename.sql', 'checksum', 1000, true);
 
 -- Check migration table
 SELECT * FROM schema_migrations ORDER BY applied_at DESC;

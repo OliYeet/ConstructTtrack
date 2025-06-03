@@ -89,8 +89,11 @@ class SchemaValidator {
     let parenCount = 0;
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
-      parenCount += (line.match(/\(/g) || []).length;
-      parenCount -= (line.match(/\)/g) || []).length;
+      // Skip SQL comments
+      const cleanLine = line.replace(/--.*$/, '').replace(/\/\*.*?\*\//g, '');
+      // Simple check - doesn't handle strings perfectly but better than nothing
+      parenCount += (cleanLine.match(/\(/g) || []).length;
+      parenCount -= (cleanLine.match(/\)/g) || []).length;
     }
 
     if (parenCount !== 0) {

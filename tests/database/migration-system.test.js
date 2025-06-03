@@ -279,12 +279,31 @@ DELETE FROM important_data;
     });
 
     test('should handle file system errors gracefully', async () => {
-      // Try to create migration with invalid name
-      const result = await migrationManager.createMigration(
-        '',
-        'Empty name test'
-      );
-      expect(result).toBeFalsy();
+      const invalidScenarios = [
+        {
+          name: '',
+          description: 'Empty name test',
+          expected: 'Name cannot be empty',
+        },
+        {
+          name: null,
+          description: 'Null name test',
+          expected: 'Name must be a string',
+        },
+        {
+          name: 'valid_name',
+          description: null,
+          expected: 'Description must be a string',
+        },
+      ];
+
+      for (const scenario of invalidScenarios) {
+        const result = await migrationManager.createMigration(
+          scenario.name,
+          scenario.description
+        );
+        expect(result).toBeFalsy();
+      }
     });
   });
 
@@ -317,18 +336,17 @@ DELETE FROM important_data;
 
 describe('Migration File Format', () => {
   test('should follow naming convention', () => {
+    // Use actual format that MigrationManager generates
     const validNames = [
-      '20250130120000000_initial_schema.sql',
-      '20250130120000001_add_user_table.sql',
-      '20250130120000002_update_permissions.sql',
+      '20250130T120000000Z_initial_schema.sql',
+      '20250130T120000001Z_add_user_table.sql',
+      '20250130T120000002Z_update_permissions.sql',
     ];
 
     const namePattern = /^\d{8}T\d{6}\d{3}Z_.+\.sql$/;
 
     validNames.forEach(name => {
-      // Adjust for actual timestamp format
-      const adjustedName = name.replace(/^(\d{8})(\d{6})(\d{3})_/, '$1T$2$3Z_');
-      expect(adjustedName).toMatch(namePattern);
+      expect(name).toMatch(namePattern);
     });
   });
 

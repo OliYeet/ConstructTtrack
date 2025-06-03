@@ -51,16 +51,16 @@ RETURNS TABLE (
 ) AS $$
 BEGIN
   RETURN QUERY
-  SELECT 
+  SELECT
     p.id,
     p.name,
     p.status,
-    ST_Distance(p.location, ST_Point(lng, lat)::geography)::FLOAT as distance_meters,
+    ST_Distance(p.location::geography, ST_MakePoint(lng, lat)::geography)::FLOAT as distance_meters,
     p.customer_name
   FROM projects p
   WHERE p.organization_id = auth.user_organization_id()
     AND p.location IS NOT NULL
-    AND ST_DWithin(p.location, ST_Point(lng, lat)::geography, radius_meters)
+    AND ST_DWithin(p.location::geography, ST_MakePoint(lng, lat)::geography, radius_meters)
   ORDER BY distance_meters;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
@@ -93,15 +93,15 @@ DECLARE
   used_days INTEGER;
 BEGIN
   total_days := end_date - start_date + 1;
-  
+
   SELECT COUNT(DISTINCT DATE(assigned_at))
   INTO used_days
   FROM equipment_assignments
   WHERE equipment_id = equipment_uuid
-    AND assigned_at >= start_date
-    AND (returned_at IS NULL OR returned_at <= end_date);
-  
-  RETURN CASE 
+    AND assigned_at <= end_date
+    AND (returned_at IS NULL OR returned_at >= start_date);
+
+  RETURN CASE
     WHEN total_days > 0 THEN (used_days::FLOAT / total_days::FLOAT) * 100
     ELSE 0
   END;

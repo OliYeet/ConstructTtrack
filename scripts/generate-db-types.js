@@ -39,19 +39,28 @@ async function generateDatabaseTypes() {
       '../packages/supabase/types/database.ts'
     );
 
+    // Ensure output directory exists
+    const outputDir = path.dirname(outputPath);
+    if (!fs.existsSync(outputDir)) {
+      fs.mkdirSync(outputDir, { recursive: true });
+      logger.info(`Created directory: ${outputDir}`);
+    }
+
     logger.info('Generating types from local Supabase instance...');
 
     try {
-      const command = `supabase gen types typescript --local > "${outputPath}"`;
-      execSync(command, { stdio: 'inherit' });
+      execSync('supabase gen types typescript --local', {
+        stdio: ['inherit', fs.openSync(outputPath, 'w'), 'inherit'],
+      });
       logger.success(`Types generated successfully at: ${outputPath}`);
     } catch {
       logger.warn('Local generation failed, trying with project reference...');
 
       // Fallback: try with project reference if available
       try {
-        const command = `supabase gen types typescript --project-id constructtrack > "${outputPath}"`;
-        execSync(command, { stdio: 'inherit' });
+        execSync('supabase gen types typescript --project-id constructtrack', {
+          stdio: ['inherit', fs.openSync(outputPath, 'w'), 'inherit'],
+        });
         logger.success(`Types generated successfully at: ${outputPath}`);
       } catch {
         logger.error(
