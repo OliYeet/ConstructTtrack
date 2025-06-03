@@ -1,0 +1,98 @@
+# 👥 Code Owners for ConstructTrack
+
+# Global fallback owners
+* @OliYeet
+
+# 🌐 Frontend Applications
+/apps/web/ @OliYeet
+/apps/web/src/components/ @OliYeet
+/apps/web/src/pages/ @OliYeet
+/apps/web/src/styles/ @OliYeet
+
+# 📱 Mobile Application
+/apps/mobile/ @OliYeet
+/apps/mobile/src/components/ @OliYeet
+/apps/mobile/src/screens/ @OliYeet
+
+# 🎨 UI Package
+/packages/ui/ @OliYeet
+/packages/ui/src/components/ @OliYeet
+/packages/ui/src/styles/ @OliYeet
+
+# 🔧 Backend & API
+/apps/web/src/app/api/ @OliYeet
+/apps/web/src/lib/api/ @OliYeet
+/packages/supabase/ @OliYeet
+
+# 🗄️ Database & Migrations
+/packages/supabase/migrations/ @OliYeet
+/packages/supabase/types/ @OliYeet
+/scripts/migration-manager.js @OliYeet
+/scripts/setup-database.js @OliYeet
+
+# 🔒 Security & Authentication
+/apps/web/src/lib/security/ @OliYeet
+/apps/web/src/lib/auth/ @OliYeet
+/apps/web/src/middleware.ts @OliYeet
+
+# 📊 Monitoring & Logging
+/apps/web/src/lib/logging/ @OliYeet
+/apps/web/src/lib/monitoring/ @OliYeet
+/apps/web/src/lib/errors/ @OliYeet
+/apps/web/src/lib/alerts/ @OliYeet
+
+# 🔄 CI/CD & DevOps
+/.github/ @OliYeet
+/.github/workflows/ @OliYeet
+/scripts/ @OliYeet
+/Dockerfile @OliYeet
+/docker-compose.yml @OliYeet
+
+# 📦 Package Management
+/package.json @OliYeet
+/package-lock.json @OliYeet
+/pnpm-lock.yaml @OliYeet
+/apps/*/package.json @OliYeet
+/packages/*/package.json @OliYeet
+
+# 🔧 Configuration Files
+/.eslintrc.js @OliYeet
+/.prettierrc @OliYeet
+/tsconfig.json @OliYeet
+/jest.config.js @OliYeet
+/next.config.js @OliYeet
+/tailwind.config.js @OliYeet
+
+# 📚 Documentation
+/docs/ @OliYeet
+/README.md @OliYeet
+/CONTRIBUTING.md @OliYeet
+/CHANGELOG.md @OliYeet
+
+# 🔗 Notion Integration
+/src/notion-*.js @OliYeet
+/scripts/notion-*.js @OliYeet
+/packages/notion/ @OliYeet
+
+# 🗺️ MapBox Integration
+/apps/web/src/components/map/ @OliYeet
+/apps/web/src/lib/mapbox/ @OliYeet
+
+# 🧪 Testing
+/tests/ @OliYeet
+/**/*.test.ts @OliYeet
+/**/*.test.tsx @OliYeet
+/**/*.spec.ts @OliYeet
+/**/*.spec.tsx @OliYeet
+/jest.config.js @OliYeet
+/cypress.config.js @OliYeet
+
+# 🌍 Environment & Deployment
+/.env.example @OliYeet
+/vercel.json @OliYeet
+/supabase/ @OliYeet
+
+# 📋 Project Management
+/docs/constructtrack_agile_project_plan.md @OliYeet
+/docs/project-requirements.md @OliYeet
+/docs/technical-specifications.md @OliYeet

@@ -7,6 +7,9 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { createRequestContext } from '@/lib/api/auth';
 import { logRequest, logResponse, logError } from '@/lib/api/logger';
+import { logRequest as enhancedLogRequest, logResponse as enhancedLogResponse, logError as enhancedLogError } from '@/lib/logging';
+import { apiMetricsTracker } from '@/lib/monitoring/api-metrics';
+import { performanceMonitor } from '@/lib/monitoring/performance-monitor';
 import {
   createErrorResponse,
   createMethodNotAllowedResponse,
@@ -100,8 +103,12 @@ export function withApiMiddleware(
       // Create request context with authentication
       requestContext = await createRequestContext(request);
 
-      // Log incoming request
+      // Log incoming request (both old and new systems)
       logRequest(request, requestContext);
+      await enhancedLogRequest(request, requestContext);
+
+      // Start API metrics tracking
+      const requestId = apiMetricsTracker.recordRequestStart(request, requestContext);
 
       // Handle CORS preflight
       if (request.method === 'OPTIONS') {
@@ -219,14 +226,19 @@ export function withApiMiddleware(
         addCorsHeaders(response);
       }
 
-      // Log response
+      // Log response (both old and new systems)
       const duration = Date.now() - startTime;
       logResponse(request, response.status, duration, requestContext);
+      await enhancedLogResponse(request, response.status, duration, requestContext);
+
+      // Record API metrics
+      apiMetricsTracker.recordRequestEnd(request, response, requestId, requestContext);
 
       return response;
     } catch (error) {
-      // Log error
+      // Log error (both old and new systems)
       logError('API Error', error, request, requestContext);
+      await enhancedLogError('API Error', error, request, requestContext);
 
       // Handle known API errors
       let apiError: BaseApiError;

@@ -82,7 +82,22 @@
     "db:stop": "supabase stop",
     "db:status": "supabase status",
     "db:test": "npm test -- tests/database/",
-    "db:validate": "node scripts/setup-database.js --skip-cli-check --skip-local-start --skip-migrations --skip-types --skip-seed"
+    "db:validate": "node scripts/setup-database.js --skip-cli-check --skip-local-start --skip-migrations --skip-types --skip-seed",
+    "test:unit": "jest --testPathPattern=unit",
+    "test:integration": "jest --testPathPattern=integration",
+    "test:e2e": "jest --testPathPattern=e2e",
+    "test:coverage": "jest --coverage",
+    "test:smoke": "jest --testPathPattern=smoke",
+    "test:performance": "node scripts/performance-tests.js",
+    "test:a11y": "node scripts/accessibility-tests.js",
+    "security:scan": "node scripts/security-scanner.js",
+    "docs:generate": "npm run api:docs:generate",
+    "docs:validate": "npm run api:validate",
+    "docs:coverage": "node scripts/docs-coverage.js",
+    "analyze:bundle": "node scripts/bundle-analyzer.js",
+    "a11y:report": "node scripts/accessibility-report.js",
+    "db:seed:prod": "node scripts/seed-production.js",
+    "lint:quick": "eslint apps/web/src --max-warnings 0"
   },
   "keywords": [
     "construction",
