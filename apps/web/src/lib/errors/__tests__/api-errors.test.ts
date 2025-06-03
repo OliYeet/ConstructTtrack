@@ -55,7 +55,7 @@ describe('BaseApiError', () => {
 
 describe('ValidationError', () => {
   it('should create a validation error with correct defaults', () => {
-    const error = new ValidationError('Invalid input', 'email');
+    const error = new ValidationError('Invalid input', undefined, 'email');
 
     expect(error.message).toBe('Invalid input');
     expect(error.statusCode).toBe(400);
@@ -65,9 +65,10 @@ describe('ValidationError', () => {
 
   it('should include details when provided', () => {
     const details = { zodError: [] };
-    const error = new ValidationError('Invalid input', 'email', details);
+    const error = new ValidationError('Invalid input', details, 'email');
 
     expect(error.details).toEqual(details);
+    expect(error.field).toBe('email');
   });
 });
 

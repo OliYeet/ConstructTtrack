@@ -17,7 +17,7 @@ export const commonSchemas = {
   email: z.string().email('Invalid email format'),
 
   // Phone validation (basic)
-  phone: z.string().regex(/^\+?[\d\s\-\(\)]+$/, 'Invalid phone number format'),
+  phone: z.string().regex(/^\+?[\d\s\-()]+$/, 'Invalid phone number format'),
 
   // Password validation
   password: z
@@ -56,9 +56,9 @@ export async function validateRequestBody<T>(
   } catch (error) {
     if (error instanceof z.ZodError) {
       const firstError = error.errors[0];
-      throw new ValidationError(firstError.message, firstError.path.join('.'), {
+      throw new ValidationError(firstError.message, {
         zodError: error.errors,
-      });
+      }, firstError.path.join('.'));
     }
     throw new ValidationError('Invalid JSON in request body');
   }
@@ -81,9 +81,9 @@ export function validateQueryParams<T>(
   } catch (error) {
     if (error instanceof z.ZodError) {
       const firstError = error.errors[0];
-      throw new ValidationError(firstError.message, firstError.path.join('.'), {
+      throw new ValidationError(firstError.message, {
         zodError: error.errors,
-      });
+      }, firstError.path.join('.'));
     }
     throw new ValidationError('Invalid query parameters');
   }
@@ -99,9 +99,9 @@ export function validatePathParams<T>(
   } catch (error) {
     if (error instanceof z.ZodError) {
       const firstError = error.errors[0];
-      throw new ValidationError(firstError.message, firstError.path.join('.'), {
+      throw new ValidationError(firstError.message, {
         zodError: error.errors,
-      });
+      }, firstError.path.join('.'));
     }
     throw new ValidationError('Invalid path parameters');
   }
@@ -133,6 +133,7 @@ export function validateFileUpload(
   if (file.size > maxSize) {
     throw new ValidationError(
       `File size exceeds maximum allowed size of ${maxSize / (1024 * 1024)}MB`,
+      undefined,
       'file'
     );
   }
@@ -141,6 +142,7 @@ export function validateFileUpload(
   if (allowedTypes.length > 0 && !allowedTypes.includes(file.type)) {
     throw new ValidationError(
       `File type ${file.type} is not allowed. Allowed types: ${allowedTypes.join(', ')}`,
+      undefined,
       'file'
     );
   }
@@ -151,6 +153,7 @@ export function validateFileUpload(
     if (!extension || !allowedExtensions.includes(extension)) {
       throw new ValidationError(
         `File extension .${extension} is not allowed. Allowed extensions: ${allowedExtensions.join(', ')}`,
+        undefined,
         'file'
       );
     }
@@ -168,12 +171,13 @@ export function sanitizeString(input: string): string {
 // Validate and sanitize search query
 export function validateSearchQuery(query: string): string {
   if (!query || query.trim().length === 0) {
-    throw new ValidationError('Search query cannot be empty', 'query');
+    throw new ValidationError('Search query cannot be empty', undefined, 'query');
   }
 
   if (query.length > 100) {
     throw new ValidationError(
       'Search query cannot exceed 100 characters',
+      undefined,
       'query'
     );
   }

@@ -47,8 +47,8 @@ export class BaseApiError extends Error {
 export class ValidationError extends BaseApiError {
   constructor(
     message: string,
-    field?: string,
-    details?: Record<string, unknown>
+    details?: Record<string, unknown>,
+    field?: string
   ) {
     super(message, 400, 'VALIDATION_ERROR', details, field);
   }
@@ -114,7 +114,7 @@ export class ExternalServiceError extends BaseApiError {
 
 // Error Factory Functions
 export const createValidationError = (field: string, message: string) => {
-  return new ValidationError(message, field);
+  return new ValidationError(message, undefined, field);
 };
 
 export const createNotFoundError = (resource: string) => {
