@@ -39,7 +39,7 @@ export interface RateLimitStore {
 // In-memory rate limit store
 export class MemoryRateLimitStore implements RateLimitStore {
   private store = new Map<string, { count: number; resetTime: number }>();
-  private timers = new Map<string, NodeJS.Timeout>();
+  private timers = new Map<string, ReturnType<typeof setTimeout>>();
 
   async get(key: string): Promise<{ count: number; resetTime: number } | null> {
     return this.store.get(key) || null;
@@ -101,9 +101,9 @@ export class MemoryRateLimitStore implements RateLimitStore {
 
 // Redis rate limit store (for production)
 export class RedisRateLimitStore implements RateLimitStore {
-  private redis: unknown; // Redis client
+  private redis: any; // Redis client - using any for flexibility with different Redis clients
 
-  constructor(redisClient: unknown) {
+  constructor(redisClient: any) {
     this.redis = redisClient;
   }
 
