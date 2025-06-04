@@ -5,6 +5,23 @@
 
 import { NextRequest } from 'next/server';
 
+// Polyfill static Response.json (not provided by JSDOM fetch polyfill)
+// Next.js' `NextResponse.json` helper relies on `Response.json` existing.
+if (
+  typeof Response !== 'undefined' &&
+  typeof (Response as any).json !== 'function'
+) {
+  (Response as any).json = function json(data: unknown, init?: ResponseInit) {
+    const headers = new Headers(
+      init?.headers || { 'Content-Type': 'application/json' }
+    );
+    return new Response(JSON.stringify(data), {
+      ...init,
+      headers,
+    });
+  };
+}
+
 // Global type declarations for Jest and browser APIs
 /* eslint-disable no-unused-vars */
 declare const jest: {

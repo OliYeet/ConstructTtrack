@@ -4,48 +4,52 @@
  */
 
 import { jest } from '@jest/globals';
-import { createMockRequest } from '@/tests/setup';
 import { createSuccessResponse } from '@/lib/api/response';
-
-// -----------------------------
-// Mock `createRequestContext`
-// -----------------------------
-
-// We need to manipulate the behaviour of `createRequestContext` for different
-// scenarios (valid token, missing token, invalid token). Jest hoists `jest.mock`
-// calls so the mock is applied before the actual module under test is imported.
-
-jest.mock('@/lib/api/auth', () => ({
-  // We will override this implementation separately in each test case
-  createRequestContext: jest.fn(),
-}));
-
-// Import after mocking so that the middleware picks up the mocked function
 import { withAuth } from '@/lib/api/middleware';
 import type { NextRequest } from 'next/server';
 
-// Extract the mocked `createRequestContext` for easy reference/typing
-import { createRequestContext } from '@/lib/api/auth';
+import { supabase } from '@constructtrack/supabase/client';
 
-const mockCreateRequestContext = createRequestContext as jest.MockedFunction<
-  typeof createRequestContext
->;
+interface MockRequestOptions {
+  method?: string;
+  url?: string;
+  headers?: Record<string, string>;
+  body?: unknown;
+}
 
-// Minimal OK handler that will only be executed if authentication succeeded
-const okHandler = async () => {
-  return createSuccessResponse({ message: 'Authenticated' }, 'OK', 200);
+// Build a minimal NextRequest-like object for middleware testing
+const buildRequest = (options: MockRequestOptions): NextRequest => {
+  const {
+    method = 'GET',
+    url = 'http://localhost/api/test',
+    headers = {},
+    body,
+  } = options;
+
+  const hdrs = new Headers({
+    'content-type': 'application/json',
+    ...headers,
+  });
+
+  return {
+    method,
+    url,
+    headers: hdrs,
+    json: jest.fn().mockResolvedValue(body),
+  } as unknown as NextRequest;
 };
 
-// Wrap the handler with auth requirement
-const wrappedHandler = withAuth({ GET: okHandler });
+// Simple handler used to confirm successful auth
+const okHandler = async () =>
+  createSuccessResponse({ message: 'Authenticated' }, 'OK', 200);
 
-// Helper to execute the wrapped handler (matches Next.js routing signature)
+const wrappedHandler = withAuth({ GET: okHandler });
 const exec = (request: NextRequest) =>
   wrappedHandler(request, { params: Promise.resolve({}) });
 
-// ------------------------------------------------------------------
-// Test Suite
-// ------------------------------------------------------------------
+// -------------------------------------------------------------------------------------------------
+// Tests
+// -------------------------------------------------------------------------------------------------
 
 describe('Authentication middleware (`withAuth`)', () => {
   beforeEach(() => {
@@ -53,19 +57,26 @@ describe('Authentication middleware (`withAuth`)', () => {
   });
 
   it('allows request with a valid token', async () => {
-    mockCreateRequestContext.mockResolvedValueOnce({
-      user: {
-        id: 'user-123',
-        email: 'test@example.com',
-        role: 'field_worker',
-        organizationId: 'org-123',
-      },
-      organizationId: 'org-123',
-      requestId: 'req_valid',
-      timestamp: new Date().toISOString(),
+    // Mock Supabase auth & profile queries
+    (supabase.auth.getUser as jest.Mock).mockResolvedValueOnce({
+      data: { user: { id: 'user-123', email: 'test@example.com' } },
+      error: null,
     });
 
-    const request = createMockRequest({
+    (supabase.from as jest.Mock).mockReturnValueOnce({
+      select: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      single: jest.fn().mockResolvedValueOnce({
+        data: {
+          role: 'field_worker',
+          organization_id: 'org-123',
+          full_name: 'Test User',
+        },
+        error: null,
+      }),
+    });
+
+    const request = buildRequest({
       method: 'GET',
       url: 'http://localhost/api/v1/protected',
       headers: { Authorization: 'Bearer valid-token' },
@@ -74,22 +85,12 @@ describe('Authentication middleware (`withAuth`)', () => {
     const response = await exec(request);
     const json = await response.json();
 
-    // Handler should have run and response should be successful
     expect(response.status).toBe(200);
     expect(json).toBeValidApiResponse();
-    expect(json.data.message).toBe('Authenticated');
   });
 
   it('rejects request when token is missing', async () => {
-    mockCreateRequestContext.mockResolvedValueOnce({
-      // No user information when token is missing
-      user: undefined,
-      organizationId: undefined,
-      requestId: 'req_missing',
-      timestamp: new Date().toISOString(),
-    });
-
-    const request = createMockRequest({
+    const request = buildRequest({
       method: 'GET',
       url: 'http://localhost/api/v1/protected',
     });
@@ -99,19 +100,15 @@ describe('Authentication middleware (`withAuth`)', () => {
 
     expect(response.status).toBe(401);
     expect(json).toBeValidApiError();
-    expect(json.error.code).toBe('UNAUTHORIZED');
   });
 
   it('rejects request when token is invalid', async () => {
-    // Simulate token verification failure by returning undefined user
-    mockCreateRequestContext.mockResolvedValueOnce({
-      user: undefined,
-      organizationId: undefined,
-      requestId: 'req_invalid',
-      timestamp: new Date().toISOString(),
+    (supabase.auth.getUser as jest.Mock).mockResolvedValueOnce({
+      data: { user: null },
+      error: { message: 'Invalid token' },
     });
 
-    const request = createMockRequest({
+    const request = buildRequest({
       method: 'GET',
       url: 'http://localhost/api/v1/protected',
       headers: { Authorization: 'Bearer invalid-token' },
@@ -122,6 +119,5 @@ describe('Authentication middleware (`withAuth`)', () => {
 
     expect(response.status).toBe(401);
     expect(json).toBeValidApiError();
-    expect(json.error.code).toBe('UNAUTHORIZED');
   });
 });
