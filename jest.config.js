@@ -95,6 +95,7 @@ const configs = {
     displayName: 'Unit Tests',
     testMatch: [
       '<rootDir>/tests/unit/**/*.test.{js,ts,tsx}',
+      '<rootDir>/tests/middleware/**/*.test.{js,ts,tsx}', // NEW: middleware tests
       '<rootDir>/apps/*/src/**/*.test.{js,ts,tsx}',
       '<rootDir>/packages/*/src/**/*.test.{js,ts,tsx}',
     ],
