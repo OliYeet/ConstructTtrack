@@ -92,12 +92,11 @@ export async function GET(request: NextRequest) {
         // Test user feedback
         const eventId = Sentry.captureException(new Error('Error with user feedback'));
         
-        // Simulate user feedback
-        Sentry.captureUserFeedback({
-          event_id: eventId,
+        // Simulate user feedback using current Sentry API
+        Sentry.captureFeedback({
           name: 'Test User',
           email: 'test@constructtrack.com',
-          comments: 'This is a test error for Sentry integration',
+          message: 'This is a test error for Sentry integration',
         });
         break;
       }
