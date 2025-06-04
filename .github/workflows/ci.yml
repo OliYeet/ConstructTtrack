@@ -121,7 +121,6 @@ jobs:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
           vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          working-directory: ./apps/web
 
   # Job 4: Production Deployment
   deploy:
@@ -160,7 +159,6 @@ jobs:
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
           vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
           vercel-args: '--prod'
-          working-directory: ./apps/web
 
       # Slack notifications disabled - can be re-enabled when needed
       # - name: 🎉 Notify deployment success
