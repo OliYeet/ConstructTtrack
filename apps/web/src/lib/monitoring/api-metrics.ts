@@ -4,9 +4,28 @@
  */
 
 import { NextRequest } from 'next/server';
-import { RequestContext } from '@/types/api';
+
 import { performanceMonitor } from './performance-monitor';
+
 import { getLogger } from '@/lib/logging';
+import { RequestContext } from '@/types/api';
+
+// Global type declarations for Web APIs
+declare const URL: {
+  new (
+    url: string,
+    base?: string
+  ): {
+    pathname: string;
+  };
+};
+
+interface Response {
+  status: number;
+  headers: {
+    get(name: string): string | null;
+  };
+}
 
 // API metric data
 export interface ApiMetric {
@@ -58,12 +77,14 @@ export class ApiMetricsTracker {
   private retentionPeriod = 24 * 60 * 60 * 1000; // 24 hours
 
   // Record API request start
-  recordRequestStart(request: NextRequest, context?: RequestContext): string {
-    const requestId = context?.requestId || `req_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
-    
+  recordRequestStart(_request: NextRequest, context?: RequestContext): string {
+    const requestId =
+      context?.requestId ||
+      `req_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+
     // Start performance timing
     performanceMonitor.startTiming(`api_${requestId}`);
-    
+
     return requestId;
   }
 
@@ -81,9 +102,10 @@ export class ApiMetricsTracker {
       status: response.status.toString(),
     });
 
-    if (responseTime == null) { // covers null OR undefined
-       return;
-     }
+    if (responseTime == null) {
+      // covers null OR undefined
+      return;
+    }
 
     // Extract request/response sizes
     const requestSize = this.getRequestSize(request);
@@ -101,9 +123,10 @@ export class ApiMetricsTracker {
       userId: context?.user?.id,
       organizationId: context?.organizationId,
       userAgent: request.headers.get('user-agent') || undefined,
-      ip: request.headers.get('x-forwarded-for') || 
-          request.headers.get('x-real-ip') || 
-          'unknown',
+      ip:
+        request.headers.get('x-forwarded-for') ||
+        request.headers.get('x-real-ip') ||
+        'unknown',
       error: response.status >= 400 ? `HTTP ${response.status}` : undefined,
     };
 
@@ -128,31 +151,25 @@ export class ApiMetricsTracker {
     );
 
     // Record request count
-    performanceMonitor.recordMetric(
-      'api_request_count',
-      1,
-      'count',
-      {
-        endpoint: metric.endpoint,
-        method: metric.method,
-        status: metric.statusCode.toString(),
-      }
-    );
+    performanceMonitor.recordMetric('api_request_count', 1, 'count', {
+      endpoint: metric.endpoint,
+      method: metric.method,
+      status: metric.statusCode.toString(),
+    });
 
     // Log slow requests
-    if (responseTime > 2000) { // 2 seconds
+    if (responseTime > 2000) {
+      // 2 seconds
       const logger = getLogger();
-      logger.warn(
-        'Slow API request detected',
-        undefined,
-        {
-           endpoint: metric.endpoint,
-           method: metric.method,
-           responseTime,
-           statusCode: metric.statusCode,
-           requestId,
+      logger.warn('Slow API request detected', {
+        metadata: {
+          endpoint: metric.endpoint,
+          method: metric.method,
+          responseTime,
+          statusCode: metric.statusCode,
+          requestId,
         },
-      );
+      });
     }
 
     // Log errors
@@ -178,14 +195,17 @@ export class ApiMetricsTracker {
     try {
       const urlObj = new URL(url);
       let pathname = urlObj.pathname;
-      
+
       // Normalize API paths by removing IDs and dynamic segments
       pathname = pathname
         .replace(/\/api\/v\d+/, '/api') // Remove version
-        .replace(/\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, '/:id') // UUIDs
+        .replace(
+          /\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi,
+          '/:id'
+        ) // UUIDs
         .replace(/\/\d+/g, '/:id') // Numeric IDs
         .replace(/\/[a-f0-9]{24}/g, '/:id'); // MongoDB ObjectIds
-      
+
       return pathname;
     } catch {
       return url;
@@ -206,9 +226,9 @@ export class ApiMetricsTracker {
 
   // Get endpoint statistics
   getEndpointStats(endpoint: string, method?: string): ApiEndpointStats | null {
-    const filteredMetrics = this.metrics.filter(metric => 
-      metric.endpoint === endpoint && 
-      (!method || metric.method === method)
+    const filteredMetrics = this.metrics.filter(
+      metric =>
+        metric.endpoint === endpoint && (!method || metric.method === method)
     );
 
     if (filteredMetrics.length === 0) {
@@ -220,27 +240,33 @@ export class ApiMetricsTracker {
     const errorCount = filteredMetrics.length - successCount;
 
     // Calculate requests per minute
-    const timeSpan = Date.now() - new Date(filteredMetrics[0].timestamp).getTime();
+    const timeSpan =
+      Date.now() - new Date(filteredMetrics[0].timestamp).getTime();
     const minuteWindow = Math.max(timeSpan, 60_000); // ≥ 1 min to avoid div-by-zero & spikes
     const requestsPerMinute = filteredMetrics.length / (minuteWindow / 60_000);
 
     // Status code distribution
     const statusCodes: Record<number, number> = {};
     filteredMetrics.forEach(metric => {
-      statusCodes[metric.statusCode] = (statusCodes[metric.statusCode] || 0) + 1;
+      statusCodes[metric.statusCode] =
+        (statusCodes[metric.statusCode] || 0) + 1;
     });
 
     // Recent errors
     const recentErrors = filteredMetrics
-      .filter(m => m.error && new Date(m.timestamp).getTime() > Date.now() - 60000) // Last minute
-      .map(m => m.error!)
+      .filter(
+        m => m.error && new Date(m.timestamp).getTime() > Date.now() - 60000
+      ) // Last minute
+      .map(m => m.error)
+      .filter((error): error is string => error !== undefined)
       .slice(-5); // Last 5 errors
 
     return {
       endpoint,
       method: method || 'ALL',
       totalRequests: filteredMetrics.length,
-      averageResponseTime: responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length,
+      averageResponseTime:
+        responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length,
       minResponseTime: Math.min(...responseTimes),
       maxResponseTime: Math.max(...responseTimes),
       successRate: (successCount / filteredMetrics.length) * 100,
@@ -253,7 +279,7 @@ export class ApiMetricsTracker {
 
   // Get aggregated metrics
   getAggregatedMetrics(): ApiMetricsAggregation {
-    const recentThreshold = Date.now() - (60 * 60 * 1000); // Last hour
+    const recentThreshold = Date.now() - 60 * 60 * 1000; // Last hour
     const recentMetrics = this.metrics.filter(
       metric => new Date(metric.timestamp).getTime() > recentThreshold
     );
@@ -261,9 +287,11 @@ export class ApiMetricsTracker {
     // Calculate totals
     const totalRequests = recentMetrics.length;
     const totalErrors = recentMetrics.filter(m => m.statusCode >= 400).length;
-    const averageResponseTime = recentMetrics.length > 0 ?
-      recentMetrics.reduce((sum, m) => sum + m.responseTime, 0) / recentMetrics.length :
-      0;
+    const averageResponseTime =
+      recentMetrics.length > 0
+        ? recentMetrics.reduce((sum, m) => sum + m.responseTime, 0) /
+          recentMetrics.length
+        : 0;
 
     // Requests per minute
     const requestsPerMinute = totalRequests / 60;
@@ -310,7 +338,7 @@ export class ApiMetricsTracker {
     // Status code distribution
     const statusCodeDistribution: Record<number, number> = {};
     recentMetrics.forEach(metric => {
-      statusCodeDistribution[metric.statusCode] = 
+      statusCodeDistribution[metric.statusCode] =
         (statusCodeDistribution[metric.statusCode] || 0) + 1;
     });
 
@@ -334,7 +362,9 @@ export class ApiMetricsTracker {
   // Cleanup old metrics
   private cleanup(): void {
     const cutoff = Date.now() - this.retentionPeriod;
-    this.metrics = this.metrics.filter(m => new Date(m.timestamp).getTime() > cutoff);
+    this.metrics = this.metrics.filter(
+      m => new Date(m.timestamp).getTime() > cutoff
+    );
 
     // Limit total metrics
     if (this.metrics.length > this.maxMetrics) {
