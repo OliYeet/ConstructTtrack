@@ -42,6 +42,8 @@
     "supertest": "7.1.1",
     "tailwindcss": "^4",
     "ts-jest": "29.3.4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "jsonwebtoken": "^9.0.2",
+    "@types/jsonwebtoken": "^9.0.2"
   }
 }

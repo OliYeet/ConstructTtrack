@@ -109,6 +109,16 @@ export function withApiMiddleware(
       // Create request context with authentication
       requestContext = await createRequestContext(request);
 
+      // Expose context for downstream handlers
+      (request as unknown as {
+        context?: RequestContext;
+        user?: RequestContext['user'];
+      }).context = requestContext;
+      (request as unknown as {
+        context?: RequestContext;
+        user?: RequestContext['user'];
+      }).user = requestContext.user;
+
       // Log incoming request (both old and new systems)
       logRequest(request, requestContext);
       await enhancedLogRequest(request, requestContext);
@@ -234,7 +244,10 @@ export function withApiMiddleware(
       // Execute handler
       const params = await context.params;
       const response = await handler(
-        request as NextRequest & { context: RequestContext },
+        request as NextRequest & {
+          context: RequestContext;
+          user?: RequestContext['user'];
+        },
         { params }
       );
 

@@ -1,8 +1,10 @@
+/* eslint-disable import/first */
 /**
  * API Authentication Middleware
  * JWT token verification and user context extraction
  */
 
+import jwt, { JwtPayload } from 'jsonwebtoken';
 import { NextRequest } from 'next/server';
 
 import {
@@ -27,46 +29,85 @@ export function extractToken(request: NextRequest): string | null {
   return authHeader;
 }
 
+// ----------------------------------------------------------------------------
+// INTERNAL HELPERS
+// ----------------------------------------------------------------------------
+
+// Verify with Supabase (legacy / fallback)
+async function verifyWithSupabase(
+  token: string
+): Promise<RequestContext['user']> {
+  // Dynamically import Supabase client to avoid module-level initialization
+  const { supabase } = await import('@constructtrack/supabase/client');
+
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser(token);
+
+  if (error || !user) {
+    throw new AuthenticationError('Invalid or expired token');
+  }
+
+  // Get user profile with role and organization
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('role, organization_id, full_name')
+    .eq('id', user.id)
+    .single();
+
+  if (profileError) {
+    throw new AuthenticationError('User profile not found');
+  }
+
+  return {
+    id: user.id,
+    email: user.email || '',
+    role: profile.role,
+    organizationId: profile.organization_id || undefined,
+  };
+}
+
+// ----------------------------------------------------------------------------
+// PUBLIC API
+// ----------------------------------------------------------------------------
+
 // Verify JWT token and get user information
 export async function verifyToken(
   token: string
 ): Promise<RequestContext['user']> {
-  try {
-    // Dynamically import Supabase client to avoid module-level initialization
-    const { supabase } = await import('@constructtrack/supabase/client');
+  const hmacSecret = process.env.AUTH_SECRET;
 
-    const {
-      data: { user },
-      error,
-    } = await supabase.auth.getUser(token);
+  // --------------------------------------------------------------------------
+  // 1. Try lightweight HMAC verification first (local / offline friendly)
+  // --------------------------------------------------------------------------
+  if (hmacSecret) {
+    try {
+      const decoded = jwt.verify(token, hmacSecret) as JwtPayload & {
+        sub?: string;
+        id?: string;
+        email?: string;
+        role?: string;
+        organizationId?: string;
+        organization_id?: string;
+      };
 
-    if (error || !user) {
-      throw new AuthenticationError('Invalid or expired token');
+      return {
+        id: decoded.sub || decoded.id || '',
+        email: decoded.email || '',
+        role: decoded.role || 'field_worker',
+        organizationId: decoded.organizationId ?? decoded.organization_id,
+      };
+    } catch {
+      // Fall back to Supabase verification.
+      // Do NOT throw here – specification requires graceful fallback.
     }
-
-    // Get user profile with role and organization
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('role, organization_id, full_name')
-      .eq('id', user.id)
-      .single();
-
-    if (profileError) {
-      throw new AuthenticationError('User profile not found');
-    }
-
-    return {
-      id: user.id,
-      email: user.email || '',
-      role: profile.role,
-      organizationId: profile.organization_id || undefined,
-    };
-  } catch (error) {
-    if (error instanceof AuthenticationError) {
-      throw error;
-    }
-    throw new AuthenticationError('Token verification failed');
   }
+
+  // --------------------------------------------------------------------------
+  // 2. Fallback to Supabase verification (existing behaviour)
+  // --------------------------------------------------------------------------
+  return verifyWithSupabase(token);
 }
 
 // Create request context with user information
@@ -80,15 +121,15 @@ export async function createRequestContext(
     try {
       user = await verifyToken(token);
     } catch {
-      // For optional authentication, we don't throw here
-      // The specific route handler can decide if auth is required
+      // For optional authentication, we don't throw here.
+      // Route-specific middleware will decide if auth is mandatory.
     }
   }
 
   return {
     user,
     organizationId: user?.organizationId,
-    requestId: `req_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
+    requestId: `req_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`,
     timestamp: new Date().toISOString(),
   };
 }

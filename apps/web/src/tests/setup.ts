@@ -36,6 +36,23 @@ process.env.SUPABASE_URL = 'https://test.supabase.co';
 process.env.SUPABASE_ANON_KEY = 'test-anon-key';
 process.env.API_VERSION = '1.0.0-test';
 
+// Ensure a default secret so unit tests can sign/verify JWTs without env rigging
+if (!process.env.AUTH_SECRET) {
+  process.env.AUTH_SECRET = 'test-secret';
+}
+
+// Polyfill the static Response.json(initial, init) in the Node/Jest environment
+if (
+  typeof global.Response !== 'undefined' &&
+  !(global.Response as any).json
+) {
+  (global.Response as any).json = (data: unknown, init?: ResponseInit) =>
+    new Response(JSON.stringify(data), {
+      headers: { 'content-type': 'application/json' },
+      ...init,
+    });
+}
+
 // Mock console methods in tests to reduce noise
 const originalConsoleError = console.error;
 const originalConsoleWarn = console.warn;
