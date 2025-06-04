@@ -50,9 +50,6 @@ function ErrorDashboard() {
   const [loading, setLoading] = useState(true);
   const [selectedTimeframe, setSelectedTimeframe] = useState('24h');
   const [selectedType, setSelectedType] = useState('all');
-  useEffect(() => {
-    fetchErrorData();
-  }, [selectedTimeframe, selectedType, fetchErrorData]);
 
   const fetchErrorData = useCallback(async () => {
     const controller = new AbortController();
@@ -88,6 +85,10 @@ function ErrorDashboard() {
       setLoading(false);
     }
   }, [selectedTimeframe, selectedType]);
+
+  useEffect(() => {
+    fetchErrorData();
+  }, [selectedTimeframe, selectedType, fetchErrorData]);
 
   const handleResolveError = async (fingerprint: string) => {
     try {
