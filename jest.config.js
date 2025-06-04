@@ -96,9 +96,9 @@ const configs = {
     ...baseConfig,
     displayName: 'Unit Tests',
     testMatch: [
-      '<rootDir>/tests/unit/**/*.test.{ts,tsx}',
-      '<rootDir>/apps/*/src/**/*.test.{ts,tsx}',
-      '<rootDir>/packages/*/src/**/*.test.{ts,tsx}',
+      '<rootDir>/tests/unit/**/*.test.{js,ts,tsx}',
+      '<rootDir>/apps/*/src/**/*.test.{js,ts,tsx}',
+      '<rootDir>/packages/*/src/**/*.test.{js,ts,tsx}',
     ],
     testEnvironment: 'jsdom',
   },
@@ -106,14 +106,14 @@ const configs = {
   integration: {
     ...baseConfig,
     displayName: 'Integration Tests',
-    testMatch: ['<rootDir>/tests/integration/**/*.test.{ts,tsx}'],
+    testMatch: ['<rootDir>/tests/integration/**/*.test.{js,ts,tsx}'],
     testTimeout: 60000,
   },
 
   e2e: {
     ...baseConfig,
     displayName: 'E2E Tests',
-    testMatch: ['<rootDir>/tests/e2e/**/*.test.{ts,tsx}'],
+    testMatch: ['<rootDir>/tests/e2e/**/*.test.{js,ts,tsx}'],
     testTimeout: 120000,
     maxWorkers: 1,
   },
@@ -141,13 +141,16 @@ const configs = {
 };
 
 // Export configuration based on test type
+let config;
 if (testType === 'all') {
-  module.exports = {
+  config = {
     projects: Object.values(configs),
     coverageDirectory: '<rootDir>/coverage',
     collectCoverageFrom: baseConfig.collectCoverageFrom,
     coverageReporters: baseConfig.coverageReporters,
   };
 } else {
-  module.exports = configs[testType] || configs.unit;
+  config = configs[testType] || configs.unit;
 }
+
+export default config;
