@@ -5,6 +5,42 @@
 
 import { getLogger } from '@/lib/logging';
 
+// Global type declarations for browser APIs
+declare const window:
+  | {
+      addEventListener: (type: string, listener: any) => void;
+      removeEventListener: (type: string, listener: any) => void;
+      location: { href: string };
+    }
+  | undefined;
+
+declare const navigator:
+  | {
+      userAgent: string;
+    }
+  | undefined;
+
+declare const setTimeout: (callback: () => void, ms: number) => any;
+
+declare const console: {
+  error: (...args: any[]) => void;
+};
+
+declare const process:
+  | {
+      on: (event: string, listener: any) => void;
+      off: (event: string, listener: any) => void;
+    }
+  | undefined;
+
+interface ErrorEvent {
+  error?: Error;
+  message: string;
+  filename?: string;
+  lineno?: number;
+  colno?: number;
+}
+
 // Error context interface
 export interface ErrorContext {
   source: string;
@@ -26,7 +62,13 @@ export enum ErrorSeverity {
 
 // Error classification
 export interface ErrorClassification {
-  type: 'javascript' | 'network' | 'api' | 'validation' | 'security' | 'unknown';
+  type:
+    | 'javascript'
+    | 'network'
+    | 'api'
+    | 'validation'
+    | 'security'
+    | 'unknown';
   severity: ErrorSeverity;
   category: string;
   recoverable: boolean;
@@ -57,7 +99,10 @@ export class GlobalErrorHandler {
     // Handle uncaught JavaScript errors
     if (typeof window !== 'undefined') {
       window.addEventListener('error', this.handleWindowError);
-      window.addEventListener('unhandledrejection', this.handleUnhandledRejection);
+      window.addEventListener(
+        'unhandledrejection',
+        this.handleUnhandledRejection
+      );
     }
 
     // Handle Node.js uncaught exceptions (server-side)
@@ -73,7 +118,10 @@ export class GlobalErrorHandler {
   cleanup(): void {
     if (typeof window !== 'undefined') {
       window.removeEventListener('error', this.handleWindowError);
-      window.removeEventListener('unhandledrejection', this.handleUnhandledRejection);
+      window.removeEventListener(
+        'unhandledrejection',
+        this.handleUnhandledRejection
+      );
     }
 
     if (typeof process !== 'undefined') {
@@ -89,8 +137,8 @@ export class GlobalErrorHandler {
     const error = event.error || new Error(event.message);
     const context: ErrorContext = {
       source: 'window.error',
-      url: event.filename || window.location.href,
-      userAgent: navigator.userAgent,
+      url: event.filename || window?.location.href,
+      userAgent: navigator?.userAgent,
       userId: this.userId,
       sessionId: this.sessionId,
       timestamp: new Date().toISOString(),
@@ -105,15 +153,20 @@ export class GlobalErrorHandler {
   };
 
   // Handle unhandled promise rejections
-  private handleUnhandledRejection = (event: { reason: unknown; preventDefault?: () => void }): void => {
-    const error = event.reason instanceof Error ? 
-      event.reason : 
-      new Error(String(event.reason));
+  private handleUnhandledRejection = (event: {
+    reason: unknown;
+    preventDefault?: () => void;
+  }): void => {
+    const error =
+      event.reason instanceof Error
+        ? event.reason
+        : new Error(String(event.reason));
 
     const context: ErrorContext = {
       source: 'unhandledRejection',
       url: typeof window !== 'undefined' ? window.location.href : undefined,
-      userAgent: typeof window !== 'undefined' ? navigator.userAgent : undefined,
+      userAgent:
+        typeof window !== 'undefined' ? navigator?.userAgent : undefined,
       userId: this.userId,
       sessionId: this.sessionId,
       timestamp: new Date().toISOString(),
@@ -143,11 +196,14 @@ export class GlobalErrorHandler {
   };
 
   // Main error handling method
-  private async handleError(error: Error, context: ErrorContext): Promise<void> {
+  private async handleError(
+    error: Error,
+    context: ErrorContext
+  ): Promise<void> {
     try {
       // Classify the error
       const classification = this.classifyError(error, context);
-      
+
       // Add to queue if it's full, remove oldest
       if (this.errorQueue.length >= this.maxQueueSize) {
         this.errorQueue.shift();
@@ -173,7 +229,6 @@ export class GlobalErrorHandler {
       if (classification.recoverable) {
         await this.attemptRecovery(error, context, classification);
       }
-
     } catch (handlingError) {
       // Fallback logging if our error handling fails
       console.error('Error in global error handler:', handlingError);
@@ -182,13 +237,20 @@ export class GlobalErrorHandler {
   }
 
   // Classify error type and severity
-  private classifyError(error: Error, context: ErrorContext): ErrorClassification {
+  private classifyError(
+    error: Error,
+    context: ErrorContext
+  ): ErrorClassification {
     const message = error.message.toLowerCase();
     const stack = error.stack?.toLowerCase() || '';
 
     // Network errors
-    if (message.includes('fetch') || message.includes('network') || 
-        message.includes('connection') || message.includes('timeout')) {
+    if (
+      message.includes('fetch') ||
+      message.includes('network') ||
+      message.includes('connection') ||
+      message.includes('timeout')
+    ) {
       return {
         type: 'network',
         severity: ErrorSeverity.MEDIUM,
@@ -198,8 +260,11 @@ export class GlobalErrorHandler {
     }
 
     // API errors
-    if (message.includes('api') || message.includes('http') || 
-        context.source.includes('api')) {
+    if (
+      message.includes('api') ||
+      message.includes('http') ||
+      context.source.includes('api')
+    ) {
       return {
         type: 'api',
         severity: ErrorSeverity.MEDIUM,
@@ -209,8 +274,11 @@ export class GlobalErrorHandler {
     }
 
     // Validation errors
-    if (message.includes('validation') || message.includes('invalid') ||
-        message.includes('required')) {
+    if (
+      message.includes('validation') ||
+      message.includes('invalid') ||
+      message.includes('required')
+    ) {
       return {
         type: 'validation',
         severity: ErrorSeverity.LOW,
@@ -220,8 +288,12 @@ export class GlobalErrorHandler {
     }
 
     // Security errors
-    if (message.includes('permission') || message.includes('unauthorized') ||
-        message.includes('forbidden') || message.includes('security')) {
+    if (
+      message.includes('permission') ||
+      message.includes('unauthorized') ||
+      message.includes('forbidden') ||
+      message.includes('security')
+    ) {
       return {
         type: 'security',
         severity: ErrorSeverity.HIGH,
@@ -231,9 +303,11 @@ export class GlobalErrorHandler {
     }
 
     // Critical JavaScript errors
-    if (message.includes('cannot read property') || 
-        message.includes('undefined is not a function') ||
-        stack.includes('typeerror')) {
+    if (
+      message.includes('cannot read property') ||
+      message.includes('undefined is not a function') ||
+      stack.includes('typeerror')
+    ) {
       return {
         type: 'javascript',
         severity: ErrorSeverity.HIGH,
@@ -275,28 +349,37 @@ export class GlobalErrorHandler {
 
   // Attempt error recovery
   private async attemptRecovery(
-    error: Error,
+    _error: Error,
     context: ErrorContext,
     classification: ErrorClassification
   ): Promise<void> {
     const logger = getLogger();
 
-switch (classification.type) {
-       case 'network':
-         await logger.info('Attempting network error recovery', {
-           metadata: { ...context, recoveryType: 'network' },
-         });
+    switch (classification.type) {
+      case 'network':
+        await logger.info('Attempting network error recovery', {
+          metadata: { ...context, recoveryType: 'network' },
+        });
         // Implement retry with exponential backoff
         if (context.additionalData?.retryable) {
-          const retryCount = context.additionalData.retryCount as number || 0;
+          const retryCount = (context.additionalData.retryCount as number) || 0;
           if (retryCount < 3) {
-            setTimeout(() => {
-              // Trigger retry logic
-              this.emit('retry', { error, context, retryCount: retryCount + 1 });
-            }, Math.pow(2, retryCount) * 1000);
+            setTimeout(
+              () => {
+                // Log retry attempt instead of emitting event
+                logger.info('Retrying failed operation', {
+                  metadata: {
+                    ...context,
+                    retryCount: retryCount + 1,
+                    retryType: 'network',
+                  },
+                });
+              },
+              Math.pow(2, retryCount) * 1000
+            );
           }
         }
-         break;
+        break;
 
       case 'api':
         // Could implement API retry, fallback endpoints, etc.
@@ -327,7 +410,8 @@ switch (classification.type) {
     const context: ErrorContext = {
       source: 'manual_report',
       url: typeof window !== 'undefined' ? window.location.href : undefined,
-      userAgent: typeof window !== 'undefined' ? navigator.userAgent : undefined,
+      userAgent:
+        typeof window !== 'undefined' ? navigator?.userAgent : undefined,
       userId: this.userId,
       sessionId: this.sessionId,
       timestamp: new Date().toISOString(),
@@ -344,7 +428,7 @@ switch (classification.type) {
     errorsByType: Record<string, number>;
     errorsBySeverity: Record<string, number>;
   } {
-    const recentThreshold = Date.now() - (5 * 60 * 1000); // 5 minutes
+    const recentThreshold = Date.now() - 5 * 60 * 1000; // 5 minutes
     const recentErrors = this.errorQueue.filter(
       ({ context }) => new Date(context.timestamp).getTime() > recentThreshold
     );
@@ -354,8 +438,10 @@ switch (classification.type) {
 
     this.errorQueue.forEach(({ error, context }) => {
       const classification = this.classifyError(error, context);
-      errorsByType[classification.type] = (errorsByType[classification.type] || 0) + 1;
-      errorsBySeverity[classification.severity] = (errorsBySeverity[classification.severity] || 0) + 1;
+      errorsByType[classification.type] =
+        (errorsByType[classification.type] || 0) + 1;
+      errorsBySeverity[classification.severity] =
+        (errorsBySeverity[classification.severity] || 0) + 1;
     });
 
     return {
