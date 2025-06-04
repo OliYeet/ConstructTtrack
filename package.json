@@ -87,7 +87,7 @@
     "test:integration": "TEST_TYPE=integration jest tests/integration",
     "test:e2e": "TEST_TYPE=e2e jest tests/e2e",
     "test:coverage": "jest --coverage",
-    "test:smoke": "jest --testPathPattern=smoke",
+    "test:smoke": "TEST_TYPE=smoke jest",
     "test:performance": "node scripts/performance-tests.js",
     "test:a11y": "node scripts/accessibility-tests.js",
     "security:scan": "node scripts/security-scanner.js",

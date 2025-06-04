@@ -119,7 +119,7 @@ const configs = {
   smoke: {
     ...baseConfig,
     displayName: 'Smoke Tests',
-    testMatch: ['<rootDir>/tests/smoke/**/*.test.{ts,tsx}'],
+    testMatch: ['<rootDir>/tests/smoke/**/*.test.{js,ts,tsx}'],
     testTimeout: 60000,
   },
 
