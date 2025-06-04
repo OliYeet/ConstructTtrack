@@ -144,8 +144,9 @@ export default [
 
   // React/Next.js files
   {
-    files: ['apps/web/**/*.{jsx,tsx}'],
+    files: ['apps/web/**/*.{jsx,tsx,ts,js}'],
     plugins: {
+      '@typescript-eslint': tseslint,
       react,
       'react-hooks': reactHooks,
       'jsx-a11y': jsxA11y,
@@ -154,6 +155,36 @@ export default [
       globals: {
         React: 'readonly',
         JSX: 'readonly',
+        // Browser globals
+        window: 'readonly',
+        document: 'readonly',
+        navigator: 'readonly',
+        localStorage: 'readonly',
+        sessionStorage: 'readonly',
+        fetch: 'readonly',
+        URL: 'readonly',
+        URLSearchParams: 'readonly',
+        Headers: 'readonly',
+        Response: 'readonly',
+        Request: 'readonly',
+        File: 'readonly',
+        FormData: 'readonly',
+        crypto: 'readonly',
+        performance: 'readonly',
+        PerformanceObserver: 'readonly',
+        PerformanceNavigationTiming: 'readonly',
+        // Node.js globals for Next.js API routes
+        process: 'readonly',
+        Buffer: 'readonly',
+        console: 'readonly',
+        setTimeout: 'readonly',
+        setInterval: 'readonly',
+        clearTimeout: 'readonly',
+        clearInterval: 'readonly',
+        require: 'readonly',
+        module: 'readonly',
+        exports: 'readonly',
+        NodeJS: 'readonly',
       },
     },
     settings: {
@@ -173,6 +204,13 @@ export default [
       // JSX accessibility rules
       'jsx-a11y/alt-text': 'error',
       'jsx-a11y/anchor-is-valid': 'error',
+
+      // Relax some rules for Next.js
+      'no-console': 'warn', // Allow console but warn
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_' },
+      ],
     },
   },
 
@@ -211,7 +249,12 @@ export default [
 
   // Node.js scripts configuration (ES modules)
   {
-    files: ['scripts/**/*.js', 'notion_scripts/**/*.js', 'src/**/*.js'],
+    files: [
+      'scripts/**/*.js',
+      'notion_scripts/**/*.js',
+      'src/**/*.js',
+      'apps/web/src/tests/**/*.js',
+    ],
     languageOptions: {
       ecmaVersion: 'latest',
       sourceType: 'module',
@@ -226,6 +269,13 @@ export default [
         global: 'readonly',
         __dirname: 'readonly',
         __filename: 'readonly',
+        require: 'readonly',
+        module: 'readonly',
+        exports: 'readonly',
+        fetch: 'readonly',
+        URL: 'readonly',
+        Headers: 'readonly',
+        Response: 'readonly',
       },
     },
     rules: {
@@ -238,10 +288,19 @@ export default [
 
   // Test files configuration (Jest environment)
   {
-    files: ['tests/**/*.js', '**/*.test.js', '**/*.spec.js'],
+    files: [
+      'tests/**/*.{js,ts,tsx}',
+      '**/*.test.{js,ts,tsx}',
+      '**/*.spec.{js,ts,tsx}',
+      'apps/web/src/**/__tests__/**/*.{js,ts,tsx}',
+      'apps/web/src/tests/**/*.{js,ts,tsx}',
+    ],
+    plugins: {
+      '@typescript-eslint': tseslint,
+    },
     languageOptions: {
       ecmaVersion: 'latest',
-      sourceType: 'commonjs',
+      sourceType: 'module',
       globals: {
         // Node.js globals
         process: 'readonly',
@@ -267,12 +326,32 @@ export default [
         afterAll: 'readonly',
         beforeEach: 'readonly',
         afterEach: 'readonly',
+        // Browser globals for tests
+        window: 'readonly',
+        document: 'readonly',
+        navigator: 'readonly',
+        localStorage: 'readonly',
+        sessionStorage: 'readonly',
+        fetch: 'readonly',
+        URL: 'readonly',
+        URLSearchParams: 'readonly',
+        Headers: 'readonly',
+        Response: 'readonly',
+        Request: 'readonly',
+        File: 'readonly',
+        FormData: 'readonly',
+        crypto: 'readonly',
       },
     },
     rules: {
       'no-console': 'off', // Allow console in tests
       'no-undef': 'off', // Jest and Node.js globals are handled above
       'no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_' },
+      ],
+      'import/order': 'off', // Relax import order in tests
     },
   },
 

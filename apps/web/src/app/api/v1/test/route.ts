@@ -4,9 +4,10 @@
  */
 
 import { NextRequest } from 'next/server';
+import { z } from 'zod';
+
 import { createSuccessResponse } from '@/lib/api/response';
 import { validateRequestBody } from '@/lib/api/validation';
-import { z } from 'zod';
 
 // Test request schema
 const testRequestSchema = z.object({
@@ -28,18 +29,14 @@ interface TestResponse {
 }
 
 // GET /api/v1/test - Public test endpoint
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   const testData: TestResponse = {
     message: 'API is working correctly!',
     timestamp: new Date().toISOString(),
     requestId: 'test-request',
   };
 
-  return createSuccessResponse(
-    testData,
-    'Test endpoint successful',
-    200
-  );
+  return createSuccessResponse(testData, 'Test endpoint successful', 200);
 }
 
 // POST /api/v1/test - Test with request body validation
@@ -53,9 +50,5 @@ export async function POST(request: NextRequest) {
     receivedData: body.data,
   };
 
-  return createSuccessResponse(
-    testData,
-    'Test POST successful',
-    200
-  );
+  return createSuccessResponse(testData, 'Test POST successful', 200);
 }

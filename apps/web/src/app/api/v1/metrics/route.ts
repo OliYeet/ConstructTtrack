@@ -4,12 +4,13 @@
  */
 
 import { NextRequest } from 'next/server';
+
 import { createSuccessResponse, createErrorResponse } from '@/lib/api/response';
-import { performanceMonitor } from '@/lib/monitoring/performance-monitor';
-import { apiMetricsTracker } from '@/lib/monitoring/api-metrics';
-import { resourceMonitor } from '@/lib/monitoring/resource-monitor';
 import { errorReporter } from '@/lib/errors/error-reporter';
 import { globalErrorHandler } from '@/lib/errors/global-handler';
+import { apiMetricsTracker } from '@/lib/monitoring/api-metrics';
+import { performanceMonitor } from '@/lib/monitoring/performance-monitor';
+import { resourceMonitor } from '@/lib/monitoring/resource-monitor';
 
 // GET /api/v1/metrics - Get system metrics
 export async function GET(request: NextRequest) {
@@ -19,16 +20,18 @@ export async function GET(request: NextRequest) {
 
   // Parse timeframe
   const timeframeMs = parseTimeframe(timeframe);
-  
+
   let metrics: Record<string, unknown> = {};
 
   switch (type) {
     case 'performance':
       metrics = {
         performance: performanceMonitor.getStats(),
-        metrics: performanceMonitor.getMetrics().filter(
-          m => new Date(m.timestamp).getTime() > Date.now() - timeframeMs
-        ),
+        metrics: performanceMonitor
+          .getMetrics()
+          .filter(
+            m => new Date(m.timestamp).getTime() > Date.now() - timeframeMs
+          ),
       };
       break;
 
@@ -84,21 +87,23 @@ export async function GET(request: NextRequest) {
 // POST /api/v1/metrics - Record custom metric
 export async function POST(request: NextRequest) {
   const body = await request.json();
-  
+
   const { name, value, unit, tags, metadata } = body;
 
-// Validate required fields
-   if (!name || typeof value !== 'number' || !unit) {
-     return createErrorResponse(
-       new Error('Missing required fields: name, value, unit'),
-       'unknown'
-     );
-   }
+  // Validate required fields
+  if (!name || typeof value !== 'number' || !unit) {
+    return createErrorResponse(
+      new Error('Missing required fields: name, value, unit'),
+      'unknown'
+    );
+  }
 
   // Validate metric name format (alphanumeric with dots/underscores)
   if (!/^[a-zA-Z0-9._]+$/.test(name)) {
     return createErrorResponse(
-      new Error('Invalid metric name format. Use only alphanumeric characters, dots, and underscores'),
+      new Error(
+        'Invalid metric name format. Use only alphanumeric characters, dots, and underscores'
+      ),
       'validation_error'
     );
   }
@@ -112,13 +117,7 @@ export async function POST(request: NextRequest) {
   }
 
   // Record the metric
-  performanceMonitor.recordMetric(
-    name,
-    value,
-    unit,
-    tags || {},
-    metadata
-  );
+  performanceMonitor.recordMetric(name, value, unit, tags || {}, metadata);
 
   return createSuccessResponse({
     message: 'Metric recorded successfully',
@@ -133,12 +132,17 @@ export async function POST(request: NextRequest) {
 }
 
 // Helper function to parse timeframe
- function parseTimeframe(timeframe: string): number {
-  const match = timeframe.trim().toLowerCase().match(/^(\d+)([smhd])$/);
-   if (!match) {
-    console.warn(`Invalid timeframe format: ${timeframe}. Using default 1 hour.`);
-     return 60 * 60 * 1000; // Default to 1 hour
-   }
+function parseTimeframe(timeframe: string): number {
+  const match = timeframe
+    .trim()
+    .toLowerCase()
+    .match(/^(\d+)([smhd])$/);
+  if (!match) {
+    console.warn(
+      `Invalid timeframe format: ${timeframe}. Using default 1 hour.`
+    );
+    return 60 * 60 * 1000; // Default to 1 hour
+  }
 
   const value = parseInt(match[1], 10);
   const unit = match[2];
@@ -189,9 +193,11 @@ async function getHealthMetrics() {
   }
 
   // Deduct points for high error rates
-  const errorRate = apiStats.totalRequests > 0 ? 
-    (apiStats.totalErrors / apiStats.totalRequests) * 100 : 0;
-  
+  const errorRate =
+    apiStats.totalRequests > 0
+      ? (apiStats.totalErrors / apiStats.totalRequests) * 100
+      : 0;
+
   if (errorRate > 10) {
     healthScore -= 25;
   } else if (errorRate > 5) {
@@ -215,27 +221,41 @@ async function getHealthMetrics() {
     score: healthScore,
     status,
     checks: {
-memory: {
-         status: !currentResources ? 'unknown' :
-                 currentResources.memory.percentage > 90 ? 'critical' :
-                 currentResources.memory.percentage > 80 ? 'warning' : 'healthy',
+      memory: {
+        status: !currentResources
+          ? 'unknown'
+          : currentResources.memory.percentage > 90
+            ? 'critical'
+            : currentResources.memory.percentage > 80
+              ? 'warning'
+              : 'healthy',
         usage: currentResources?.memory?.percentage ?? 0,
-       },
-       cpu: {
-         status: !currentResources ? 'unknown' :
-                 currentResources.cpu.usage > 0.9 ? 'critical' :
-                 currentResources.cpu.usage > 0.7 ? 'warning' : 'healthy',
-        usage: currentResources?.cpu?.usage ? currentResources.cpu.usage * 100 : 0,
-       },
+      },
+      cpu: {
+        status: !currentResources
+          ? 'unknown'
+          : currentResources.cpu.usage > 0.9
+            ? 'critical'
+            : currentResources.cpu.usage > 0.7
+              ? 'warning'
+              : 'healthy',
+        usage: currentResources?.cpu?.usage
+          ? currentResources.cpu.usage * 100
+          : 0,
+      },
       api: {
-        status: apiStats.averageResponseTime > 5000 ? 'critical' :
-                apiStats.averageResponseTime > 2000 ? 'warning' : 'healthy',
+        status:
+          apiStats.averageResponseTime > 5000
+            ? 'critical'
+            : apiStats.averageResponseTime > 2000
+              ? 'warning'
+              : 'healthy',
         averageResponseTime: apiStats.averageResponseTime,
         requestsPerMinute: apiStats.requestsPerMinute,
       },
       errors: {
-        status: errorRate > 10 ? 'critical' :
-                errorRate > 5 ? 'warning' : 'healthy',
+        status:
+          errorRate > 10 ? 'critical' : errorRate > 5 ? 'warning' : 'healthy',
         errorRate,
         recentErrors: errorStats.recentErrors,
       },

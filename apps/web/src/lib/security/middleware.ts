@@ -4,9 +4,20 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { applySecurityHeaders, applyCorsHeaders, defaultSecurityConfig, defaultCorsConfig } from './headers';
+
+import {
+  applySecurityHeaders,
+  applyCorsHeaders,
+  defaultSecurityConfig,
+  defaultCorsConfig,
+} from './headers';
+import {
+  privacyManager,
+  ProcessingPurpose,
+  DataCategory,
+} from './privacy-compliance';
 import { createRateLimitMiddleware, shouldRateLimit } from './rate-limiting';
-import { privacyManager, ProcessingPurpose, DataCategory } from './privacy-compliance';
+
 import { getLogger } from '@/lib/logging';
 
 // Security middleware configuration
@@ -51,11 +62,15 @@ export class SecurityMiddleware {
   private config: SecurityMiddlewareConfig;
   private rateLimitMiddleware?: any;
 
-  constructor(config: SecurityMiddlewareConfig = defaultSecurityMiddlewareConfig) {
+  constructor(
+    config: SecurityMiddlewareConfig = defaultSecurityMiddlewareConfig
+  ) {
     this.config = config;
-    
+
     if (config.enableRateLimit && config.rateLimitConfig) {
-      this.rateLimitMiddleware = createRateLimitMiddleware(config.rateLimitConfig as any);
+      this.rateLimitMiddleware = createRateLimitMiddleware(
+        config.rateLimitConfig as any
+      );
     }
   }
 
@@ -70,28 +85,35 @@ export class SecurityMiddleware {
 
     try {
       // 1. Rate limiting check
-      if (this.config.enableRateLimit && shouldRateLimit(request) && this.rateLimitMiddleware) {
-let rateLimitResult;
-try {
-  rateLimitResult = await this.rateLimitMiddleware(request);
-} catch (error) {
-  logger.error('Rate limit middleware error', error, {
-    correlationId: context.correlationId,
-  });
-  // Fail open - allow the request but log the error
-  rateLimitResult = { allowed: true };
-}
+      if (
+        this.config.enableRateLimit &&
+        shouldRateLimit(request) &&
+        this.rateLimitMiddleware
+      ) {
+        let rateLimitResult;
+        try {
+          rateLimitResult = await this.rateLimitMiddleware(request);
+        } catch (error) {
+          logger.error('Rate limit middleware error', error, {
+            correlationId: context.correlationId,
+          });
+          // Fail open - allow the request but log the error
+          rateLimitResult = { allowed: true };
+        }
 
-if (!rateLimitResult || typeof rateLimitResult.allowed === 'undefined') {
-  logger.warn('Invalid rate limit result, failing open', {
-    correlationId: context.correlationId,
-  });
-  rateLimitResult = { allowed: true };
-}
+        if (
+          !rateLimitResult ||
+          typeof rateLimitResult.allowed === 'undefined'
+        ) {
+          logger.warn('Invalid rate limit result, failing open', {
+            correlationId: context.correlationId,
+          });
+          rateLimitResult = { allowed: true };
+        }
 
- if (!rateLimitResult.allowed) {
+        if (!rateLimitResult.allowed) {
           context.securityFlags.rateLimited = true;
-          
+
           if (this.config.enableSecurityLogging) {
             logger.warn('Request rate limited', {
               correlationId: context.correlationId,
@@ -116,7 +138,11 @@ if (!rateLimitResult || typeof rateLimitResult.allowed === 'undefined') {
             return { response: secureResponse, context, allowed: false };
           }
 
-          return { response: rateLimitResult.response, context, allowed: false };
+          return {
+            response: rateLimitResult.response,
+            context,
+            allowed: false,
+          };
         }
       }
 
@@ -125,7 +151,7 @@ if (!rateLimitResult || typeof rateLimitResult.allowed === 'undefined') {
         const corsValid = this.validateCors(context.origin);
         if (!corsValid) {
           context.securityFlags.corsViolation = true;
-          
+
           if (this.config.enableSecurityLogging) {
             logger.warn('CORS violation detected', {
               correlationId: context.correlationId,
@@ -142,19 +168,22 @@ if (!rateLimitResult || typeof rateLimitResult.allowed === 'undefined') {
             { status: 403, headers: { 'Content-Type': 'application/json' } }
           );
 
-          return { 
-            response: this.applySecurityHeaders(corsResponse, context.origin), 
-            context, 
-            allowed: false 
+          return {
+            response: this.applySecurityHeaders(corsResponse, context.origin),
+            context,
+            allowed: false,
           };
         }
       }
 
       // 3. Suspicious activity detection
-      const suspiciousActivity = this.detectSuspiciousActivity(request, context);
+      const suspiciousActivity = this.detectSuspiciousActivity(
+        request,
+        context
+      );
       if (suspiciousActivity) {
         context.securityFlags.suspiciousActivity = true;
-        
+
         if (this.config.enableSecurityLogging) {
           logger.warn('Suspicious activity detected', {
             correlationId: context.correlationId,
@@ -188,7 +217,6 @@ if (!rateLimitResult || typeof rateLimitResult.allowed === 'undefined') {
       }
 
       return { context, allowed: true };
-
     } catch (error) {
       logger.error('Security middleware error', error, {
         correlationId: context.correlationId,
@@ -215,9 +243,11 @@ if (!rateLimitResult || typeof rateLimitResult.allowed === 'undefined') {
 
     // Apply custom security headers
     if (this.config.customSecurityHeaders) {
-      Object.entries(this.config.customSecurityHeaders).forEach(([key, value]) => {
-        response.headers.set(key, value);
-      });
+      Object.entries(this.config.customSecurityHeaders).forEach(
+        ([key, value]) => {
+          response.headers.set(key, value);
+        }
+      );
     }
 
     return response;
@@ -225,10 +255,11 @@ if (!rateLimitResult || typeof rateLimitResult.allowed === 'undefined') {
 
   // Create security context
   private createSecurityContext(request: NextRequest): SecurityContext {
-    const uuid = typeof crypto.randomUUID === 'function' 
-  ? crypto.randomUUID().substring(0, 9)
-  : Math.random().toString(36).substring(2, 11);
-const correlationId = `sec_${Date.now()}_${uuid}`;
+    const uuid =
+      typeof crypto.randomUUID === 'function'
+        ? crypto.randomUUID().substring(0, 9)
+        : Math.random().toString(36).substring(2, 11);
+    const correlationId = `sec_${Date.now()}_${uuid}`;
     const requestId = request.headers.get('x-request-id') || correlationId;
 
     return {
@@ -271,12 +302,17 @@ const correlationId = `sec_${Date.now()}_${uuid}`;
 
   // Validate CORS
   private validateCors(origin: string): boolean {
-    return defaultCorsConfig.allowedOrigins.includes('*') ||
-           defaultCorsConfig.allowedOrigins.includes(origin);
+    return (
+      defaultCorsConfig.allowedOrigins.includes('*') ||
+      defaultCorsConfig.allowedOrigins.includes(origin)
+    );
   }
 
   // Detect suspicious activity
-  private detectSuspiciousActivity(request: NextRequest, context: SecurityContext): string[] {
+  private detectSuspiciousActivity(
+    request: NextRequest,
+    context: SecurityContext
+  ): string[] {
     const indicators: string[] = [];
     const url = new URL(request.url);
     const userAgent = context.userAgent.toLowerCase();
@@ -297,26 +333,38 @@ const correlationId = `sec_${Date.now()}_${uuid}`;
       }
     }
 
-// Check for suspicious user agents
-const maliciousUserAgents = ['sqlmap', 'nikto', 'nmap', 'masscan', 'zap', 'burp'];
-const automatedUserAgents = ['wget', 'curl', 'python-requests', 'go-http-client'];
+    // Check for suspicious user agents
+    const maliciousUserAgents = [
+      'sqlmap',
+      'nikto',
+      'nmap',
+      'masscan',
+      'zap',
+      'burp',
+    ];
+    const automatedUserAgents = [
+      'wget',
+      'curl',
+      'python-requests',
+      'go-http-client',
+    ];
 
-for (const malicious of maliciousUserAgents) {
-  if (userAgent.includes(malicious)) {
-    indicators.push('malicious_user_agent');
-    break;
-  }
-}
-
-// Only flag automated agents if combined with other suspicious patterns
-if (indicators.length > 0) {
-  for (const automated of automatedUserAgents) {
-    if (userAgent.includes(automated)) {
-      indicators.push('automated_user_agent');
-      break;
+    for (const malicious of maliciousUserAgents) {
+      if (userAgent.includes(malicious)) {
+        indicators.push('malicious_user_agent');
+        break;
+      }
     }
-  }
-}
+
+    // Only flag automated agents if combined with other suspicious patterns
+    if (indicators.length > 0) {
+      for (const automated of automatedUserAgents) {
+        if (userAgent.includes(automated)) {
+          indicators.push('automated_user_agent');
+          break;
+        }
+      }
+    }
 
     // Check for unusual request patterns
     if (url.pathname.includes('..')) {
@@ -327,12 +375,22 @@ if (indicators.length > 0) {
       indicators.push('oversized_parameters');
     }
 
-// Check for common vulnerability scanning patterns
-const scanningPaths = [
-  '/admin', '/wp-admin', '/.env', '/config', '/backup',
-  '/phpmyadmin', '/adminer', '/.git', '/.svn', '/.hg',
-  '/wp-config.php', '/web.config', '/database.yml'
-];
+    // Check for common vulnerability scanning patterns
+    const scanningPaths = [
+      '/admin',
+      '/wp-admin',
+      '/.env',
+      '/config',
+      '/backup',
+      '/phpmyadmin',
+      '/adminer',
+      '/.git',
+      '/.svn',
+      '/.hg',
+      '/wp-config.php',
+      '/web.config',
+      '/database.yml',
+    ];
 
     for (const path of scanningPaths) {
       if (url.pathname.includes(path)) {
@@ -345,7 +403,10 @@ const scanningPaths = [
   }
 
   // Track privacy compliance
-  private async trackPrivacyCompliance(request: NextRequest, context: SecurityContext): Promise<void> {
+  private async trackPrivacyCompliance(
+    request: NextRequest,
+    context: SecurityContext
+  ): Promise<void> {
     try {
       const url = new URL(request.url);
       const userId = request.headers.get('x-user-id');
@@ -384,7 +445,9 @@ const scanningPaths = [
       '/api/v1/forms',
     ];
 
-    return personalDataEndpoints.some(endpoint => pathname.startsWith(endpoint));
+    return personalDataEndpoints.some(endpoint =>
+      pathname.startsWith(endpoint)
+    );
   }
 
   // Get data category for endpoint
@@ -403,7 +466,9 @@ const scanningPaths = [
 }
 
 // Create security middleware instance
-export function createSecurityMiddleware(config?: Partial<SecurityMiddlewareConfig>) {
+export function createSecurityMiddleware(
+  config?: Partial<SecurityMiddlewareConfig>
+) {
   const finalConfig = { ...defaultSecurityMiddlewareConfig, ...config };
   return new SecurityMiddleware(finalConfig);
 }
@@ -416,7 +481,9 @@ export async function withSecurity(
   request: NextRequest,
   config?: Partial<SecurityMiddlewareConfig>
 ): Promise<NextResponse | undefined> {
-  const middleware = config ? createSecurityMiddleware(config) : securityMiddleware;
+  const middleware = config
+    ? createSecurityMiddleware(config)
+    : securityMiddleware;
   const result = await middleware.handle(request);
 
   if (!result.allowed && result.response) {
@@ -425,7 +492,10 @@ export async function withSecurity(
 
   // Add security context to request headers for downstream use
   const response = NextResponse.next();
-  response.headers.set('x-security-correlation-id', result.context.correlationId);
+  response.headers.set(
+    'x-security-correlation-id',
+    result.context.correlationId
+  );
   response.headers.set('x-client-ip', result.context.clientIP);
 
   // Apply security headers

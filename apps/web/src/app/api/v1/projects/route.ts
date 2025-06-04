@@ -4,6 +4,8 @@
  */
 
 import { NextRequest } from 'next/server';
+import { z } from 'zod';
+
 import { withAuth } from '@/lib/api/middleware';
 import {
   createCreatedResponse,
@@ -11,7 +13,6 @@ import {
 } from '@/lib/api/response';
 import { validateRequestBody, validateQueryParams } from '@/lib/api/validation';
 import { constructTrackSchemas, commonSchemas } from '@/lib/api/validation';
-import { z } from 'zod';
 
 // Project response interface
 interface ProjectResponse {
@@ -44,7 +45,9 @@ const listProjectsSchema = z.object({
     .optional(),
   managerId: commonSchemas.uuid.optional(),
   search: z.string().max(100).optional(),
-  sortBy: z.enum(['created_at', 'name', 'status', 'start_date', 'end_date']).optional(),
+  sortBy: z
+    .enum(['created_at', 'name', 'status', 'start_date', 'end_date'])
+    .optional(),
   sortOrder: z.enum(['asc', 'desc']).optional(),
 });
 
@@ -100,7 +103,7 @@ function transformProject(row: ProjectRow): ProjectResponse {
 // GET /api/v1/projects - List projects
 async function handleGet(
   request: NextRequest,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
   _: { params: Record<string, string> }
 ) {
   const context = (
@@ -165,7 +168,7 @@ async function handleGet(
 // POST /api/v1/projects - Create project
 async function handlePost(
   request: NextRequest,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
   _: { params: Record<string, string> }
 ) {
   const context = (

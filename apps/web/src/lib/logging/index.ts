@@ -4,14 +4,7 @@
  */
 
 import { NextRequest } from 'next/server';
-import { RequestContext } from '@/types/api';
-import {
-  StructuredLogger,
-  LogLevel,
-  ConsoleTransport,
-  FileTransport,
-  StructuredLogEntry,
-} from './structured-logger';
+
 import {
   createCorrelationContext,
   createEnhancedRequestContext,
@@ -26,6 +19,15 @@ import {
   defaultAggregatorConfig,
   LogAggregatorConfig,
 } from './log-aggregator';
+import {
+  StructuredLogger,
+  LogLevel,
+  ConsoleTransport,
+  FileTransport,
+  StructuredLogEntry,
+} from './structured-logger';
+
+import { RequestContext } from '@/types/api';
 
 // Enhanced logger configuration
 export interface EnhancedLoggerConfig {
@@ -65,27 +67,35 @@ class EnhancedLoggerInstance {
 
   constructor(config: EnhancedLoggerConfig) {
     this.config = config;
-    
+
     // Create transports
     const transports = [new ConsoleTransport()];
-    
+
     // Add file transport if enabled (only in Node.js environment)
-    if (config.enableFileLogging && config.logFilePath && typeof window === 'undefined') {
+    if (
+      config.enableFileLogging &&
+      config.logFilePath &&
+      typeof window === 'undefined'
+    ) {
       // Ensure directory exists to prevent ENOENT at first write
       import('fs/promises')
-        .then(fs => import('path').then(path =>
-          fs.mkdir(path.dirname(config.logFilePath!), { recursive: true })
-        ))
-        .catch(() => {/* ignore – runtime will still fallback to console */});
+        .then(fs =>
+          import('path').then(path =>
+            fs.mkdir(path.dirname(config.logFilePath!), { recursive: true })
+          )
+        )
+        .catch(() => {
+          /* ignore – runtime will still fallback to console */
+        });
       transports.push(new FileTransport(config.logFilePath));
     }
-    
+
     // Create aggregator if enabled
     if (config.enableAggregation) {
       this.aggregator = createLogAggregator(config.aggregatorConfig);
       transports.push(new AggregatorTransport(this.aggregator));
     }
-    
+
     // Create structured logger
     this.logger = new StructuredLogger({
       service: config.service,
@@ -114,7 +124,10 @@ class EnhancedLoggerInstance {
   }
 
   // Enhanced API logging methods
-  async logRequest(request: NextRequest, context?: RequestContext): Promise<void> {
+  async logRequest(
+    request: NextRequest,
+    context?: RequestContext
+  ): Promise<void> {
     const enhancedContext = createEnhancedRequestContext(request, context);
     await this.logger.logRequest(request, enhancedContext);
   }
@@ -126,7 +139,12 @@ class EnhancedLoggerInstance {
     context?: RequestContext
   ): Promise<void> {
     const enhancedContext = createEnhancedRequestContext(request, context);
-    await this.logger.logResponse(request, statusCode, duration, enhancedContext);
+    await this.logger.logResponse(
+      request,
+      statusCode,
+      duration,
+      enhancedContext
+    );
   }
 
   async logError(
@@ -135,30 +153,46 @@ class EnhancedLoggerInstance {
     request?: NextRequest,
     context?: RequestContext
   ): Promise<void> {
-    const enhancedContext = request ? 
-      createEnhancedRequestContext(request, context) : 
-      context;
+    const enhancedContext = request
+      ? createEnhancedRequestContext(request, context)
+      : context;
     await this.logger.logError(message, error, request, enhancedContext);
   }
 
   // Direct logging methods
-  async error(message: string, error?: Error | unknown, context?: Partial<StructuredLogEntry>): Promise<void> {
+  async error(
+    message: string,
+    error?: Error | unknown,
+    context?: Partial<StructuredLogEntry>
+  ): Promise<void> {
     await this.logger.error(message, error, context);
   }
 
-  async warn(message: string, context?: Partial<StructuredLogEntry>): Promise<void> {
+  async warn(
+    message: string,
+    context?: Partial<StructuredLogEntry>
+  ): Promise<void> {
     await this.logger.warn(message, context);
   }
 
-  async info(message: string, context?: Partial<StructuredLogEntry>): Promise<void> {
+  async info(
+    message: string,
+    context?: Partial<StructuredLogEntry>
+  ): Promise<void> {
     await this.logger.info(message, context);
   }
 
-  async debug(message: string, context?: Partial<StructuredLogEntry>): Promise<void> {
+  async debug(
+    message: string,
+    context?: Partial<StructuredLogEntry>
+  ): Promise<void> {
     await this.logger.debug(message, context);
   }
 
-  async trace(message: string, context?: Partial<StructuredLogEntry>): Promise<void> {
+  async trace(
+    message: string,
+    context?: Partial<StructuredLogEntry>
+  ): Promise<void> {
     await this.logger.trace(message, context);
   }
 
@@ -187,9 +221,9 @@ const defaultConfig: EnhancedLoggerConfig = {
   enableAggregation: process.env.ENABLE_LOG_AGGREGATION === 'true',
   aggregatorConfig: {
     ...defaultAggregatorConfig,
-    endpoints: process.env.LOG_ENDPOINTS ? 
-      JSON.parse(process.env.LOG_ENDPOINTS) : 
-      [],
+    endpoints: process.env.LOG_ENDPOINTS
+      ? JSON.parse(process.env.LOG_ENDPOINTS)
+      : [],
   },
 };
 
@@ -197,7 +231,9 @@ const defaultConfig: EnhancedLoggerConfig = {
 let globalLogger: EnhancedLoggerInstance;
 
 // Initialize logger
-export function initializeLogger(config?: Partial<EnhancedLoggerConfig>): EnhancedLoggerInstance {
+export function initializeLogger(
+  config?: Partial<EnhancedLoggerConfig>
+): EnhancedLoggerInstance {
   const finalConfig = {
     ...defaultConfig,
     ...config,
@@ -219,7 +255,10 @@ export function getLogger(): EnhancedLoggerInstance {
 }
 
 // Convenience functions that use the global logger
-export async function logRequest(request: NextRequest, context?: RequestContext): Promise<void> {
+export async function logRequest(
+  request: NextRequest,
+  context?: RequestContext
+): Promise<void> {
   await getLogger().logRequest(request, context);
 }
 
@@ -265,10 +304,7 @@ export {
   withCorrelation,
 };
 
-export type {
-  StructuredLogEntry,
-  LogAggregatorConfig
-};
+export type { StructuredLogEntry, LogAggregatorConfig };
 
 // Graceful shutdown handler
 process.on('SIGTERM', async () => {

@@ -6,6 +6,7 @@
 import { NextRequest } from 'next/server';
 
 // Global type declarations for Jest and browser APIs
+/* eslint-disable no-unused-vars */
 declare const jest: {
   fn: (implementation?: any) => any;
   mock: (moduleName: string, factory: () => any) => void;
@@ -25,6 +26,7 @@ declare const Headers: {
     get: (name: string) => string | null;
   };
 };
+/* eslint-enable no-unused-vars */
 
 // Set test environment variables
 // NODE_ENV is set by the test runner
@@ -208,7 +210,7 @@ export const createMockRequest = (
   // Add headers.get method
   (
     request.headers as Map<string, string> & {
-      get: (key: string) => string | undefined;
+      get: (_key: string) => string | undefined;
     }
   ).get = (key: string) => {
     return (request.headers as Map<string, string>).get(key.toLowerCase());

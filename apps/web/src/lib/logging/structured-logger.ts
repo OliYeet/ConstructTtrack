@@ -4,6 +4,7 @@
  */
 
 import { NextRequest } from 'next/server';
+
 import { RequestContext } from '@/types/api';
 
 // Enhanced log levels with numeric values for comparison
@@ -74,9 +75,9 @@ export class ConsoleTransport implements LogTransport {
     const timestamp = new Date(entry.timestamp).toISOString();
     const levelName = LogLevel[entry.level];
     const correlationId = entry.correlationId ? `[${entry.correlationId}]` : '';
-    
+
     let message = `${timestamp} ${levelName} ${correlationId} ${entry.message}`;
-    
+
     if (entry.metadata && Object.keys(entry.metadata).length > 0) {
       message += `\nMetadata: ${JSON.stringify(entry.metadata, null, 2)}`;
     }
@@ -167,8 +168,13 @@ export class StructuredLogger {
     defaultMetadata?: Record<string, unknown>;
   }) {
     this.service = options.service;
-    this.environment = options.environment || process.env.NODE_ENV || 'development';
-    this.version = options.version || process.env.npm_package_version || process.env.NEXT_PUBLIC_VERSION || '1.0.0';
+    this.environment =
+      options.environment || process.env.NODE_ENV || 'development';
+    this.version =
+      options.version ||
+      process.env.npm_package_version ||
+      process.env.NEXT_PUBLIC_VERSION ||
+      '1.0.0';
     this.transports = options.transports || [new ConsoleTransport()];
     this.defaultMetadata = options.defaultMetadata || {};
   }
@@ -189,7 +195,7 @@ export class StructuredLogger {
         } catch (error) {
           console.error(`Transport ${transport.name} failed:`, error);
         }
-      }),
+      })
     );
   }
 
@@ -224,12 +230,15 @@ export class StructuredLogger {
     error?: Error | unknown,
     context?: Partial<StructuredLogEntry>
   ): Promise<void> {
-    const errorInfo = error instanceof Error ? {
-      name: error.name,
-      message: error.message,
-      stack: error.stack,
-      code: (error as any).code,
-    } : undefined;
+    const errorInfo =
+      error instanceof Error
+        ? {
+            name: error.name,
+            message: error.message,
+            stack: error.stack,
+            code: (error as any).code,
+          }
+        : undefined;
 
     await this.log(LogLevel.ERROR, message, {
       ...context,
@@ -237,19 +246,31 @@ export class StructuredLogger {
     });
   }
 
-  async warn(message: string, context?: Partial<StructuredLogEntry>): Promise<void> {
+  async warn(
+    message: string,
+    context?: Partial<StructuredLogEntry>
+  ): Promise<void> {
     await this.log(LogLevel.WARN, message, context);
   }
 
-  async info(message: string, context?: Partial<StructuredLogEntry>): Promise<void> {
+  async info(
+    message: string,
+    context?: Partial<StructuredLogEntry>
+  ): Promise<void> {
     await this.log(LogLevel.INFO, message, context);
   }
 
-  async debug(message: string, context?: Partial<StructuredLogEntry>): Promise<void> {
+  async debug(
+    message: string,
+    context?: Partial<StructuredLogEntry>
+  ): Promise<void> {
     await this.log(LogLevel.DEBUG, message, context);
   }
 
-  async trace(message: string, context?: Partial<StructuredLogEntry>): Promise<void> {
+  async trace(
+    message: string,
+    context?: Partial<StructuredLogEntry>
+  ): Promise<void> {
     await this.log(LogLevel.TRACE, message, context);
   }
 
@@ -267,9 +288,10 @@ export class StructuredLogger {
         method: request.method || 'GET',
         url: request.url,
         userAgent: request.headers.get('user-agent') || undefined,
-        ip: request.headers.get('x-forwarded-for') ||
-            request.headers.get('x-real-ip') ||
-            'unknown',
+        ip:
+          request.headers.get('x-forwarded-for') ||
+          request.headers.get('x-real-ip') ||
+          'unknown',
       },
     });
   }
@@ -280,9 +302,12 @@ export class StructuredLogger {
     duration: number,
     context?: RequestContext & { correlationId?: string }
   ): Promise<void> {
-    const level = statusCode >= 500 ? LogLevel.ERROR :
-                  statusCode >= 400 ? LogLevel.WARN :
-                  LogLevel.INFO;
+    const level =
+      statusCode >= 500
+        ? LogLevel.ERROR
+        : statusCode >= 400
+          ? LogLevel.WARN
+          : LogLevel.INFO;
 
     await this.log(level, 'API Response', {
       correlationId: context?.correlationId,
@@ -313,28 +338,33 @@ export class StructuredLogger {
       requestId: context?.requestId,
       userId: context?.user?.id,
       organizationId: context?.organizationId,
-      request: request ? {
-        method: request.method || 'GET',
-        url: request.url,
-      } : undefined,
+      request: request
+        ? {
+            method: request.method || 'GET',
+            url: request.url,
+          }
+        : undefined,
     });
   }
 
   // Performance logging
-async logPerformance(
-  operation: string,
-  duration: number,
-  context?: Partial<StructuredLogEntry>
-): Promise<void> {
-  await this.info(`Performance: ${operation}`, {
-    ...context,
-    performance: {
-      duration,
-     memoryUsage: typeof process !== 'undefined' && process.memoryUsage ? process.memoryUsage() : undefined,
-      ...context?.performance,
-    },
-  });
-}
+  async logPerformance(
+    operation: string,
+    duration: number,
+    context?: Partial<StructuredLogEntry>
+  ): Promise<void> {
+    await this.info(`Performance: ${operation}`, {
+      ...context,
+      performance: {
+        duration,
+        memoryUsage:
+          typeof process !== 'undefined' && process.memoryUsage
+            ? process.memoryUsage()
+            : undefined,
+        ...context?.performance,
+      },
+    });
+  }
 
   // Create child logger with additional context
   child(additionalMetadata: Record<string, unknown>): StructuredLogger {

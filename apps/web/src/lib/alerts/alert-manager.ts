@@ -3,8 +3,9 @@
  * Centralized alert management, rules, and escalation
  */
 
-import { getLogger } from '@/lib/logging';
 import { NotificationService } from './notification-service';
+
+import { getLogger } from '@/lib/logging';
 
 // Alert severity levels
 export enum AlertSeverity {
@@ -100,9 +101,11 @@ export class AlertManager {
   private lastFailureTime = 0;
   private nextRetryTime = 0;
   private readonly maxFailures = 5;
-  private readonly circuitBreakerTimeout = 60000; // 1 minute
 
-  constructor(config: AlertManagerConfig, notificationService: NotificationService) {
+  constructor(
+    config: AlertManagerConfig,
+    notificationService: NotificationService
+  ) {
     this.config = config;
     this.notificationService = notificationService;
   }
@@ -116,7 +119,10 @@ export class AlertManager {
     this.evaluationTimer = setInterval(() => {
       this.evaluateRulesWithCircuitBreaker().catch((error: unknown) => {
         const logger = getLogger();
-        logger.error('Unhandled error in rule evaluation', error instanceof Error ? error : new Error(String(error)));
+        logger.error(
+          'Unhandled error in rule evaluation',
+          error instanceof Error ? error : new Error(String(error))
+        );
       });
     }, this.config.evaluationInterval);
 
@@ -143,7 +149,7 @@ export class AlertManager {
   // Add alert rule
   addRule(rule: AlertRule): void {
     this.rules.set(rule.id, rule);
-    
+
     const logger = getLogger();
     logger.info('Alert rule added', {
       metadata: {
@@ -158,7 +164,7 @@ export class AlertManager {
   removeRule(ruleId: string): void {
     this.rules.delete(ruleId);
     this.lastEvaluations.delete(ruleId);
-    
+
     const logger = getLogger();
     logger.info('Alert rule removed', {
       metadata: { ruleId },
@@ -176,12 +182,13 @@ export class AlertManager {
     tags: string[] = []
   ): Promise<string> {
     const fingerprint = this.generateFingerprint(title, source, category);
-   const alertId = `alert_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+    const alertId = `alert_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
     const timestamp = new Date().toISOString();
 
     // Check if similar alert already exists
     const existingAlert = Array.from(this.alerts.values()).find(
-      alert => alert.fingerprint === fingerprint && alert.status === AlertStatus.ACTIVE
+      alert =>
+        alert.fingerprint === fingerprint && alert.status === AlertStatus.ACTIVE
     );
 
     if (existingAlert) {
@@ -189,7 +196,7 @@ export class AlertManager {
       existingAlert.count++;
       existingAlert.lastSeen = timestamp;
       existingAlert.metadata = { ...existingAlert.metadata, ...metadata };
-      
+
       const logger = getLogger();
       logger.info('Alert updated', {
         metadata: {
@@ -244,7 +251,10 @@ export class AlertManager {
   }
 
   // Acknowledge alert
-  async acknowledgeAlert(alertId: string, acknowledgedBy: string): Promise<boolean> {
+  async acknowledgeAlert(
+    alertId: string,
+    acknowledgedBy: string
+  ): Promise<boolean> {
     const alert = this.alerts.get(alertId);
     if (!alert || alert.status !== AlertStatus.ACTIVE) {
       return false;
@@ -281,7 +291,9 @@ export class AlertManager {
       metadata: {
         alertId,
         title: alert.title,
-        duration: new Date(alert.resolvedAt).getTime() - new Date(alert.timestamp).getTime(),
+        duration:
+          new Date(alert.resolvedAt).getTime() -
+          new Date(alert.timestamp).getTime(),
       },
     });
 
@@ -341,12 +353,16 @@ export class AlertManager {
     this.lastFailureTime = Date.now();
 
     const logger = getLogger();
-    logger.error('Rule evaluation failed', error instanceof Error ? error : new Error(String(error)), {
-      metadata: {
-        failureCount: this.failureCount,
-        circuitBreakerState: this.circuitBreakerState,
-      },
-    });
+    logger.error(
+      'Rule evaluation failed',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        metadata: {
+          failureCount: this.failureCount,
+          circuitBreakerState: this.circuitBreakerState,
+        },
+      }
+    );
 
     // Open circuit breaker if too many failures
     if (this.failureCount >= this.maxFailures) {
@@ -355,7 +371,10 @@ export class AlertManager {
       // Calculate exponential backoff delay (base 2 seconds, max 5 minutes)
       const baseDelay = 2000; // 2 seconds
       const maxDelay = 5 * 60 * 1000; // 5 minutes
-      const exponentialDelay = Math.min(baseDelay * Math.pow(2, this.failureCount - this.maxFailures), maxDelay);
+      const exponentialDelay = Math.min(
+        baseDelay * Math.pow(2, this.failureCount - this.maxFailures),
+        maxDelay
+      );
 
       this.nextRetryTime = this.lastFailureTime + exponentialDelay;
 
@@ -404,7 +423,7 @@ export class AlertManager {
 
     // Get metric value (this would integrate with your metrics system)
     const metricValue = await this.getMetricValue(rule.condition.metric);
-    
+
     if (metricValue === null) {
       return;
     }
@@ -415,7 +434,7 @@ export class AlertManager {
     if (conditionMet) {
       // Check cooldown period
       const recentAlert = Array.from(this.alerts.values()).find(
-        alert => 
+        alert =>
           alert.source === `rule:${rule.id}` &&
           alert.status === AlertStatus.ACTIVE &&
           new Date(alert.timestamp).getTime() > now - rule.cooldownPeriod
@@ -441,12 +460,20 @@ export class AlertManager {
   }
 
   // Get metric value from the metrics system
-  private async getMetricValue(metric: string): Promise<number | string | null> {
+  private async getMetricValue(
+    metric: string
+  ): Promise<number | string | null> {
     try {
       // Import metrics modules dynamically to avoid circular dependencies
-      const { performanceMonitor } = await import('@/lib/monitoring/performance-monitor');
-      const { resourceMonitor } = await import('@/lib/monitoring/resource-monitor');
-      const { apiMetricsTracker } = await import('@/lib/monitoring/api-metrics');
+      const { performanceMonitor } = await import(
+        '@/lib/monitoring/performance-monitor'
+      );
+      const { resourceMonitor } = await import(
+        '@/lib/monitoring/resource-monitor'
+      );
+      const { apiMetricsTracker } = await import(
+        '@/lib/monitoring/api-metrics'
+      );
       const { errorReporter } = await import('@/lib/errors/error-reporter');
 
       // Parse metric name to determine source and specific metric
@@ -462,13 +489,18 @@ export class AlertManager {
               return stats.currentMemoryUsage;
             case 'totalMetrics':
               return stats.totalMetrics;
-            default:
+            default: {
               // Look for specific metric by name
               const metrics = performanceMonitor.getMetrics();
               const latestMetric = metrics
                 .filter(m => m.name === metricName)
-                .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0];
+                .sort(
+                  (a, b) =>
+                    new Date(b.timestamp).getTime() -
+                    new Date(a.timestamp).getTime()
+                )[0];
               return latestMetric?.value ?? null;
+            }
           }
         }
 
@@ -484,7 +516,9 @@ export class AlertManager {
             case 'cpu_usage':
               return current.cpu.usage;
             case 'heap_usage':
-              return current.memory.heap ? (current.memory.heap.used / current.memory.heap.total) * 100 : null;
+              return current.memory.heap
+                ? (current.memory.heap.used / current.memory.heap.total) * 100
+                : null;
             default:
               return null;
           }
@@ -499,7 +533,9 @@ export class AlertManager {
               return apiStats.averageResponseTime;
             case 'errorRate':
               // Calculate error rate from available data
-              return apiStats.totalRequests > 0 ? apiStats.totalErrors / apiStats.totalRequests : 0;
+              return apiStats.totalRequests > 0
+                ? apiStats.totalErrors / apiStats.totalRequests
+                : 0;
             case 'requestsPerMinute':
               return apiStats.requestsPerMinute;
             default:
@@ -522,25 +558,37 @@ export class AlertManager {
           }
         }
 
-        default:
+        default: {
           // Try to find metric in performance monitor by full name
           const metrics = performanceMonitor.getMetrics();
           const latestMetric = metrics
             .filter(m => m.name === metric)
-            .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0];
+            .sort(
+              (a, b) =>
+                new Date(b.timestamp).getTime() -
+                new Date(a.timestamp).getTime()
+            )[0];
           return latestMetric?.value ?? null;
+        }
       }
     } catch (error) {
       const logger = getLogger();
-      logger.error('Failed to get metric value', error instanceof Error ? error : new Error(String(error)), {
-        metadata: { metric },
-      });
+      logger.error(
+        'Failed to get metric value',
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          metadata: { metric },
+        }
+      );
       return null;
     }
   }
 
   // Evaluate condition
-  private evaluateCondition(condition: AlertCondition, value: number | string): boolean {
+  private evaluateCondition(
+    condition: AlertCondition,
+    value: number | string
+  ): boolean {
     const { operator, threshold } = condition;
 
     if (typeof value === 'number' && typeof threshold === 'number') {
@@ -578,7 +626,9 @@ export class AlertManager {
   private async sendNotifications(alert: Alert): Promise<void> {
     // Find applicable rules
     const applicableRules = Array.from(this.rules.values()).filter(
-      rule => rule.category === alert.category || rule.tags.some(tag => alert.tags.includes(tag))
+      rule =>
+        rule.category === alert.category ||
+        rule.tags.some(tag => alert.tags.includes(tag))
     );
 
     // Send immediate notifications
@@ -620,8 +670,10 @@ export class AlertManager {
         }
 
         // Check escalation condition
-        if (escalation.condition === 'unacknowledged' &&
-            currentAlert.status === AlertStatus.ACKNOWLEDGED) {
+        if (
+          escalation.condition === 'unacknowledged' &&
+          currentAlert.status === AlertStatus.ACKNOWLEDGED
+        ) {
           return;
         }
 
@@ -640,13 +692,17 @@ export class AlertManager {
             });
           } catch (error) {
             const logger = getLogger();
-            logger.error('Failed to send escalation notification', error instanceof Error ? error : new Error(String(error)), {
-              metadata: {
-                alertId: alert.id,
-                escalationLevel: escalation.level,
-                channel,
-              },
-            });
+            logger.error(
+              'Failed to send escalation notification',
+              error instanceof Error ? error : new Error(String(error)),
+              {
+                metadata: {
+                  alertId: alert.id,
+                  escalationLevel: escalation.level,
+                  channel,
+                },
+              }
+            );
           }
         }
       }, escalation.delay);
@@ -658,8 +714,14 @@ export class AlertManager {
   }
 
   // Generate alert fingerprint
-  private generateFingerprint(title: string, source: string, category: string): string {
-    return `${title}|${source}|${category}`.toLowerCase().replace(/[^a-z0-9|]/g, '');
+  private generateFingerprint(
+    title: string,
+    source: string,
+    category: string
+  ): string {
+    return `${title}|${source}|${category}`
+      .toLowerCase()
+      .replace(/[^a-z0-9|]/g, '');
   }
 
   // Cleanup old alerts
@@ -668,8 +730,11 @@ export class AlertManager {
     const toDelete: string[] = [];
 
     this.alerts.forEach((alert, id) => {
-      if (alert.status === AlertStatus.RESOLVED &&
-         alert.resolvedAt && new Date(alert.resolvedAt).getTime() < cutoff) {
+      if (
+        alert.status === AlertStatus.RESOLVED &&
+        alert.resolvedAt &&
+        new Date(alert.resolvedAt).getTime() < cutoff
+      ) {
         toDelete.push(id);
       }
     });
@@ -679,7 +744,10 @@ export class AlertManager {
     // Limit active alerts
     const activeAlerts = Array.from(this.alerts.values())
       .filter(alert => alert.status === AlertStatus.ACTIVE)
-      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+      .sort(
+        (a, b) =>
+          new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+      );
 
     if (activeAlerts.length > this.config.maxActiveAlerts) {
       const toSuppress = activeAlerts.slice(this.config.maxActiveAlerts);
@@ -711,21 +779,27 @@ export class AlertManager {
     alertsBySeverity: Record<string, number>;
   } {
     const alerts = Array.from(this.alerts.values());
-    
+
     const alertsByCategory: Record<string, number> = {};
     const alertsBySeverity: Record<string, number> = {};
 
     alerts.forEach(alert => {
-      alertsByCategory[alert.category] = (alertsByCategory[alert.category] || 0) + 1;
-      alertsBySeverity[alert.severity] = (alertsBySeverity[alert.severity] || 0) + 1;
+      alertsByCategory[alert.category] =
+        (alertsByCategory[alert.category] || 0) + 1;
+      alertsBySeverity[alert.severity] =
+        (alertsBySeverity[alert.severity] || 0) + 1;
     });
 
     return {
       totalAlerts: alerts.length,
       activeAlerts: alerts.filter(a => a.status === AlertStatus.ACTIVE).length,
-      acknowledgedAlerts: alerts.filter(a => a.status === AlertStatus.ACKNOWLEDGED).length,
-      resolvedAlerts: alerts.filter(a => a.status === AlertStatus.RESOLVED).length,
-      suppressedAlerts: alerts.filter(a => a.status === AlertStatus.SUPPRESSED).length,
+      acknowledgedAlerts: alerts.filter(
+        a => a.status === AlertStatus.ACKNOWLEDGED
+      ).length,
+      resolvedAlerts: alerts.filter(a => a.status === AlertStatus.RESOLVED)
+        .length,
+      suppressedAlerts: alerts.filter(a => a.status === AlertStatus.SUPPRESSED)
+        .length,
       alertsByCategory,
       alertsBySeverity,
     };

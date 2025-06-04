@@ -4,6 +4,7 @@
  */
 
 import { NextRequest } from 'next/server';
+
 import { RequestContext } from '@/types/api';
 
 // Log levels

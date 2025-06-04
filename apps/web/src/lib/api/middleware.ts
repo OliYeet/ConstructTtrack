@@ -22,7 +22,7 @@ import { apiMetricsTracker } from '@/lib/monitoring/api-metrics';
 // import { performanceMonitor } from '@/lib/monitoring/performance-monitor';
 import { ApiHandler, RequestContext, HttpMethod } from '@/types/api';
 
-// Rate limiting store 
+// Rate limiting store
 // TODO: Replace with Redis or other persistent storage for production
 // WARNING: In-memory storage only works for single-instance deployments
 const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
@@ -220,14 +220,16 @@ export function withApiMiddleware(
         }
       }
 
-// Add context to request headers for downstream use
-const headers = new Headers(request.headers);
-headers.set('x-request-context', JSON.stringify({
-  requestId: requestContext.requestId,
-  userId: requestContext.user?.id,
-  userRole: requestContext.user?.role,
-}));
-const contextualRequest = new NextRequest(request, { headers });
+      // Add context to request headers for downstream use
+      const headers = new Headers(request.headers);
+      headers.set(
+        'x-request-context',
+        JSON.stringify({
+          requestId: requestContext.requestId,
+          userId: requestContext.user?.id,
+          userRole: requestContext.user?.role,
+        })
+      );
 
       // Execute handler
       const params = await context.params;

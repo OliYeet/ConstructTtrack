@@ -4,8 +4,9 @@
  */
 
 import { NextResponse } from 'next/server';
-import { ApiResponse, ApiError, PaginatedResponse } from '@/types/api';
+
 import { BaseApiError } from '@/lib/errors/api-errors';
+import { ApiResponse, ApiError, PaginatedResponse } from '@/types/api';
 
 // API Configuration
 const API_CONFIG = {

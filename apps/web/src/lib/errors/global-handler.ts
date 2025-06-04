@@ -6,6 +6,7 @@
 import { getLogger } from '@/lib/logging';
 
 // Global type declarations for browser APIs
+
 declare const window:
   | {
       addEventListener: (type: string, listener: any) => void;

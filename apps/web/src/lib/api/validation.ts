@@ -3,8 +3,9 @@
  * Request validation using Zod schemas
  */
 
-import { z } from 'zod';
 import { NextRequest } from 'next/server';
+import { z } from 'zod';
+
 import { ValidationError } from '@/lib/errors/api-errors';
 import { PaginationParams } from '@/types/api';
 
@@ -56,9 +57,13 @@ export async function validateRequestBody<T>(
   } catch (error) {
     if (error instanceof z.ZodError) {
       const firstError = error.errors[0];
-      throw new ValidationError(firstError.message, {
-        zodError: error.errors,
-      }, firstError.path.join('.'));
+      throw new ValidationError(
+        firstError.message,
+        {
+          zodError: error.errors,
+        },
+        firstError.path.join('.')
+      );
     }
     throw new ValidationError('Invalid JSON in request body');
   }
@@ -81,9 +86,13 @@ export function validateQueryParams<T>(
   } catch (error) {
     if (error instanceof z.ZodError) {
       const firstError = error.errors[0];
-      throw new ValidationError(firstError.message, {
-        zodError: error.errors,
-      }, firstError.path.join('.'));
+      throw new ValidationError(
+        firstError.message,
+        {
+          zodError: error.errors,
+        },
+        firstError.path.join('.')
+      );
     }
     throw new ValidationError('Invalid query parameters');
   }
@@ -99,9 +108,13 @@ export function validatePathParams<T>(
   } catch (error) {
     if (error instanceof z.ZodError) {
       const firstError = error.errors[0];
-      throw new ValidationError(firstError.message, {
-        zodError: error.errors,
-      }, firstError.path.join('.'));
+      throw new ValidationError(
+        firstError.message,
+        {
+          zodError: error.errors,
+        },
+        firstError.path.join('.')
+      );
     }
     throw new ValidationError('Invalid path parameters');
   }
@@ -171,7 +184,11 @@ export function sanitizeString(input: string): string {
 // Validate and sanitize search query
 export function validateSearchQuery(query: string): string {
   if (!query || query.trim().length === 0) {
-    throw new ValidationError('Search query cannot be empty', undefined, 'query');
+    throw new ValidationError(
+      'Search query cannot be empty',
+      undefined,
+      'query'
+    );
   }
 
   if (query.length > 100) {

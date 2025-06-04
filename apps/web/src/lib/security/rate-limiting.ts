@@ -4,6 +4,7 @@
  */
 
 import { NextRequest } from 'next/server';
+
 import { getLogger } from '@/lib/logging';
 
 // Rate limit configuration
@@ -30,8 +31,15 @@ export interface RateLimitResult {
 // Rate limit store interface
 export interface RateLimitStore {
   get(key: string): Promise<{ count: number; resetTime: number } | null>;
-  set(key: string, value: { count: number; resetTime: number }, ttl: number): Promise<void>;
-  increment(key: string, ttl: number): Promise<{ count: number; resetTime: number }>;
+  set(
+    key: string,
+    value: { count: number; resetTime: number },
+    ttl: number
+  ): Promise<void>;
+  increment(
+    key: string,
+    ttl: number
+  ): Promise<{ count: number; resetTime: number }>;
   delete(key: string): Promise<void>;
   clear(): Promise<void>;
 }
@@ -45,12 +53,19 @@ export class MemoryRateLimitStore implements RateLimitStore {
     return this.store.get(key) || null;
   }
 
-  async set(key: string, value: { count: number; resetTime: number }, ttl: number): Promise<void> {
+  async set(
+    key: string,
+    value: { count: number; resetTime: number },
+    ttl: number
+  ): Promise<void> {
     this.store.set(key, value);
     this.setExpiration(key, ttl);
   }
 
-  async increment(key: string, ttl: number): Promise<{ count: number; resetTime: number }> {
+  async increment(
+    key: string,
+    ttl: number
+  ): Promise<{ count: number; resetTime: number }> {
     const now = Date.now();
     const existing = this.store.get(key);
 
@@ -110,8 +125,10 @@ export class RedisRateLimitStore implements RateLimitStore {
 
   async get(key: string): Promise<{ count: number; resetTime: number } | null> {
     try {
-  const data = await this.redis.hgetall(key);
-  return Object.keys(data).length ? { count: +data.count, resetTime: +data.resetTime } : null;
+      const data = await this.redis.hgetall(key);
+      return Object.keys(data).length
+        ? { count: +data.count, resetTime: +data.resetTime }
+        : null;
     } catch (error) {
       const logger = getLogger();
       logger.error('Redis get error', error);
@@ -119,7 +136,11 @@ export class RedisRateLimitStore implements RateLimitStore {
     }
   }
 
-  async set(key: string, value: { count: number; resetTime: number }, ttl: number): Promise<void> {
+  async set(
+    key: string,
+    value: { count: number; resetTime: number },
+    ttl: number
+  ): Promise<void> {
     try {
       await this.redis.setex(key, Math.ceil(ttl / 1000), JSON.stringify(value));
     } catch (error) {
@@ -128,7 +149,10 @@ export class RedisRateLimitStore implements RateLimitStore {
     }
   }
 
-  async increment(key: string, ttl: number): Promise<{ count: number; resetTime: number }> {
+  async increment(
+    key: string,
+    ttl: number
+  ): Promise<{ count: number; resetTime: number }> {
     const now = Date.now();
     const resetTime = now + ttl;
 
@@ -139,7 +163,13 @@ export class RedisRateLimitStore implements RateLimitStore {
         redis.call('PEXPIRE', KEYS[1], ARGV[2])
         return current
       `;
-      const count: number = await this.redis.eval(script, 1, key, resetTime, ttl);
+      const count: number = await this.redis.eval(
+        script,
+        1,
+        key,
+        resetTime,
+        ttl
+      );
       return { count, resetTime };
     } catch (error) {
       const logger = getLogger();
@@ -184,10 +214,12 @@ export class RateLimiter {
 
     try {
       const result = await this.store.increment(key, this.config.windowMs);
-      
+
       const allowed = result.count <= this.config.maxRequests;
       const remaining = Math.max(0, this.config.maxRequests - result.count);
-      const retryAfter = allowed ? undefined : Math.ceil((result.resetTime - now) / 1000);
+      const retryAfter = allowed
+        ? undefined
+        : Math.ceil((result.resetTime - now) / 1000);
 
       return {
         allowed,
@@ -263,7 +295,8 @@ export const rateLimitConfigs = {
     message: 'Too many authentication attempts, please try again later.',
     statusCode: 429,
     keyGenerator: (request: NextRequest) => {
-      const ip = request.headers.get('x-forwarded-for')?.split(',')[0] || 'unknown';
+      const ip =
+        request.headers.get('x-forwarded-for')?.split(',')[0] || 'unknown';
       return `auth_limit:${ip}`;
     },
   },
@@ -303,7 +336,8 @@ export const rateLimitConfigs = {
     message: 'Too many admin requests, please try again later.',
     statusCode: 429,
     keyGenerator: (request: NextRequest) => {
-      const ip = request.headers.get('x-forwarded-for')?.split(',')[0] || 'unknown';
+      const ip =
+        request.headers.get('x-forwarded-for')?.split(',')[0] || 'unknown';
       const userId = request.headers.get('x-user-id') || 'anonymous';
       return `admin_limit:${ip}:${userId}`;
     },
@@ -325,9 +359,7 @@ export function createRateLimitMiddleware(
   store?: RateLimitStore
 ) {
   const config =
-    typeof configName === 'string'
-      ? rateLimitConfigs[configName]
-      : configName;
+    typeof configName === 'string' ? rateLimitConfigs[configName] : configName;
 
   if (!config) {
     throw new Error(
@@ -348,8 +380,10 @@ export function createRateLimitMiddleware(
     if (config.enableHeaders) {
       headers['X-RateLimit-Limit'] = result.limit.toString();
       headers['X-RateLimit-Remaining'] = result.remaining.toString();
-      headers['X-RateLimit-Reset'] = Math.ceil(result.resetTime / 1000).toString();
-      
+      headers['X-RateLimit-Reset'] = Math.ceil(
+        result.resetTime / 1000
+      ).toString();
+
       if (result.retryAfter) {
         headers['Retry-After'] = result.retryAfter.toString();
       }
@@ -360,7 +394,8 @@ export function createRateLimitMiddleware(
       const logger = getLogger();
       logger.warn('Rate limit exceeded', {
         metadata: {
-          ip: request.headers.get('x-forwarded-for')?.split(',')[0] || 'unknown',
+          ip:
+            request.headers.get('x-forwarded-for')?.split(',')[0] || 'unknown',
           endpoint: new URL(request.url).pathname,
           limit: result.limit,
           remaining: result.remaining,
@@ -395,17 +430,32 @@ export function createRateLimitMiddleware(
 const globalStore = new MemoryRateLimitStore();
 
 // Export rate limiters for different use cases
-export const apiRateLimiter = new RateLimiter(rateLimitConfigs.api, globalStore);
-export const authRateLimiter = new RateLimiter(rateLimitConfigs.auth, globalStore);
-export const uploadRateLimiter = new RateLimiter(rateLimitConfigs.upload, globalStore);
-export const searchRateLimiter = new RateLimiter(rateLimitConfigs.search, globalStore);
-export const adminRateLimiter = new RateLimiter(rateLimitConfigs.admin, globalStore);
+export const apiRateLimiter = new RateLimiter(
+  rateLimitConfigs.api,
+  globalStore
+);
+export const authRateLimiter = new RateLimiter(
+  rateLimitConfigs.auth,
+  globalStore
+);
+export const uploadRateLimiter = new RateLimiter(
+  rateLimitConfigs.upload,
+  globalStore
+);
+export const searchRateLimiter = new RateLimiter(
+  rateLimitConfigs.search,
+  globalStore
+);
+export const adminRateLimiter = new RateLimiter(
+  rateLimitConfigs.admin,
+  globalStore
+);
 
 // Utility function to check if request should be rate limited
 export function shouldRateLimit(request: NextRequest): boolean {
   // Skip rate limiting for certain conditions
   const userAgent = request.headers.get('user-agent') || '';
-  
+
   // Skip for health checks
   if (userAgent.includes('health-check') || userAgent.includes('monitoring')) {
     return false;

@@ -18,7 +18,7 @@ on:
       skip_implementation_tests:
         description: 'Skip implementation tests (useful when API server is not available)'
         required: false
-        default: 'false'
+        default: false
         type: boolean
 
 jobs:

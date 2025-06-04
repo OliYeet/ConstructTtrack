@@ -3,8 +3,9 @@
  * Handles error reporting, aggregation, and analytics
  */
 
-import { getLogger } from '@/lib/logging';
 import { ErrorClassification } from './global-handler';
+
+import { getLogger } from '@/lib/logging';
 // import { ErrorSeverity } from './global-handler';
 
 // Error report interface
@@ -109,15 +110,15 @@ export class ErrorReporter {
     // Update aggregation
     this.updateAggregation(report);
 
- // Add to queue only when it can eventually be drained
- if (this.config.enableRemoteReporting) {
-   this.reportQueue.push(report);
-  
-  // Limit queue size to prevent memory issues
-  if (this.reportQueue.length > this.config.maxReports) {
-    this.reportQueue.shift(); // Remove oldest
-  }
- }
+    // Add to queue only when it can eventually be drained
+    if (this.config.enableRemoteReporting) {
+      this.reportQueue.push(report);
+
+      // Limit queue size to prevent memory issues
+      if (this.reportQueue.length > this.config.maxReports) {
+        this.reportQueue.shift(); // Remove oldest
+      }
+    }
 
     // Save to storage
     if (this.config.enableLocalStorage) {
@@ -154,20 +155,26 @@ export class ErrorReporter {
   // Generate error fingerprint for deduplication
   private generateFingerprint(
     error: Error,
-    context: { source: string; url?: string; additionalData?: Record<string, unknown> }
+    context: {
+      source: string;
+      url?: string;
+      additionalData?: Record<string, unknown>;
+    }
   ): string {
     // Create a hash-like string from error characteristics
     const components = [
       error.name,
       error.message,
       context.source,
-(() => {
-   try {
-     return context.url ? new URL(context.url, 'http://local').pathname : '';
-   } catch {
-    return context.url || ''; // Use raw URL as fallback
-   }
- })(),
+      (() => {
+        try {
+          return context.url
+            ? new URL(context.url, 'http://local').pathname
+            : '';
+        } catch {
+          return context.url || ''; // Use raw URL as fallback
+        }
+      })(),
       error.stack ? error.stack.split('\n')[1] : '', // First stack frame
     ];
 
@@ -181,7 +188,11 @@ export class ErrorReporter {
   // Generate tags for categorization
   private generateTags(
     error: Error,
-    context: { source: string; url?: string; additionalData?: Record<string, unknown> },
+    context: {
+      source: string;
+      url?: string;
+      additionalData?: Record<string, unknown>;
+    },
     classification: ErrorClassification
   ): string[] {
     const tags: string[] = [
@@ -229,14 +240,17 @@ export class ErrorReporter {
 
       // Update hourly occurrences
       const hour = new Date(report.timestamp).toISOString().substring(0, 13);
-      existing.occurrencesByHour[hour] = (existing.occurrencesByHour[hour] || 0) + 1;
+      existing.occurrencesByHour[hour] =
+        (existing.occurrencesByHour[hour] || 0) + 1;
     } else {
       const aggregation: ErrorAggregation = {
         fingerprint: report.fingerprint,
         count: 1,
         firstSeen: report.timestamp,
         lastSeen: report.timestamp,
-        affectedUsers: new Set(report.context.userId ? [report.context.userId] : []),
+        affectedUsers: new Set(
+          report.context.userId ? [report.context.userId] : []
+        ),
         occurrencesByHour: {
           [new Date(report.timestamp).toISOString().substring(0, 13)]: 1,
         },
@@ -259,19 +273,21 @@ export class ErrorReporter {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(this.config.apiKey && { 'Authorization': `Bearer ${this.config.apiKey}` }),
+          ...(this.config.apiKey && {
+            Authorization: `Bearer ${this.config.apiKey}`,
+          }),
         },
-body: JSON.stringify({
-   report,
-  aggregation: (() => {
-    const agg = this.aggregations.get(report.fingerprint);
-    if (!agg) return null;
-    return {
-      ...agg,
-      affectedUsers: Array.from(agg.affectedUsers)
-    };
-  })(),
- }),
+        body: JSON.stringify({
+          report,
+          aggregation: (() => {
+            const agg = this.aggregations.get(report.fingerprint);
+            if (!agg) return null;
+            return {
+              ...agg,
+              affectedUsers: Array.from(agg.affectedUsers),
+            };
+          })(),
+        }),
       });
 
       if (!response.ok) {
@@ -283,7 +299,6 @@ body: JSON.stringify({
       if (index > -1) {
         this.reportQueue.splice(index, 1);
       }
-
     } catch (error) {
       const logger = getLogger();
       await logger.warn('Failed to send error report to remote endpoint', {
@@ -306,7 +321,7 @@ body: JSON.stringify({
       const stored = localStorage.getItem('constructtrack_error_reports');
       if (stored) {
         const data = JSON.parse(stored);
-        
+
         // Restore reports
         if (data.reports) {
           Object.entries(data.reports).forEach(([id, report]) => {
@@ -318,7 +333,9 @@ body: JSON.stringify({
         if (data.aggregations) {
           Object.entries(data.aggregations).forEach(([fingerprint, agg]) => {
             const aggregation = agg as any;
-            aggregation.affectedUsers = new Set(aggregation.affectedUsers || []);
+            aggregation.affectedUsers = new Set(
+              aggregation.affectedUsers || []
+            );
             this.aggregations.set(fingerprint, aggregation);
           });
         }
@@ -349,7 +366,10 @@ body: JSON.stringify({
         timestamp: new Date().toISOString(),
       };
 
-      localStorage.setItem('constructtrack_error_reports', JSON.stringify(data));
+      localStorage.setItem(
+        'constructtrack_error_reports',
+        JSON.stringify(data)
+      );
     } catch (error) {
       console.warn('Failed to save error reports to storage:', error);
     }
@@ -372,9 +392,11 @@ body: JSON.stringify({
 
     // Limit total reports
     if (this.reports.size > this.config.maxReports) {
-      const sorted = Array.from(this.reports.entries())
-        .sort(([, a], [, b]) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-      
+      const sorted = Array.from(this.reports.entries()).sort(
+        ([, a], [, b]) =>
+          new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+      );
+
       const toKeep = sorted.slice(0, this.config.maxReports);
       this.reports.clear();
       toKeep.forEach(([id, report]) => this.reports.set(id, report));
@@ -390,7 +412,7 @@ body: JSON.stringify({
     errorsByType: Record<string, number>;
     errorsBySeverity: Record<string, number>;
   } {
-    const recentThreshold = Date.now() - (24 * 60 * 60 * 1000); // 24 hours
+    const recentThreshold = Date.now() - 24 * 60 * 60 * 1000; // 24 hours
     const recentErrors = Array.from(this.reports.values()).filter(
       report => new Date(report.timestamp).getTime() > recentThreshold
     );
@@ -399,8 +421,10 @@ body: JSON.stringify({
     const errorsBySeverity: Record<string, number> = {};
 
     this.aggregations.forEach(agg => {
-      errorsByType[agg.classification.type] = (errorsByType[agg.classification.type] || 0) + agg.count;
-      errorsBySeverity[agg.classification.severity] = (errorsBySeverity[agg.classification.severity] || 0) + agg.count;
+      errorsByType[agg.classification.type] =
+        (errorsByType[agg.classification.type] || 0) + agg.count;
+      errorsBySeverity[agg.classification.severity] =
+        (errorsBySeverity[agg.classification.severity] || 0) + agg.count;
     });
 
     const topErrors = Array.from(this.aggregations.values())
@@ -424,8 +448,9 @@ body: JSON.stringify({
 
   // Get aggregated errors
   getAggregatedErrors(): ErrorAggregation[] {
-    return Array.from(this.aggregations.values())
-      .sort((a, b) => b.count - a.count);
+    return Array.from(this.aggregations.values()).sort(
+      (a, b) => b.count - a.count
+    );
   }
 
   // Mark error as resolved

@@ -4,6 +4,7 @@
  */
 
 import { NextRequest } from 'next/server';
+
 import { createSuccessResponse } from '@/lib/api/response';
 
 // Health check response interface
@@ -40,7 +41,7 @@ async function checkDatabase(): Promise<'healthy' | 'unhealthy'> {
 }
 
 // GET /api/v1/health
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   const startTime = Date.now();
 
   // Check all services
