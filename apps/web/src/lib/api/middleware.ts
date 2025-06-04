@@ -21,6 +21,10 @@ import {
 import { apiMetricsTracker } from '@/lib/monitoring/api-metrics';
 // import { performanceMonitor } from '@/lib/monitoring/performance-monitor';
 import { ApiHandler, RequestContext, HttpMethod } from '@/types/api';
+import {
+  parseApiVersion,
+  API_VERSION_HEADER,
+} from '@/lib/api/versioning';
 
 // Rate limiting store
 // TODO: Replace with Redis or other persistent storage for production
@@ -103,11 +107,13 @@ export function withApiMiddleware(
     context: { params: Promise<Record<string, string>> }
   ): Promise<NextResponse> {
     const startTime = Date.now();
+    const apiVersion = parseApiVersion(request);
     let requestContext: RequestContext | undefined;
 
     try {
       // Create request context with authentication
       requestContext = await createRequestContext(request);
+      (requestContext as RequestContext).apiVersion = apiVersion;
 
       // Log incoming request (both old and new systems)
       logRequest(request, requestContext);
@@ -134,7 +140,8 @@ export function withApiMiddleware(
         const allowedMethods = Object.keys(handlers);
         const response = createMethodNotAllowedResponse(
           allowedMethods,
-          requestContext.requestId
+          requestContext.requestId,
+          apiVersion
         );
 
         if (options.cors !== false) {
@@ -143,7 +150,7 @@ export function withApiMiddleware(
 
         const duration = Date.now() - startTime;
         logResponse(request, 405, duration, requestContext);
-        return response;
+        return ensureVersionHeader(response, apiVersion);
       }
 
       // Rate limiting
@@ -261,6 +268,9 @@ export function withApiMiddleware(
         requestContext
       );
 
+      // Ensure API version header is set
+      ensureVersionHeader(response, apiVersion);
+
       return response;
     } catch (error) {
       // Log error (both old and new systems)
@@ -280,12 +290,18 @@ export function withApiMiddleware(
         );
       }
 
-      const response = createErrorResponse(apiError, requestContext?.requestId);
+      const response = createErrorResponse(
+        apiError,
+        requestContext?.requestId,
+        apiVersion
+      );
 
-      // Add CORS headers if enabled
       if (options.cors !== false) {
         addCorsHeaders(response);
       }
+
+      // Ensure API version header is set
+      ensureVersionHeader(response, apiVersion);
 
       // Log error response
       const duration = Date.now() - startTime;

@@ -58,6 +58,8 @@ export interface RequestContext {
   organizationId?: string;
   requestId: string;
   timestamp: string;
+  /** Parsed API version (e.g. `1.0.0`). */
+  apiVersion?: string;
 }
 
 // Enhanced NextRequest with context
