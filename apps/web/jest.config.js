@@ -1,5 +1,6 @@
-const path = require('path');
 const fs = require('fs');
+const path = require('path');
+
 const nextJest = require('next/jest');
 
 // Get the absolute path to the current directory (apps/web)

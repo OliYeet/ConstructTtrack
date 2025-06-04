@@ -349,7 +349,6 @@ async function main() {
   const success = await validator.validate();
   process.exit(success ? 0 : 1);
 }
-import { fileURLToPath, pathToFileURL } from 'url';
 
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   main().catch(error => {

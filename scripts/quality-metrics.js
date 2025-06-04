@@ -5,9 +5,9 @@
  * Collects and analyzes code quality metrics for ConstructTrack
  */
 
+const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
 
 // Configuration
 const config = {
@@ -145,7 +145,7 @@ class QualityMetricsCollector {
       
       let totalComplexityIssues = 0;
       let totalFiles = 0;
-      let highComplexityFiles = [];
+      const highComplexityFiles = [];
 
       eslintResults.forEach(result => {
         if (result.messages.length > 0) {
@@ -193,9 +193,9 @@ class QualityMetricsCollector {
       const allFiles = [...sourceFiles, ...packageFiles];
 
       let totalLines = 0;
-      let totalFiles = allFiles.length;
-      let largeFiles = [];
-      let longFunctions = [];
+      const totalFiles = allFiles.length;
+      const largeFiles = [];
+      const longFunctions = [];
 
       allFiles.forEach(filePath => {
         const content = fs.readFileSync(filePath, 'utf8');
@@ -286,7 +286,7 @@ class QualityMetricsCollector {
       
       let totalErrors = 0;
       let totalWarnings = 0;
-      let totalFiles = eslintResults.length;
+      const totalFiles = eslintResults.length;
       let filesWithIssues = 0;
 
       eslintResults.forEach(result => {

@@ -5,10 +5,11 @@
  * Automatically generates comprehensive API documentation from code
  */
 
+const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
+
 const swaggerJSDoc = require('swagger-jsdoc');
-const { execSync } = require('child_process');
 
 // Configuration
 const config = {

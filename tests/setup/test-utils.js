@@ -3,7 +3,7 @@
  * Common utilities and helpers for all test types
  */
 
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { jest } from '@jest/globals';
 import userEvent from '@testing-library/user-event';
 
@@ -106,6 +106,7 @@ const createMockLocation = (overrides = {}) => ({
 // Custom render function with providers
 const renderWithProviders = (ui, options = {}) => {
   const {
+    // eslint-disable-next-line no-unused-vars
     initialState = {},
     ...renderOptions
   } = options;
@@ -273,7 +274,7 @@ class TestErrorBoundary extends React.Component {
     this.state = { hasError: false };
   }
 
-  static getDerivedStateFromError(error) {
+  static getDerivedStateFromError(_error) {
     return { hasError: true };
   }
 

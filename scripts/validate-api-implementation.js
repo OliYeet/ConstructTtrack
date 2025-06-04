@@ -10,6 +10,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+
 import SwaggerParser from '@apidevtools/swagger-parser';
 import chalk from 'chalk';
 

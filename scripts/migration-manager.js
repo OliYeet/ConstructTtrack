@@ -70,7 +70,7 @@ class MigrationManager {
   async ensureMigrationTable() {
     try {
       // Create migration tracking table if it doesn't exist
-      let { error } = await this.supabase.rpc('create_migration_table');
+      const { error } = await this.supabase.rpc('create_migration_table');
       if (error && error.code === '42883') {
         // function not found, create table directly
         const { error: ddlError } = await this.supabase.rpc(

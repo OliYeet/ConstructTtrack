@@ -20,9 +20,9 @@ if (!supabaseUrl || !supabaseKey) {
   console.warn(
     'Skipping schema-validation tests – SUPABASE credentials not set'
   );
-  // eslint-disable-next-line jest/no-export
+  // eslint-disable-next-line no-undef
   module.exports = {}; // make Jest treat file as empty
-  return;
+  process.exit(0);
 }
 
 let supabase;

@@ -7,10 +7,11 @@
  * breaking changes and generate a diff report.
  */
 
+import { execSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { execSync } from 'child_process';
+
 import chalk from 'chalk';
 
 const __filename = fileURLToPath(import.meta.url);
