@@ -18,6 +18,7 @@
     "@constructtrack/supabase": "*",
     "@constructtrack/ui": "*",
     "@mapbox/mapbox-gl-draw": "^1.4.0",
+    "@sentry/nextjs": "9.26.0",
     "@supabase/supabase-js": "^2.39.0",
     "inquirer": "^9.0.0",
     "mapbox-gl": "^3.0.0",

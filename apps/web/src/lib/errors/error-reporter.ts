@@ -1,8 +1,10 @@
 /**
  * Error Reporter Service
  * Handles error reporting, aggregation, and analytics
+ * Integrates with Sentry for enhanced error monitoring
  */
 
+import * as Sentry from '@sentry/nextjs';
 import { ErrorClassification } from './global-handler';
 
 import { getLogger } from '@/lib/logging';
@@ -52,6 +54,7 @@ export interface ErrorReporterConfig {
   aggregationWindow: number; // milliseconds
   enableLocalStorage: boolean;
   enableRemoteReporting: boolean;
+  enableSentryReporting: boolean;
   remoteEndpoint?: string;
   apiKey?: string;
 }
@@ -123,6 +126,11 @@ export class ErrorReporter {
     // Save to storage
     if (this.config.enableLocalStorage) {
       this.saveToStorage();
+    }
+
+    // Send to Sentry
+    if (this.config.enableSentryReporting) {
+      await this.sendToSentry(error, report);
     }
 
     // Send to remote endpoint
@@ -259,6 +267,80 @@ export class ErrorReporter {
       };
 
       this.aggregations.set(report.fingerprint, aggregation);
+    }
+  }
+
+  // Send error to Sentry
+  private async sendToSentry(error: Error, report: ErrorReport): Promise<void> {
+    try {
+      // Set Sentry context
+      Sentry.withScope((scope) => {
+        // Set user context
+        if (report.context.userId) {
+          scope.setUser({ id: report.context.userId });
+        }
+
+        // Set tags
+        scope.setTags({
+          component: 'constructtrack-web',
+          source: report.context.source,
+          classification_type: report.classification.type,
+          classification_severity: report.classification.severity,
+          classification_category: report.classification.category,
+          fingerprint: report.fingerprint,
+          report_id: report.id,
+        });
+
+        // Set context data
+        scope.setContext('error_report', {
+          id: report.id,
+          timestamp: report.timestamp,
+          fingerprint: report.fingerprint,
+          count: report.count,
+          classification: report.classification,
+        });
+
+        scope.setContext('request', {
+          url: report.context.url,
+          user_agent: report.context.userAgent,
+        });
+
+        // Set additional data
+        if (report.context.additionalData) {
+          scope.setContext('additional_data', report.context.additionalData);
+        }
+
+        // Set level based on severity
+        const sentryLevel = this.mapSeverityToSentryLevel(report.classification.severity);
+        scope.setLevel(sentryLevel);
+
+        // Capture the error
+        Sentry.captureException(error);
+      });
+    } catch (sentryError) {
+      const logger = getLogger();
+      await logger.warn('Failed to send error to Sentry', {
+        metadata: {
+          reportId: report.id,
+          error: sentryError instanceof Error ? sentryError.message : String(sentryError),
+        },
+      });
+    }
+  }
+
+  // Map error severity to Sentry level
+  private mapSeverityToSentryLevel(severity: string): Sentry.SeverityLevel {
+    switch (severity.toLowerCase()) {
+      case 'critical':
+        return 'fatal';
+      case 'high':
+        return 'error';
+      case 'medium':
+        return 'warning';
+      case 'low':
+        return 'info';
+      default:
+        return 'error';
     }
   }
 
@@ -477,6 +559,7 @@ const defaultConfig: ErrorReporterConfig = {
   aggregationWindow: 7 * 24 * 60 * 60 * 1000, // 7 days
   enableLocalStorage: true,
   enableRemoteReporting: false,
+  enableSentryReporting: true, // Enable Sentry by default
   remoteEndpoint: process.env.ERROR_REPORTING_ENDPOINT,
   apiKey: process.env.ERROR_REPORTING_API_KEY,
 };
