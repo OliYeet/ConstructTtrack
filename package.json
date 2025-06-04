@@ -86,7 +86,7 @@
     "db:status": "supabase status",
     "db:test": "npm test -- tests/database/",
     "db:validate": "node scripts/setup-database.js --skip-cli-check --skip-local-start --skip-migrations --skip-types --skip-seed",
-    "test:unit": "TEST_TYPE=unit jest tests/unit",
+    "test:unit": "TEST_TYPE=unit jest",
     "test:integration": "TEST_TYPE=integration jest tests/integration",
     "test:e2e": "TEST_TYPE=e2e jest tests/e2e",
     "test:coverage": "jest --coverage",
