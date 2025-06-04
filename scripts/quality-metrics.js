@@ -77,13 +77,19 @@ class QualityMetricsCollector {
       });
 
       // Read coverage summary
-      const coverageSummaryPath = path.join(config.coverageDir, 'coverage-summary.json');
+      const coverageSummaryPath = path.join(
+        config.coverageDir,
+        'coverage-summary.json'
+      );
       if (fs.existsSync(coverageSummaryPath)) {
-        const coverageSummary = JSON.parse(fs.readFileSync(coverageSummaryPath, 'utf8'));
-        
+        const coverageSummary = JSON.parse(
+          fs.readFileSync(coverageSummaryPath, 'utf8')
+        );
+
         this.metrics.coverage = {
           total: coverageSummary.total,
-          files: Object.keys(coverageSummary).filter(key => key !== 'total').length,
+          files: Object.keys(coverageSummary).filter(key => key !== 'total')
+            .length,
           summary: {
             statements: coverageSummary.total.statements.pct,
             branches: coverageSummary.total.branches.pct,
@@ -142,7 +148,7 @@ class QualityMetricsCollector {
         };
         return;
       }
-      
+
       let totalComplexityIssues = 0;
       let totalFiles = 0;
       const highComplexityFiles = [];
@@ -150,12 +156,13 @@ class QualityMetricsCollector {
       eslintResults.forEach(result => {
         if (result.messages.length > 0) {
           totalFiles++;
-          const complexityIssues = result.messages.filter(msg => 
-            msg.ruleId === 'complexity' || 
-            msg.ruleId === 'max-depth' || 
-            msg.ruleId === 'max-lines-per-function'
+          const complexityIssues = result.messages.filter(
+            msg =>
+              msg.ruleId === 'complexity' ||
+              msg.ruleId === 'max-depth' ||
+              msg.ruleId === 'max-lines-per-function'
           );
-          
+
           if (complexityIssues.length > 0) {
             totalComplexityIssues += complexityIssues.length;
             highComplexityFiles.push({
@@ -170,13 +177,14 @@ class QualityMetricsCollector {
         totalFiles,
         totalIssues: totalComplexityIssues,
         highComplexityFiles: highComplexityFiles.slice(0, 10), // Top 10
-        averageIssuesPerFile: totalFiles > 0 ? totalComplexityIssues / totalFiles : 0,
+        averageIssuesPerFile:
+          totalFiles > 0 ? totalComplexityIssues / totalFiles : 0,
         thresholds: thresholds.complexity,
         passed: totalComplexityIssues === 0,
       };
 
       console.log('✅ Complexity metrics collected');
-    } catch (error) {
+    } catch {
       console.warn('⚠️ Complexity analysis completed with issues');
       // ESLint exits with non-zero when issues are found, which is expected
     }
@@ -211,11 +219,11 @@ class QualityMetricsCollector {
 
         // Simple function length analysis
         const functionPatterns = [
-          /function\s+\w+/g,                    // Named functions
+          /function\s+\w+/g, // Named functions
           /const\s+\w+\s*=\s*\([^)]*\)\s*=>/g, // Arrow functions with params
-          /const\s+\w+\s*=\s*\w+\s*=>/g,       // Arrow functions without parens
-          /async\s+function\s+\w+/g,            // Async functions
-          /\w+\s*\([^)]*\)\s*{/g,              // Method declarations
+          /const\s+\w+\s*=\s*\w+\s*=>/g, // Arrow functions without parens
+          /async\s+function\s+\w+/g, // Async functions
+          /\w+\s*\([^)]*\)\s*{/g, // Method declarations
         ];
 
         let functionMatches = [];
@@ -233,7 +241,11 @@ class QualityMetricsCollector {
       });
 
       const averageLinesPerFile = totalFiles > 0 ? totalLines / totalFiles : 0;
-      const maintainabilityScore = this.calculateMaintainabilityScore(averageLinesPerFile, largeFiles.length, totalFiles);
+      const maintainabilityScore = this.calculateMaintainabilityScore(
+        averageLinesPerFile,
+        largeFiles.length,
+        totalFiles
+      );
 
       this.metrics.maintainability = {
         totalFiles,
@@ -248,23 +260,26 @@ class QualityMetricsCollector {
 
       console.log('✅ Maintainability metrics collected');
     } catch (error) {
-      console.error('❌ Failed to collect maintainability metrics:', error.message);
+      console.error(
+        '❌ Failed to collect maintainability metrics:',
+        error.message
+      );
     }
   }
 
   // Calculate maintainability score
   calculateMaintainabilityScore(avgLines, largeFilesCount, totalFiles) {
     let score = 100;
-    
+
     // Penalize for large average file size
     if (avgLines > 200) score -= 20;
     else if (avgLines > 150) score -= 10;
-    
+
     // Penalize for too many large files
     const largeFileRatio = largeFilesCount / totalFiles;
     if (largeFileRatio > 0.2) score -= 30;
     else if (largeFileRatio > 0.1) score -= 15;
-    
+
     return Math.max(0, score);
   }
 
@@ -273,17 +288,14 @@ class QualityMetricsCollector {
     console.log('🔍 Collecting linting metrics...');
 
     try {
-      const lintReport = execSync(
-        'npx eslint apps/web/src --format json',
-        {
-          cwd: config.projectRoot,
-          encoding: 'utf8',
-          maxBuffer: 10 * 1024 * 1024, // 10 MB
-        }
-      );
+      const lintReport = execSync('npx eslint apps/web/src --format json', {
+        cwd: config.projectRoot,
+        encoding: 'utf8',
+        maxBuffer: 10 * 1024 * 1024, // 10 MB
+      });
 
       const eslintResults = JSON.parse(lintReport);
-      
+
       let totalErrors = 0;
       let totalWarnings = 0;
       const totalFiles = eslintResults.length;
@@ -305,24 +317,24 @@ class QualityMetricsCollector {
         totalErrors,
         totalWarnings,
         totalIssues: totalErrors + totalWarnings,
-        errorRate: totalFiles > 0 ? (totalErrors / totalFiles) : 0,
-        warningRate: totalFiles > 0 ? (totalWarnings / totalFiles) : 0,
+        errorRate: totalFiles > 0 ? totalErrors / totalFiles : 0,
+        warningRate: totalFiles > 0 ? totalWarnings / totalFiles : 0,
         passed: totalErrors === 0,
       };
 
       console.log('✅ Linting metrics collected');
-    } catch (error) {
+    } catch {
       console.warn('⚠️ Linting analysis completed with issues');
     }
   }
 
   // Collect security metrics
-async collectSecurityMetrics() {
-     console.log('🔒 Collecting security metrics...');
- 
+  async collectSecurityMetrics() {
+    console.log('🔒 Collecting security metrics...');
+
     let auditResults;
-     try {
-       // Run npm audit
+    try {
+      // Run npm audit
       try {
         const auditReport = execSync('npm audit --json', {
           cwd: config.projectRoot,
@@ -336,9 +348,11 @@ async collectSecurityMetrics() {
         if (auditError.stdout) {
           try {
             auditResults = JSON.parse(auditError.stdout.toString());
-          } catch (parseError) {
+          } catch {
             console.error('❌ Failed to parse npm audit output');
-            auditResults = { metadata: { vulnerabilities: {}, dependencies: 0 } };
+            auditResults = {
+              metadata: { vulnerabilities: {}, dependencies: 0 },
+            };
           }
         } else {
           throw auditError;
@@ -347,9 +361,15 @@ async collectSecurityMetrics() {
 
       this.metrics.security = {
         vulnerabilities: auditResults.metadata?.vulnerabilities || {},
-        totalVulnerabilities: Object.values(auditResults.metadata?.vulnerabilities || {}).reduce((a, b) => a + b, 0),
+        totalVulnerabilities: Object.values(
+          auditResults.metadata?.vulnerabilities || {}
+        ).reduce((a, b) => a + b, 0),
         dependencies: auditResults.metadata?.dependencies || 0,
-        passed: Object.values(auditResults.metadata?.vulnerabilities || {}).reduce((a, b) => a + b, 0) === 0,
+        passed:
+          Object.values(auditResults.metadata?.vulnerabilities || {}).reduce(
+            (a, b) => a + b,
+            0
+          ) === 0,
       };
 
       console.log('✅ Security metrics collected');
@@ -367,19 +387,23 @@ async collectSecurityMetrics() {
   // Get all source files
   getSourceFiles(dir) {
     const files = [];
-    
+
     if (!fs.existsSync(dir)) {
       return files;
     }
 
-    const walk = (currentDir) => {
+    const walk = currentDir => {
       const items = fs.readdirSync(currentDir);
-      
+
       items.forEach(item => {
         const fullPath = path.join(currentDir, item);
         const stat = fs.statSync(fullPath);
-        
-        if (stat.isDirectory() && !item.startsWith('.') && item !== 'node_modules') {
+
+        if (
+          stat.isDirectory() &&
+          !item.startsWith('.') &&
+          item !== 'node_modules'
+        ) {
           walk(fullPath);
         } else if (stat.isFile() && /\.(ts|tsx|js|jsx)$/.test(item)) {
           files.push(fullPath);
@@ -421,14 +445,14 @@ async collectSecurityMetrics() {
   // Calculate overall quality score
   calculateOverallScore() {
     const scores = [];
-    
+
     if (this.metrics.coverage.summary) {
-      const avgCoverage = (
-        this.metrics.coverage.summary.statements +
-        this.metrics.coverage.summary.branches +
-        this.metrics.coverage.summary.functions +
-        this.metrics.coverage.summary.lines
-      ) / 4;
+      const avgCoverage =
+        (this.metrics.coverage.summary.statements +
+          this.metrics.coverage.summary.branches +
+          this.metrics.coverage.summary.functions +
+          this.metrics.coverage.summary.lines) /
+        4;
       scores.push(avgCoverage);
     }
 
@@ -441,17 +465,19 @@ async collectSecurityMetrics() {
       scores.push(lintScore);
     }
 
-    return scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
+    return scores.length > 0
+      ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)
+      : 0;
   }
 
   // Calculate overall pass status
   calculateOverallPassed() {
     return (
-      (this.metrics.coverage.passed !== false) &&
-      (this.metrics.complexity.passed !== false) &&
-      (this.metrics.maintainability.passed !== false) &&
-      (this.metrics.linting.passed !== false) &&
-      (this.metrics.security.passed !== false)
+      this.metrics.coverage.passed !== false &&
+      this.metrics.complexity.passed !== false &&
+      this.metrics.maintainability.passed !== false &&
+      this.metrics.linting.passed !== false &&
+      this.metrics.security.passed !== false
     );
   }
 
@@ -464,11 +490,15 @@ async collectSecurityMetrics() {
     }
 
     if (this.metrics.complexity.totalIssues > 0) {
-      recommendations.push('Reduce code complexity by refactoring complex functions');
+      recommendations.push(
+        'Reduce code complexity by refactoring complex functions'
+      );
     }
 
     if (this.metrics.maintainability.passed === false) {
-      recommendations.push('Improve maintainability by reducing file sizes and function lengths');
+      recommendations.push(
+        'Improve maintainability by reducing file sizes and function lengths'
+      );
     }
 
     if (this.metrics.linting.totalErrors > 0) {
@@ -485,16 +515,16 @@ async collectSecurityMetrics() {
   // Helper function to escape HTML
   escapeHtml(unsafe) {
     return String(unsafe)
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#039;");
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
   }
 
   // Generate HTML report
   generateHTMLReport(report) {
-     return `
+    return `
  <!DOCTYPE html>
  <html>
  <head>
@@ -540,14 +570,18 @@ async collectSecurityMetrics() {
         <p>Total Vulnerabilities: ${report.security.totalVulnerabilities || 0}</p>
     </div>
 
-    ${report.summary.recommendations.length > 0 ? `
+    ${
+      report.summary.recommendations.length > 0
+        ? `
     <div class="recommendations">
         <h2>Recommendations</h2>
         <ul>
             ${report.summary.recommendations.map(rec => `<li>${rec}</li>`).join('')}
         </ul>
     </div>
-    ` : ''}
+    `
+        : ''
+    }
 </body>
 </html>
     `;

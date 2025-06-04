@@ -48,9 +48,12 @@ class AccessibilityTester {
     try {
       for (const url of config.testUrls) {
         console.log(`🔍 Testing: ${url}`);
-        
-        const reportPath = path.join(config.outputDir, `axe-${url.replace(/[^a-zA-Z0-9]/g, '_')}.json`);
-        
+
+        const reportPath = path.join(
+          config.outputDir,
+          `axe-${url.replace(/[^a-zA-Z0-9]/g, '_')}.json`
+        );
+
         // Create axe test script
         const axeScript = `
 const { Builder } = require('selenium-webdriver');
@@ -81,7 +84,7 @@ const fs = require('fs');
         // Write and execute axe script
         const scriptPath = path.join(config.outputDir, 'temp-axe-script.js');
         fs.writeFileSync(scriptPath, axeScript);
-        
+
         try {
           execSync(`node ${scriptPath}`, {
             cwd: config.outputDir,
@@ -91,7 +94,7 @@ const fs = require('fs');
           // Parse results
           if (fs.existsSync(reportPath)) {
             const axeResults = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
-            
+
             this.results.axeResults[url] = {
               violations: axeResults.violations.length,
               passes: axeResults.passes.length,
@@ -131,22 +134,30 @@ const fs = require('fs');
     try {
       for (const url of config.testUrls) {
         console.log(`📊 Testing: ${url}`);
-        
-        const reportPath = path.join(config.outputDir, `lighthouse-a11y-${url.replace(/[^a-zA-Z0-9]/g, '_')}.json`);
-        
+
+        const reportPath = path.join(
+          config.outputDir,
+          `lighthouse-a11y-${url.replace(/[^a-zA-Z0-9]/g, '_')}.json`
+        );
+
         // Run Lighthouse with accessibility focus
-        execSync(`npx lighthouse ${url} --only-categories=accessibility --output=json --output-path=${reportPath} --chrome-flags="--headless" --quiet`, {
-          stdio: 'inherit',
-        });
+        execSync(
+          `npx lighthouse ${url} --only-categories=accessibility --output=json --output-path=${reportPath} --chrome-flags="--headless" --quiet`,
+          {
+            stdio: 'inherit',
+          }
+        );
 
         // Parse results
         if (fs.existsSync(reportPath)) {
           const report = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
-          
+
           this.results.lighthouseA11y[url] = {
             score: report.categories.accessibility.score * 100,
             audits: Object.entries(report.audits)
-              .filter(([key, audit]) => audit.scoreDisplayMode !== 'notApplicable')
+              .filter(
+                ([_key, audit]) => audit.scoreDisplayMode !== 'notApplicable'
+              )
               .map(([key, audit]) => ({
                 id: key,
                 title: audit.title,
@@ -173,21 +184,25 @@ const fs = require('fs');
     try {
       for (const url of config.testUrls) {
         console.log(`📊 Testing: ${url}`);
-        
-        const reportPath = path.join(config.outputDir, `pa11y-${url.replace(/[^a-zA-Z0-9]/g, '_')}.json`);
-        
+
+        const reportPath = path.join(
+          config.outputDir,
+          `pa11y-${url.replace(/[^a-zA-Z0-9]/g, '_')}.json`
+        );
+
         // Run Pa11y
-const pa11yOutput = execSync(
-  `npx pa11y ${url} --standard WCAG2AA --reporter json`,
-  { encoding: 'utf8', timeout: 30000, maxBuffer: 10 * 1024 * 1024 }
-);
+        const pa11yOutput = execSync(
+          `npx pa11y ${url} --standard WCAG2AA --reporter json`,
+          { encoding: 'utf8', timeout: 30000, maxBuffer: 10 * 1024 * 1024 }
+        );
 
         const pa11yResults = JSON.parse(pa11yOutput);
-        
+
         this.results.paResults[url] = {
           issues: pa11yResults.length,
           errors: pa11yResults.filter(issue => issue.type === 'error').length,
-          warnings: pa11yResults.filter(issue => issue.type === 'warning').length,
+          warnings: pa11yResults.filter(issue => issue.type === 'warning')
+            .length,
           notices: pa11yResults.filter(issue => issue.type === 'notice').length,
           issueDetails: pa11yResults.map(issue => ({
             type: issue.type,
@@ -196,7 +211,8 @@ const pa11yOutput = execSync(
             context: issue.context,
             selector: issue.selector,
           })),
-          passed: pa11yResults.filter(issue => issue.type === 'error').length === 0,
+          passed:
+            pa11yResults.filter(issue => issue.type === 'error').length === 0,
         };
 
         // Write detailed report
@@ -204,7 +220,7 @@ const pa11yOutput = execSync(
       }
 
       console.log('✅ Pa11y tests completed');
-    } catch (error) {
+    } catch {
       console.warn('⚠️ Pa11y tests completed with issues');
     }
   }
@@ -217,15 +233,24 @@ const pa11yOutput = execSync(
     this.results.summary = this.calculateSummary();
 
     // Write JSON report
-    const jsonReportPath = path.join(config.outputDir, 'accessibility-report.json');
+    const jsonReportPath = path.join(
+      config.outputDir,
+      'accessibility-report.json'
+    );
     fs.writeFileSync(jsonReportPath, JSON.stringify(this.results, null, 2));
 
     // Write HTML report
-    const htmlReportPath = path.join(config.outputDir, 'accessibility-report.html');
+    const htmlReportPath = path.join(
+      config.outputDir,
+      'accessibility-report.html'
+    );
     fs.writeFileSync(htmlReportPath, this.generateHTMLReport());
 
     // Write CSV summary
-    const csvReportPath = path.join(config.outputDir, 'accessibility-summary.csv');
+    const csvReportPath = path.join(
+      config.outputDir,
+      'accessibility-summary.csv'
+    );
     fs.writeFileSync(csvReportPath, this.generateCSVReport());
 
     console.log('✅ Accessibility report generated');
@@ -240,11 +265,19 @@ const pa11yOutput = execSync(
     const lighthouseResults = Object.values(this.results.lighthouseA11y);
     const pa11yResults = Object.values(this.results.paResults);
 
-    const totalViolations = axeResults.reduce((sum, result) => sum + result.violations, 0);
-    const totalErrors = pa11yResults.reduce((sum, result) => sum + result.errors, 0);
-    const avgLighthouseScore = lighthouseResults.length > 0 
-      ? lighthouseResults.reduce((sum, result) => sum + result.score, 0) / lighthouseResults.length
-      : 0;
+    const totalViolations = axeResults.reduce(
+      (sum, result) => sum + result.violations,
+      0
+    );
+    const totalErrors = pa11yResults.reduce(
+      (sum, result) => sum + result.errors,
+      0
+    );
+    const avgLighthouseScore =
+      lighthouseResults.length > 0
+        ? lighthouseResults.reduce((sum, result) => sum + result.score, 0) /
+          lighthouseResults.length
+        : 0;
 
     const allPassed = [
       ...axeResults.map(result => result.passed),
@@ -267,12 +300,15 @@ const pa11yOutput = execSync(
   }
 
   // Check WCAG compliance
-  checkWCAGCompliance(level) {
+  checkWCAGCompliance(_level) {
     const axeResults = Object.values(this.results.axeResults);
     const criticalViolations = axeResults.reduce((sum, result) => {
-      return sum + result.violationDetails.filter(v => 
-        v.impact === 'critical' || v.impact === 'serious'
-      ).length;
+      return (
+        sum +
+        result.violationDetails.filter(
+          v => v.impact === 'critical' || v.impact === 'serious'
+        ).length
+      );
     }, 0);
 
     return criticalViolations === 0;
@@ -285,29 +321,41 @@ const pa11yOutput = execSync(
     // Axe recommendations
     Object.entries(this.results.axeResults).forEach(([url, result]) => {
       if (result.violations > 0) {
-        recommendations.push(`Fix ${result.violations} accessibility violations on ${url}`);
+        recommendations.push(
+          `Fix ${result.violations} accessibility violations on ${url}`
+        );
       }
     });
 
     // Lighthouse recommendations
     Object.entries(this.results.lighthouseA11y).forEach(([url, result]) => {
       if (result.score < 90) {
-        recommendations.push(`Improve accessibility score for ${url} (currently ${result.score}%)`);
+        recommendations.push(
+          `Improve accessibility score for ${url} (currently ${result.score}%)`
+        );
       }
     });
 
     // Pa11y recommendations
     Object.entries(this.results.paResults).forEach(([url, result]) => {
       if (result.errors > 0) {
-        recommendations.push(`Address ${result.errors} accessibility errors on ${url}`);
+        recommendations.push(
+          `Address ${result.errors} accessibility errors on ${url}`
+        );
       }
     });
 
     // General recommendations
     if (recommendations.length > 0) {
-      recommendations.push('Implement automated accessibility testing in CI/CD pipeline');
-      recommendations.push('Provide accessibility training for development team');
-      recommendations.push('Establish accessibility review process for new features');
+      recommendations.push(
+        'Implement automated accessibility testing in CI/CD pipeline'
+      );
+      recommendations.push(
+        'Provide accessibility training for development team'
+      );
+      recommendations.push(
+        'Establish accessibility review process for new features'
+      );
     }
 
     return recommendations;
@@ -316,23 +364,29 @@ const pa11yOutput = execSync(
   // Generate HTML report
   generateHTMLReport() {
     const axeResults = Object.entries(this.results.axeResults)
-      .map(([url, result]) => `
+      .map(
+        ([url, result]) => `
         <div class="metric ${result.passed ? 'passed' : 'failed'}">
           <h3>Axe Results: ${url}</h3>
           <p>Violations: ${result.violations}</p>
           <p>Passes: ${result.passes}</p>
           <p>Incomplete: ${result.incomplete}</p>
         </div>
-      `).join('');
+      `
+      )
+      .join('');
 
     const lighthouseResults = Object.entries(this.results.lighthouseA11y)
-      .map(([url, result]) => `
+      .map(
+        ([url, result]) => `
         <div class="metric ${result.passed ? 'passed' : 'failed'}">
           <h3>Lighthouse: ${url}</h3>
           <p>Score: ${result.score}%</p>
           <p>Audits: ${result.audits.length}</p>
         </div>
-      `).join('');
+      `
+      )
+      .join('');
 
     return `
 <!DOCTYPE html>
@@ -381,14 +435,18 @@ const pa11yOutput = execSync(
     <h2>Lighthouse Results</h2>
     ${lighthouseResults}
 
-    ${this.results.summary.recommendations.length > 0 ? `
+    ${
+      this.results.summary.recommendations.length > 0
+        ? `
     <div class="recommendations">
         <h2>Recommendations</h2>
         <ul>
             ${this.results.summary.recommendations.map(rec => `<li>${rec}</li>`).join('')}
         </ul>
     </div>
-    ` : ''}
+    `
+        : ''
+    }
 </body>
 </html>
     `;
@@ -396,18 +454,24 @@ const pa11yOutput = execSync(
 
   // Generate CSV report
   generateCSVReport() {
-    const headers = ['URL', 'Axe Violations', 'Lighthouse Score', 'Pa11y Errors', 'Status'];
+    const headers = [
+      'URL',
+      'Axe Violations',
+      'Lighthouse Score',
+      'Pa11y Errors',
+      'Status',
+    ];
     const rows = config.testUrls.map(url => {
       const axe = this.results.axeResults[url] || {};
       const lighthouse = this.results.lighthouseA11y[url] || {};
       const pa11y = this.results.paResults[url] || {};
-      
+
       return [
         url,
         axe.violations || 0,
         lighthouse.score || 0,
         pa11y.errors || 0,
-        (axe.passed && lighthouse.passed && pa11y.passed) ? 'PASSED' : 'FAILED'
+        axe.passed && lighthouse.passed && pa11y.passed ? 'PASSED' : 'FAILED',
       ].join(',');
     });
 

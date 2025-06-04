@@ -98,7 +98,7 @@ const createMockTask = (overrides = {}) => ({
 
 const createMockLocation = (overrides = {}) => ({
   latitude: 40.7128,
-  longitude: -74.0060,
+  longitude: -74.006,
   address: '123 Test Street, New York, NY',
   ...overrides,
 });
@@ -106,18 +106,14 @@ const createMockLocation = (overrides = {}) => ({
 // Custom render function with providers
 const renderWithProviders = (ui, options = {}) => {
   const {
-    // eslint-disable-next-line no-unused-vars
+    // eslint-disable-next-line no-unused-vars, @typescript-eslint/no-unused-vars
     initialState = {},
     ...renderOptions
   } = options;
 
   // Mock providers wrapper
   const Wrapper = ({ children }) => {
-    return (
-      <div data-testid="test-wrapper">
-        {children}
-      </div>
-    );
+    return <div data-testid='test-wrapper'>{children}</div>;
   };
 
   return render(ui, { wrapper: Wrapper, ...renderOptions });
@@ -125,22 +121,22 @@ const renderWithProviders = (ui, options = {}) => {
 
 // Async utilities
 const waitForLoadingToFinish = (testId = 'loading') => {
-   return waitFor(() => {
+  return waitFor(() => {
     expect(screen.queryByTestId(testId)).not.toBeInTheDocument();
-   });
- };
+  });
+};
 
 const waitForErrorToAppear = (testId = 'error') => {
-   return waitFor(() => {
+  return waitFor(() => {
     expect(screen.getByTestId(testId)).toBeInTheDocument();
-   });
- };
+  });
+};
 
 // Form testing utilities
-const fillForm = async (formData) => {
-   const user = userEvent.setup();
-   
-   for (const [fieldName, value] of Object.entries(formData)) {
+const fillForm = async formData => {
+  const user = userEvent.setup();
+
+  for (const [fieldName, value] of Object.entries(formData)) {
     try {
       const field = screen.getByLabelText(new RegExp(fieldName, 'i'));
       await user.clear(field);
@@ -148,8 +144,8 @@ const fillForm = async (formData) => {
     } catch (error) {
       throw new Error(`Failed to fill field "${fieldName}": ${error.message}`);
     }
-   }
- };
+  }
+};
 
 const submitForm = async () => {
   const user = userEvent.setup();
@@ -181,13 +177,13 @@ export const mockApiError = (message = 'API Error', status = 500) => {
 // Local storage mocking
 export const mockLocalStorage = () => {
   const store = {};
-  
+
   return {
-    getItem: jest.fn((key) => store[key] || null),
+    getItem: jest.fn(key => store[key] || null),
     setItem: jest.fn((key, value) => {
       store[key] = value.toString();
     }),
-    removeItem: jest.fn((key) => {
+    removeItem: jest.fn(key => {
       delete store[key];
     }),
     clear: jest.fn(() => {
@@ -213,7 +209,11 @@ export const mockGeolocation = () => {
 };
 
 // File upload testing
-export const createMockFile = (name = 'test.jpg', type = 'image/jpeg', size = 1024) => {
+export const createMockFile = (
+  name = 'test.jpg',
+  type = 'image/jpeg',
+  size = 1024
+) => {
   const file = new File(['test content'], name, { type });
   Object.defineProperty(file, 'size', { value: size });
   return file;
@@ -225,7 +225,7 @@ export const uploadFile = async (inputElement, file) => {
 };
 
 // Date/time utilities
-export const mockDate = (dateString) => {
+export const mockDate = dateString => {
   const mockDate = new Date(dateString);
   jest.spyOn(global, 'Date').mockImplementation(() => mockDate);
   return mockDate;
@@ -238,7 +238,7 @@ export const restoreDate = () => {
 // Network request mocking
 const mockFetch = (responses = []) => {
   let callCount = 0;
-  
+
   global.fetch = jest.fn(() => {
     const response = responses[callCount] || responses[responses.length - 1];
     callCount++;
@@ -253,7 +253,7 @@ const restoreFetch = () => {
 };
 
 // Performance testing utilities
-export const measurePerformance = async (fn) => {
+export const measurePerformance = async fn => {
   const start = performance.now();
   await fn();
   const end = performance.now();
@@ -261,7 +261,7 @@ export const measurePerformance = async (fn) => {
 };
 
 // Accessibility testing utilities
-export const checkAccessibility = async (container) => {
+export const checkAccessibility = async container => {
   const { axe } = await import('jest-axe');
   const results = await axe(container);
   expect(results).toHaveNoViolations();
@@ -286,7 +286,11 @@ class TestErrorBoundary extends React.Component {
 
   render() {
     if (this.state.hasError) {
-      return React.createElement('div', { 'data-testid': 'error-boundary' }, 'Something went wrong');
+      return React.createElement(
+        'div',
+        { 'data-testid': 'error-boundary' },
+        'Something went wrong'
+      );
     }
     return this.props.children;
   }
@@ -298,12 +302,14 @@ expect.extend({
     const pass = received >= floor && received <= ceiling;
     if (pass) {
       return {
-        message: () => `expected ${received} not to be within range ${floor} - ${ceiling}`,
+        message: () =>
+          `expected ${received} not to be within range ${floor} - ${ceiling}`,
         pass: true,
       };
     } else {
       return {
-        message: () => `expected ${received} to be within range ${floor} - ${ceiling}`,
+        message: () =>
+          `expected ${received} to be within range ${floor} - ${ceiling}`,
         pass: false,
       };
     }
