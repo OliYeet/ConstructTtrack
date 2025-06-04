@@ -342,6 +342,9 @@ components:
               requestId: 'req_1234567890_abc123'
 
   schemas:
+    # -------------------------------------------------------------
+    # Base response schemas
+    # -------------------------------------------------------------
     ApiResponse:
       type: object
       required:
@@ -409,6 +412,9 @@ components:
           description: Unique request identifier for tracing
           example: 'req_1234567890_abc123'
 
+    # -------------------------------------------------------------
+    # Pagination metadata schema
+    # -------------------------------------------------------------
     PaginationInfo:
       type: object
       required:
@@ -449,6 +455,9 @@ components:
           description: Whether there is a previous page
           example: true
 
+    # -------------------------------------------------------------
+    # Health-check response schema
+    # -------------------------------------------------------------
     HealthResponse:
       allOf:
         - $ref: '#/components/schemas/ApiResponse'
@@ -539,6 +548,9 @@ components:
                   type: object
                   description: Echoed request data
 
+    # -------------------------------------------------------------
+    # User information schema
+    # -------------------------------------------------------------
     UserInfo:
       type: object
       required:
@@ -567,6 +579,9 @@ components:
           description: Organization ID
           example: '456e7890-e89b-12d3-a456-426614174000'
 
+    # -------------------------------------------------------------
+    # Geolocation coordinate schema
+    # -------------------------------------------------------------
     Location:
       type: object
       required:
@@ -585,6 +600,9 @@ components:
           maximum: 180
           description: Longitude coordinate
           example: -74.0060
+
+    # The remainder of the file (Project, CreateProjectRequest, etc.)
+    # is unchanged.
 
     Project:
       type: object
