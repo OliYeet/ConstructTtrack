@@ -121,6 +121,7 @@ jobs:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
           vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          working-directory: ./apps/web
 
   # Job 4: Production Deployment
   deploy:
@@ -159,22 +160,24 @@ jobs:
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
           vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
           vercel-args: '--prod'
+          working-directory: ./apps/web
 
-      - name: 🎉 Notify deployment success
-        if: success()
-        uses: 8398a7/action-slack@v3
-        with:
-          status: success
-          text: '✅ Production deployment successful'
-          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+      # Slack notifications disabled - can be re-enabled when needed
+      # - name: 🎉 Notify deployment success
+      #   if: success()
+      #   uses: 8398a7/action-slack@v3
+      #   with:
+      #     status: success
+      #     text: '✅ Production deployment successful'
+      #     webhook_url: ${{ secrets.SLACK_WEBHOOK }}
 
-      - name: 🚨 Notify deployment failure
-        if: failure()
-        uses: 8398a7/action-slack@v3
-        with:
-          status: failure
-          text: '❌ Production deployment failed'
-          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+      # - name: 🚨 Notify deployment failure
+      #   if: failure()
+      #   uses: 8398a7/action-slack@v3
+      #   with:
+      #     status: failure
+      #     text: '❌ Production deployment failed'
+      #     webhook_url: ${{ secrets.SLACK_WEBHOOK }}
 
   # Job 5: Database Migrations (Production)
   migrate:
