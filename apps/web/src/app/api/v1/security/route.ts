@@ -4,10 +4,26 @@
  */
 
 import { NextRequest } from 'next/server';
-import { createSuccessResponse, createErrorResponse } from '@/lib/api/response';
-import { securityScanner, defaultSecurityScanConfig } from '@/lib/security/vulnerability-scanner';
-import { privacyManager } from '@/lib/security/privacy-compliance';
 import { z } from 'zod';
+
+import { createSuccessResponse, createErrorResponse } from '@/lib/api/response';
+import { privacyManager } from '@/lib/security/privacy-compliance';
+import {
+  securityScanner,
+  defaultSecurityScanConfig,
+} from '@/lib/security/vulnerability-scanner';
+
+// Global type declarations for Web APIs
+declare const URL: {
+  new (
+    url: string,
+    base?: string
+  ): {
+    searchParams: {
+      get(name: string): string | null;
+    };
+  };
+};
 
 // Validation schema for POST requests
 const securityActionSchema = z.discriminatedUnion('action', [
@@ -20,7 +36,11 @@ const securityActionSchema = z.discriminatedUnion('action', [
   z.object({
     action: z.literal('privacy-request'),
     parameters: z.object({
-      requestType: z.enum(['data-export', 'data-deletion', 'consent-withdrawal']),
+      requestType: z.enum([
+        'data-export',
+        'data-deletion',
+        'consent-withdrawal',
+      ]),
       userId: z.string().uuid(),
       details: z.record(z.unknown()).optional(),
     }),
@@ -31,10 +51,12 @@ const securityActionSchema = z.discriminatedUnion('action', [
   }),
   z.object({
     action: z.literal('generate-report'),
-    parameters: z.object({
-      format: z.enum(['json', 'csv', 'pdf']).optional(),
-      includeDetails: z.boolean().optional(),
-    }).optional(),
+    parameters: z
+      .object({
+        format: z.enum(['json', 'csv', 'pdf']).optional(),
+        includeDetails: z.boolean().optional(),
+      })
+      .optional(),
   }),
 ]);
 
@@ -58,7 +80,7 @@ export async function GET(request: NextRequest) {
         };
         break;
 
-      case 'privacy':
+      case 'privacy': {
         const userId = url.searchParams.get('userId');
         if (userId) {
           response = await privacyManager.getUserPrivacyDashboard(userId);
@@ -66,6 +88,7 @@ export async function GET(request: NextRequest) {
           response = await privacyManager.checkCompliance();
         }
         break;
+      }
 
       case 'rate-limits':
         response = await getRateLimitStatus();
@@ -78,7 +101,7 @@ export async function GET(request: NextRequest) {
             'static-analysis',
             'dependency-scan',
             'configuration-scan',
-            'runtime-scan'
+            'runtime-scan',
           ],
         };
         break;
@@ -94,9 +117,9 @@ export async function GET(request: NextRequest) {
   } catch (err: unknown) {
     return createErrorResponse(
       err instanceof Error ? err : new Error(String(err)),
-      context?.requestId ?? 'unknown'
+      'unknown'
     );
-   }
+  }
 }
 
 // POST /api/v1/security - Trigger security actions
@@ -200,12 +223,12 @@ async function triggerSecurityScan(parameters: any) {
   const { scanType } = parameters;
 
   switch (scanType) {
-    case 'vulnerability':
+    case 'vulnerability': {
       // Trigger comprehensive vulnerability scan
       const findings = await securityScanner.performComprehensiveScan({
         configuration: process.env,
       });
-      
+
       return {
         scanId: `scan_${Date.now()}`,
         scanType: 'vulnerability',
@@ -220,10 +243,11 @@ async function triggerSecurityScan(parameters: any) {
         startedAt: new Date().toISOString(),
         completedAt: new Date().toISOString(),
       };
+    }
 
-    case 'compliance':
+    case 'compliance': {
       const complianceResult = await privacyManager.checkCompliance();
-      
+
       return {
         scanId: `compliance_${Date.now()}`,
         scanType: 'compliance',
@@ -234,6 +258,7 @@ async function triggerSecurityScan(parameters: any) {
         startedAt: new Date().toISOString(),
         completedAt: new Date().toISOString(),
       };
+    }
 
     default:
       throw new Error(`Unsupported scan type: ${scanType}`);
@@ -244,16 +269,17 @@ async function handlePrivacyRequest(parameters: any) {
   const { requestType, userId, details } = parameters;
 
   switch (requestType) {
-    case 'data-export':
+    case 'data-export': {
       const requestId = await privacyManager.submitDataSubjectRequest(
         userId,
         'access' as any,
         details
       );
-      
+
       // Process the request immediately for demo purposes
-      const exportData = await privacyManager.processDataSubjectRequest(requestId);
-      
+      const exportData =
+        await privacyManager.processDataSubjectRequest(requestId);
+
       return {
         requestId,
         requestType: 'data-export',
@@ -263,26 +289,33 @@ async function handlePrivacyRequest(parameters: any) {
         completedAt: new Date().toISOString(),
         data: exportData,
       };
+    }
 
-    case 'data-deletion':
+    case 'data-deletion': {
       const deletionRequestId = await privacyManager.submitDataSubjectRequest(
         userId,
         'erasure' as any,
         details
       );
-      
+
       return {
         requestId: deletionRequestId,
         requestType: 'data-deletion',
         status: 'pending',
         userId,
         submittedAt: new Date().toISOString(),
-        estimatedCompletion: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        estimatedCompletion: new Date(
+          Date.now() + 30 * 24 * 60 * 60 * 1000
+        ).toISOString(),
       };
+    }
 
-    case 'consent-withdrawal':
-      const success = await privacyManager.withdrawConsent(userId, details.consentId);
-      
+    case 'consent-withdrawal': {
+      const success = await privacyManager.withdrawConsent(
+        userId,
+        details.consentId
+      );
+
       return {
         requestType: 'consent-withdrawal',
         status: success ? 'completed' : 'failed',
@@ -290,6 +323,7 @@ async function handlePrivacyRequest(parameters: any) {
         consentId: details.consentId,
         processedAt: new Date().toISOString(),
       };
+    }
 
     default:
       throw new Error(`Unsupported privacy request type: ${requestType}`);
