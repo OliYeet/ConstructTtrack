@@ -3,6 +3,8 @@
  * Implements GDPR, CCPA, and other privacy regulations compliance
  */
 
+import { randomUUID } from 'crypto';
+
 import { getLogger } from '@/lib/logging';
 
 // Privacy regulation types
@@ -107,7 +109,7 @@ export interface PrivacyConfig {
   enableAuditLogging: boolean;
   enableDataMinimization: boolean;
   enablePseudonymization: boolean;
- defaultProcessingLocation?: string;
+  defaultProcessingLocation?: string;
 }
 
 // Privacy compliance manager
@@ -116,6 +118,7 @@ export class PrivacyComplianceManager {
   private consentRecords: Map<string, ConsentRecord[]> = new Map();
   private processingRecords: Map<string, ProcessingRecord[]> = new Map();
   private dataSubjectRequests: Map<string, DataSubjectRequest[]> = new Map();
+  private requestIdToUserId: Map<string, string> = new Map();
 
   constructor(config: PrivacyConfig) {
     this.config = config;
@@ -128,8 +131,8 @@ export class PrivacyComplianceManager {
     dataCategories: DataCategory[],
     metadata: Record<string, unknown> = {}
   ): Promise<string> {
-    const consentId = `consent_${crypto.randomUUID()}`;
-    
+    const consentId = `consent_${randomUUID()}`;
+
     const consent: ConsentRecord = {
       id: consentId,
       userId,
@@ -137,12 +140,15 @@ export class PrivacyComplianceManager {
       dataCategories,
       status: ConsentStatus.GIVEN,
       consentDate: new Date().toISOString(),
-      expiryDate: this.config.consentExpiryPeriod > 0 ? 
-        new Date(Date.now() + this.config.consentExpiryPeriod * 24 * 60 * 60 * 1000).toISOString() :
-        undefined,
+      expiryDate:
+        this.config.consentExpiryPeriod > 0
+          ? new Date(
+              Date.now() + this.config.consentExpiryPeriod * 24 * 60 * 60 * 1000
+            ).toISOString()
+          : undefined,
       version: '1.0',
-      ipAddress: metadata.ipAddress as string || 'unknown',
-      userAgent: metadata.userAgent as string || 'unknown',
+      ipAddress: (metadata.ipAddress as string) || 'unknown',
+      userAgent: (metadata.userAgent as string) || 'unknown',
       metadata,
     };
 
@@ -200,11 +206,12 @@ export class PrivacyComplianceManager {
     const userConsents = this.consentRecords.get(userId) || [];
     const now = new Date();
 
-    const validConsent = userConsents.find(consent => 
-      consent.purpose === purpose &&
-      consent.dataCategories.includes(dataCategory) &&
-      consent.status === ConsentStatus.GIVEN &&
-      (!consent.expiryDate || new Date(consent.expiryDate) > now)
+    const validConsent = userConsents.find(
+      consent =>
+        consent.purpose === purpose &&
+        consent.dataCategories.includes(dataCategory) &&
+        consent.status === ConsentStatus.GIVEN &&
+        (!consent.expiryDate || new Date(consent.expiryDate) > now)
     );
 
     return !!validConsent;
@@ -218,7 +225,7 @@ export class PrivacyComplianceManager {
     legalBasis: string,
     metadata: Record<string, unknown> = {}
   ): Promise<string> {
-    const processingId = `proc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const processingId = `proc_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
 
     const processing: ProcessingRecord = {
       id: processingId,
@@ -260,7 +267,7 @@ export class PrivacyComplianceManager {
     requestType: DataSubjectRight,
     requestDetails: Record<string, unknown> = {}
   ): Promise<string> {
-    const requestId = `dsr_${crypto.randomUUID()}`;
+    const requestId = `dsr_${randomUUID()}`;
 
     const request: DataSubjectRequest = {
       id: requestId,
@@ -275,6 +282,7 @@ export class PrivacyComplianceManager {
     const userRequests = this.dataSubjectRequests.get(userId) || [];
     userRequests.push(request);
     this.dataSubjectRequests.set(userId, userRequests);
+    this.requestIdToUserId.set(requestId, userId);
 
     if (this.config.enableAuditLogging) {
       const logger = getLogger();
@@ -291,16 +299,19 @@ export class PrivacyComplianceManager {
     return requestId;
   }
 
-async processDataSubjectRequest(requestId: string): Promise<Record<string, unknown> | null> {
- const userId = this.requestIdToUserId.get(requestId);
- if (!userId) return null;
- 
- const requests = this.dataSubjectRequests.get(userId);
- if (!requests) return null;
- 
- const request = requests.find(r => r.id === requestId);
- if (!request) return null;
+  async processDataSubjectRequest(
+    requestId: string
+  ): Promise<Record<string, unknown> | null> {
+    const userId = this.requestIdToUserId.get(requestId);
+    if (!userId) return null;
 
+    const requests = this.dataSubjectRequests.get(userId);
+    if (!requests) return null;
+
+    const request = requests.find(r => r.id === requestId);
+    if (!request) return null;
+
+    try {
       request.status = 'processing';
 
       let responseData: Record<string, unknown> = {};
@@ -344,13 +355,29 @@ async processDataSubjectRequest(requestId: string): Promise<Record<string, unkno
       }
 
       return responseData;
+    } catch (error) {
+      if (this.config.enableAuditLogging) {
+        const logger = getLogger();
+        logger.error(
+          'Failed to process data subject request',
+          error instanceof Error ? error : new Error(String(error)),
+          {
+            metadata: {
+              requestId,
+              userId,
+              privacyEvent: 'data_subject_request_error',
+            },
+          }
+        );
+      }
+      return null;
     }
-
-    return null;
   }
 
   // Data export for access requests
-  private async generateDataExport(userId: string): Promise<Record<string, unknown>> {
+  private async generateDataExport(
+    userId: string
+  ): Promise<Record<string, unknown>> {
     const consents = this.consentRecords.get(userId) || [];
     const processing = this.processingRecords.get(userId) || [];
     const requests = this.dataSubjectRequests.get(userId) || [];
@@ -366,10 +393,12 @@ async processDataSubjectRequest(requestId: string): Promise<Record<string, unkno
   }
 
   // Data erasure for right to be forgotten
-  private async eraseUserData(userId: string): Promise<Record<string, unknown>> {
+  private async eraseUserData(
+    userId: string
+  ): Promise<Record<string, unknown>> {
     // Mark data for deletion rather than immediate deletion
     // This allows for legal holds and other considerations
-    
+
     const consents = this.consentRecords.get(userId) || [];
     const processing = this.processingRecords.get(userId) || [];
 
@@ -401,9 +430,11 @@ async processDataSubjectRequest(requestId: string): Promise<Record<string, unkno
   }
 
   // Generate portable data
-  private async generatePortableData(userId: string): Promise<Record<string, unknown>> {
+  private async generatePortableData(
+    userId: string
+  ): Promise<Record<string, unknown>> {
     const exportData = await this.generateDataExport(userId);
-    
+
     // Format data in a portable format (JSON)
     return {
       format: 'JSON',
@@ -425,32 +456,42 @@ async processDataSubjectRequest(requestId: string): Promise<Record<string, unkno
     // Check for expired consents
     const now = new Date();
     for (const [userId, consents] of this.consentRecords.entries()) {
-      const expiredConsents = consents.filter(consent => 
-        consent.expiryDate && new Date(consent.expiryDate) < now
+      const expiredConsents = consents.filter(
+        consent => consent.expiryDate && new Date(consent.expiryDate) < now
       );
-      
+
       if (expiredConsents.length > 0) {
-        issues.push(`User ${userId} has ${expiredConsents.length} expired consents`);
+        issues.push(
+          `User ${userId} has ${expiredConsents.length} expired consents`
+        );
       }
     }
 
     // Check for overdue data subject requests
-    const deadlineMs = this.config.dataSubjectRequestDeadline * 24 * 60 * 60 * 1000;
+    const deadlineMs =
+      this.config.dataSubjectRequestDeadline * 24 * 60 * 60 * 1000;
     for (const [userId, requests] of this.dataSubjectRequests.entries()) {
-      const overdueRequests = requests.filter(request => 
-        request.status === 'pending' &&
-        (now.getTime() - new Date(request.requestDate).getTime()) > deadlineMs
+      const overdueRequests = requests.filter(
+        request =>
+          request.status === 'pending' &&
+          now.getTime() - new Date(request.requestDate).getTime() > deadlineMs
       );
 
       if (overdueRequests.length > 0) {
-        issues.push(`User ${userId} has ${overdueRequests.length} overdue data subject requests`);
+        issues.push(
+          `User ${userId} has ${overdueRequests.length} overdue data subject requests`
+        );
       }
     }
 
     // Add recommendations
     if (this.config.enabledRegulations.includes(PrivacyRegulation.GDPR)) {
-      recommendations.push('Ensure all data processing has a valid legal basis');
-      recommendations.push('Implement data protection by design and by default');
+      recommendations.push(
+        'Ensure all data processing has a valid legal basis'
+      );
+      recommendations.push(
+        'Implement data protection by design and by default'
+      );
     }
 
     if (this.config.enabledRegulations.includes(PrivacyRegulation.CCPA)) {
@@ -466,7 +507,9 @@ async processDataSubjectRequest(requestId: string): Promise<Record<string, unkno
   }
 
   // Get user's privacy dashboard data
-  async getUserPrivacyDashboard(userId: string): Promise<Record<string, unknown>> {
+  async getUserPrivacyDashboard(
+    userId: string
+  ): Promise<Record<string, unknown>> {
     const consents = this.consentRecords.get(userId) || [];
     const processing = this.processingRecords.get(userId) || [];
     const requests = this.dataSubjectRequests.get(userId) || [];
@@ -475,9 +518,10 @@ async processDataSubjectRequest(requestId: string): Promise<Record<string, unkno
       userId,
       consents: {
         active: consents.filter(c => c.status === ConsentStatus.GIVEN).length,
-        withdrawn: consents.filter(c => c.status === ConsentStatus.WITHDRAWN).length,
-        expired: consents.filter(c => 
-          c.expiryDate && new Date(c.expiryDate) < new Date()
+        withdrawn: consents.filter(c => c.status === ConsentStatus.WITHDRAWN)
+          .length,
+        expired: consents.filter(
+          c => c.expiryDate && new Date(c.expiryDate) < new Date()
         ).length,
       },
       dataProcessing: {
@@ -506,4 +550,6 @@ export const defaultPrivacyConfig: PrivacyConfig = {
 };
 
 // Global privacy compliance manager
-export const privacyManager = new PrivacyComplianceManager(defaultPrivacyConfig);
+export const privacyManager = new PrivacyComplianceManager(
+  defaultPrivacyConfig
+);

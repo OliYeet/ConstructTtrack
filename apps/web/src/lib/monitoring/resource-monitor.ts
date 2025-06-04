@@ -4,7 +4,19 @@
  */
 
 import { performanceMonitor } from './performance-monitor';
+
 import { getLogger } from '@/lib/logging';
+
+// Type declarations for environment compatibility
+declare const setInterval: (callback: () => void, ms: number) => any;
+declare const clearInterval: (id: any) => void;
+declare const performance: {
+  memory?: {
+    usedJSHeapSize: number;
+    totalJSHeapSize: number;
+    jsHeapSizeLimit: number;
+  };
+};
 
 // Resource usage snapshot
 export interface ResourceSnapshot {
@@ -67,9 +79,10 @@ export interface ResourceTrend {
 export class ResourceMonitor {
   private snapshots: ResourceSnapshot[] = [];
   private alertConfig: ResourceAlertConfig;
-  private monitoringInterval?: NodeJS.Timeout;
+  private monitoringInterval?: any;
   private isMonitoring = false;
   private maxSnapshots = 1440; // 24 hours at 1-minute intervals
+  private prevCpuTimestamp?: number;
 
   constructor(alertConfig: ResourceAlertConfig) {
     this.alertConfig = alertConfig;
@@ -82,14 +95,16 @@ export class ResourceMonitor {
     }
 
     this.isMonitoring = true;
-    
+
     // Take initial snapshot
     this.takeSnapshot();
 
     // Start periodic monitoring
-    this.monitoringInterval = setInterval(() => {
-      this.takeSnapshot();
-    }, intervalMs);
+    if (typeof setInterval !== 'undefined') {
+      this.monitoringInterval = setInterval(() => {
+        this.takeSnapshot();
+      }, intervalMs);
+    }
 
     const logger = getLogger();
     logger.info('Resource monitoring started', {
@@ -102,7 +117,7 @@ export class ResourceMonitor {
 
   // Stop monitoring
   stop(): void {
-    if (this.monitoringInterval) {
+    if (this.monitoringInterval && typeof clearInterval !== 'undefined') {
       clearInterval(this.monitoringInterval);
       this.monitoringInterval = undefined;
     }
@@ -129,7 +144,6 @@ export class ResourceMonitor {
 
       // Record metrics in performance monitor
       this.recordMetrics(snapshot);
-
     } catch (error) {
       const logger = getLogger();
       logger.error('Failed to take resource snapshot', error);
@@ -139,16 +153,16 @@ export class ResourceMonitor {
   // Collect resource data
   private async collectResourceData(): Promise<ResourceSnapshot> {
     const timestamp = new Date().toISOString();
-    
+
     // Memory data
     const memory = await this.getMemoryUsage();
-    
+
     // CPU data
     const cpu = await this.getCpuUsage();
-    
+
     // Disk data (if available)
     const disk = await this.getDiskUsage();
-    
+
     // Network data (if available)
     const network = await this.getNetworkUsage();
 
@@ -166,7 +180,7 @@ export class ResourceMonitor {
     if (typeof process !== 'undefined') {
       // Node.js environment
       const memUsage = process.memoryUsage();
-      
+
       // Try to get system memory info
       let totalMemory = 0;
       try {
@@ -186,10 +200,14 @@ export class ResourceMonitor {
           limit: memUsage.heapTotal * 1.5, // Rough estimate
         },
       };
-    } else if (typeof window !== 'undefined' && 'memory' in performance) {
+    } else if (
+      typeof window !== 'undefined' &&
+      typeof performance !== 'undefined' &&
+      'memory' in performance
+    ) {
       // Browser environment with memory API
       const memory = (performance as any).memory;
-      
+
       return {
         used: memory.usedJSHeapSize,
         total: memory.totalJSHeapSize,
@@ -211,24 +229,33 @@ export class ResourceMonitor {
   }
 
   // Get CPU usage
-// keep last reading between snapshots
-private prevCpuUsage: NodeJS.CpuUsage | null = null;
+  // keep last reading between snapshots
+  private prevCpuUsage: any | null = null;
 
- private async getCpuUsage(): Promise<ResourceSnapshot['cpu']> {
-   if (typeof process !== 'undefined') {
-    const current = process.cpuUsage(this.prevCpuUsage ?? undefined);
-    this.prevCpuUsage = process.cpuUsage(); // store absolute for next call
+  private async getCpuUsage(): Promise<ResourceSnapshot['cpu']> {
+    if (typeof process !== 'undefined') {
+      const current = process.cpuUsage(this.prevCpuUsage ?? undefined);
+      this.prevCpuUsage = process.cpuUsage(); // store absolute for next call
 
-    // µs spent since last sample / (elapsed_ms * #cores * 10_000) → %
-    const now = Date.now();
-    const elapsedMs = this.prevCpuTimestamp
-      ? now - this.prevCpuTimestamp
-      : intervalMs; // fall back to configured interval
-    this.prevCpuTimestamp = now;
-...
-    const usagePct = (((current.user + current.system) / 1_000) / elapsedMs) /
-                     cores;          // 0-1
-    const usage = usagePct * 100;    // percentage
+      // Get number of CPU cores
+      let cores = 1;
+      try {
+        const os = await import('os');
+        cores = os.cpus().length;
+      } catch {
+        cores = 1; // fallback
+      }
+
+      // µs spent since last sample / (elapsed_ms * #cores * 10_000) → %
+      const now = Date.now();
+      const elapsedMs = this.prevCpuTimestamp
+        ? now - this.prevCpuTimestamp
+        : 60000; // fall back to 1 minute
+      this.prevCpuTimestamp = now;
+
+      const usagePct =
+        (current.user + current.system) / 1_000 / elapsedMs / cores; // 0-1
+      const usage = usagePct * 100; // percentage
       let loadAverage: number[] | undefined;
       let processes: number | undefined;
 
@@ -262,7 +289,7 @@ private prevCpuUsage: NodeJS.CpuUsage | null = null;
     try {
       const fs = await import('fs');
       const stats = await fs.promises.statfs(process.cwd());
-      
+
       const total = stats.blocks * stats.bsize;
       const free = stats.bavail * stats.bsize;
       const used = total - free;
@@ -278,7 +305,9 @@ private prevCpuUsage: NodeJS.CpuUsage | null = null;
   }
 
   // Get network usage (placeholder - would need platform-specific implementation)
-  private async getNetworkUsage(): Promise<ResourceSnapshot['network'] | undefined> {
+  private async getNetworkUsage(): Promise<
+    ResourceSnapshot['network'] | undefined
+  > {
     // This would require platform-specific implementations
     // For now, return undefined
     return undefined;
@@ -346,7 +375,9 @@ private prevCpuUsage: NodeJS.CpuUsage | null = null;
 
     // Memory alerts
     if (this.alertConfig.memory.enabled) {
-      if (snapshot.memory.percentage > this.alertConfig.memory.criticalThreshold) {
+      if (
+        snapshot.memory.percentage > this.alertConfig.memory.criticalThreshold
+      ) {
         logger.error('Critical memory usage alert', undefined, {
           metadata: {
             usage: snapshot.memory.percentage,
@@ -356,7 +387,9 @@ private prevCpuUsage: NodeJS.CpuUsage | null = null;
             alertType: 'resource_critical',
           },
         });
-      } else if (snapshot.memory.percentage > this.alertConfig.memory.warningThreshold) {
+      } else if (
+        snapshot.memory.percentage > this.alertConfig.memory.warningThreshold
+      ) {
         logger.warn('Memory usage warning', {
           metadata: {
             usage: snapshot.memory.percentage,
@@ -372,7 +405,7 @@ private prevCpuUsage: NodeJS.CpuUsage | null = null;
     // CPU alerts
     if (this.alertConfig.cpu.enabled && snapshot.cpu.usage > 0) {
       const cpuPercentage = snapshot.cpu.usage; // Convert to percentage
-      
+
       if (cpuPercentage > this.alertConfig.cpu.criticalThreshold) {
         logger.error('Critical CPU usage alert', undefined, {
           metadata: {
@@ -406,7 +439,9 @@ private prevCpuUsage: NodeJS.CpuUsage | null = null;
             alertType: 'resource_critical',
           },
         });
-      } else if (snapshot.disk.percentage > this.alertConfig.disk.warningThreshold) {
+      } else if (
+        snapshot.disk.percentage > this.alertConfig.disk.warningThreshold
+      ) {
         logger.warn('Disk usage warning', {
           metadata: {
             usage: snapshot.disk.percentage,
@@ -422,12 +457,14 @@ private prevCpuUsage: NodeJS.CpuUsage | null = null;
 
   // Get current resource usage
   getCurrentUsage(): ResourceSnapshot | null {
-    return this.snapshots.length > 0 ? this.snapshots[this.snapshots.length - 1] : null;
+    return this.snapshots.length > 0
+      ? this.snapshots[this.snapshots.length - 1]
+      : null;
   }
 
   // Get resource history
   getHistory(hours: number = 1): ResourceSnapshot[] {
-    const threshold = Date.now() - (hours * 60 * 60 * 1000);
+    const threshold = Date.now() - hours * 60 * 60 * 1000;
     return this.snapshots.filter(
       snapshot => new Date(snapshot.timestamp).getTime() > threshold
     );
@@ -483,8 +520,9 @@ private prevCpuUsage: NodeJS.CpuUsage | null = null;
     const changePercentage = first === 0 ? 0 : (change / first) * 100;
 
     // Calculate hourly change rate
-    const timeSpan = new Date(values[values.length - 1].timestamp).getTime() - 
-                    new Date(values[0].timestamp).getTime();
+    const timeSpan =
+      new Date(values[values.length - 1].timestamp).getTime() -
+      new Date(values[0].timestamp).getTime();
     const hours = timeSpan / (60 * 60 * 1000);
     const changeRate = hours > 0 ? changePercentage / hours : 0;
 
@@ -525,17 +563,24 @@ private prevCpuUsage: NodeJS.CpuUsage | null = null;
       };
     }
 
-    const monitoringDuration = new Date(this.snapshots[this.snapshots.length - 1].timestamp).getTime() -
-                              new Date(this.snapshots[0].timestamp).getTime();
+    const monitoringDuration =
+      new Date(this.snapshots[this.snapshots.length - 1].timestamp).getTime() -
+      new Date(this.snapshots[0].timestamp).getTime();
 
     const memoryUsages = this.snapshots.map(s => s.memory.percentage);
-    const cpuUsages = this.snapshots.filter(s => s.cpu.usage > 0).map(s => s.cpu.usage * 100);
+    const cpuUsages = this.snapshots
+      .filter(s => s.cpu.usage > 0)
+      .map(s => s.cpu.usage * 100);
 
     return {
       totalSnapshots: this.snapshots.length,
       monitoringDuration,
-      averageMemoryUsage: memoryUsages.reduce((a, b) => a + b, 0) / memoryUsages.length,
-      averageCpuUsage: cpuUsages.length > 0 ? cpuUsages.reduce((a, b) => a + b, 0) / cpuUsages.length : 0,
+      averageMemoryUsage:
+        memoryUsages.reduce((a, b) => a + b, 0) / memoryUsages.length,
+      averageCpuUsage:
+        cpuUsages.length > 0
+          ? cpuUsages.reduce((a, b) => a + b, 0) / cpuUsages.length
+          : 0,
       peakMemoryUsage: Math.max(...memoryUsages),
       peakCpuUsage: cpuUsages.length > 0 ? Math.max(...cpuUsages) : 0,
     };
