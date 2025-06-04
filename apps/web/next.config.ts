@@ -5,7 +5,11 @@ const nextConfig: NextConfig = {
   /* config options here */
 };
 
-export default withSentryConfig(nextConfig, {
+// Only apply Sentry configuration if we have proper authentication
+// This prevents 403 errors during Vercel builds
+const shouldUseSentry = process.env.SENTRY_AUTH_TOKEN || process.env.VERCEL !== '1';
+
+export default shouldUseSentry ? withSentryConfig(nextConfig, {
 // For all available options, see:
 // https://www.npmjs.com/package/@sentry/webpack-plugin#options
 
@@ -14,9 +18,6 @@ project: "constructtrack",
 
 // Only print logs for uploading source maps in CI
 silent: !process.env.CI,
-
-// Disable Sentry CLI operations during build to prevent permission errors
-dryRun: process.env.VERCEL === '1',
 
 // For all available options, see:
 // https://docs.sentry.io/platforms/javascript/guides/nextjs/manual-setup/
@@ -38,4 +39,4 @@ disableLogger: true,
 // https://docs.sentry.io/product/crons/
 // https://vercel.com/docs/cron-jobs
 automaticVercelMonitors: true,
-});
+}) : nextConfig;
