@@ -5,8 +5,8 @@
  */
 
 import * as Sentry from '@sentry/nextjs';
-import { ErrorClassification } from './global-handler';
 
+import { ErrorClassification } from './global-handler';
 import { getLogger } from '@/lib/logging';
 // import { ErrorSeverity } from './global-handler';
 

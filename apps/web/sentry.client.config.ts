@@ -35,7 +35,7 @@ Sentry.init({
   release: process.env.NEXT_PUBLIC_APP_VERSION || 'development',
 
   // Additional configuration for ConstructTrack
-  beforeSend(event, hint) {
+  beforeSend(event, _hint) {
     // Filter out development errors in production
     if (process.env.NODE_ENV === 'development') {
       console.log('Sentry event:', event);

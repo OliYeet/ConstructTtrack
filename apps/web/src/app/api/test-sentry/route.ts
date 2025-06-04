@@ -3,8 +3,9 @@
  * Provides endpoints to test different types of errors and Sentry reporting
  */
 
-import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
+
+import { NextRequest, NextResponse } from 'next/server';
 import { errorReporter } from '@/lib/errors/error-reporter';
 
 export async function GET(request: NextRequest) {
@@ -22,7 +23,7 @@ export async function GET(request: NextRequest) {
         });
         break;
 
-      case 'custom':
+      case 'custom': {
         // Test custom error reporting through our ErrorReporter
         const customError = new Error('Custom error through ErrorReporter');
         await errorReporter.reportError(
@@ -44,6 +45,7 @@ export async function GET(request: NextRequest) {
           }
         );
         break;
+      }
 
       case 'sentry-direct':
         // Test direct Sentry reporting
@@ -61,7 +63,7 @@ export async function GET(request: NextRequest) {
         });
         break;
 
-      case 'performance':
+      case 'performance': {
         // Test performance monitoring
         const transaction = Sentry.startTransaction({
           name: 'test-performance',
@@ -81,8 +83,9 @@ export async function GET(request: NextRequest) {
         span.finish();
         transaction.finish();
         break;
+      }
 
-      case 'user-feedback':
+      case 'user-feedback': {
         // Test user feedback
         const eventId = Sentry.captureException(new Error('Error with user feedback'));
         
@@ -94,6 +97,7 @@ export async function GET(request: NextRequest) {
           comments: 'This is a test error for Sentry integration',
         });
         break;
+      }
 
       default:
         return NextResponse.json(
