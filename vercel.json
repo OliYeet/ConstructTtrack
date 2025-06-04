@@ -1,9 +1,9 @@
 {
   "version": 2,
   "buildCommand": "npm run build",
-  "outputDirectory": "apps/web/.next",
-  "installCommand": "npm ci --include-workspace-root",
-  "framework": null,
+  "outputDirectory": ".next",
+  "installCommand": "npm ci",
+  "framework": "nextjs",
   "functions": {
     "src/app/api/**/*.ts": {
       "runtime": "nodejs18.x"
