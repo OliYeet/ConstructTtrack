@@ -5,6 +5,27 @@
 
 import { NextRequest } from 'next/server';
 
+// Global type declarations for Jest and browser APIs
+declare const jest: {
+  fn: (implementation?: any) => any;
+  mock: (moduleName: string, factory: () => any) => void;
+  clearAllMocks: () => void;
+};
+
+declare const beforeEach: (fn: () => void) => void;
+declare const afterEach: (fn: () => void) => void;
+declare const afterAll: (fn: () => void) => void;
+declare const expect: {
+  extend: (matchers: any) => void;
+} & any;
+declare const global: any;
+
+declare const Headers: {
+  new (init?: [string, string][]): {
+    get: (name: string) => string | null;
+  };
+};
+
 // Set test environment variables
 // NODE_ENV is set by the test runner
 process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://test.supabase.co';
@@ -42,7 +63,7 @@ declare global {
 
 // Custom Jest matchers
 expect.extend({
-  toBeValidApiResponse(received) {
+  toBeValidApiResponse(received: any) {
     const pass =
       typeof received === 'object' &&
       received !== null &&
@@ -68,7 +89,7 @@ expect.extend({
     }
   },
 
-  toBeValidApiError(received) {
+  toBeValidApiError(received: any) {
     const pass =
       typeof received === 'object' &&
       received !== null &&
@@ -179,7 +200,7 @@ export const createMockRequest = (
       Object.entries({
         'content-type': 'application/json',
         ...headers,
-      }).map(([k, v]) => [k.toLowerCase(), v]),
+      }).map(([k, v]) => [k.toLowerCase(), v] as [string, string])
     ),
     json: jest.fn().mockResolvedValue(body),
   };
