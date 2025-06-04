@@ -1,6 +1,7 @@
 # 🚀 Getting Started with ConstructTrack API
 
-This guide will walk you through the basics of using the ConstructTrack API, from authentication to making your first API calls.
+This guide will walk you through the basics of using the ConstructTrack API, from authentication to
+making your first API calls.
 
 ## Prerequisites
 
@@ -31,6 +32,7 @@ The API will be available at `http://localhost:3001/api/v1`
 ### Production Environment
 
 The production API is available at:
+
 ```
 https://api.constructtrack.com/v1
 ```
@@ -44,6 +46,7 @@ curl http://localhost:3001/api/v1/health
 ```
 
 Expected response:
+
 ```json
 {
   "success": true,
@@ -88,7 +91,8 @@ curl -X POST http://localhost:3001/api/v1/test \
 
 ## Step 4: Authentication (Coming Soon)
 
-> **Note**: Authentication is currently being implemented. For now, most endpoints return a "not implemented" response.
+> **Note**: Authentication is currently being implemented. For now, most endpoints return a "not
+> implemented" response.
 
 Once authentication is available, you'll follow this process:
 
@@ -228,6 +232,7 @@ curl -X POST http://localhost:3001/api/v1/test \
 ```
 
 Response:
+
 ```json
 {
   "success": false,
@@ -253,6 +258,7 @@ curl -H "Authorization: Bearer invalid-token" \
 ```
 
 Response:
+
 ```json
 {
   "success": false,
@@ -286,6 +292,7 @@ curl -I http://localhost:3001/api/v1/test
 ```
 
 Look for headers:
+
 - `X-RateLimit-Limit`: Request limit
 - `X-RateLimit-Remaining`: Remaining requests
 - `X-RateLimit-Reset`: Reset timestamp
@@ -310,11 +317,11 @@ async function callAPI(endpoint, options = {}) {
   try {
     const response = await fetch(endpoint, options);
     const data = await response.json();
-    
+
     if (!data.success) {
       throw new Error(`API Error: ${data.error.message} (${data.error.code})`);
     }
-    
+
     return data.data;
   } catch (error) {
     console.error('API call failed:', error.message);
@@ -326,15 +333,18 @@ async function callAPI(endpoint, options = {}) {
 ## Next Steps
 
 1. **Explore the API**: Try different endpoints and parameters
-2. **Read the OpenAPI Specification**: Check [`openapi.yaml`](./openapi.yaml) for complete API details
+2. **Read the OpenAPI Specification**: Check [`openapi.yaml`](./openapi.yaml) for complete API
+   details
 3. **Check Examples**: Look at [`examples/`](./examples/) for code samples in different languages
-4. **Join the Community**: Get help and share feedback on our [Discord](https://discord.gg/constructtrack)
+4. **Join the Community**: Get help and share feedback on our
+   [Discord](https://discord.gg/constructtrack)
 
 ## Common Issues
 
 ### CORS Errors in Browser
 
-If you're making requests from a web browser, ensure CORS is properly configured. The API includes CORS headers by default.
+If you're making requests from a web browser, ensure CORS is properly configured. The API includes
+CORS headers by default.
 
 ### SSL Certificate Issues
 

@@ -2,7 +2,9 @@
 
 ## Overview
 
-This document outlines the code review guidelines and process for the ConstructTrack project. Code reviews are essential for maintaining code quality, sharing knowledge, and ensuring consistency across the codebase.
+This document outlines the code review guidelines and process for the ConstructTrack project. Code
+reviews are essential for maintaining code quality, sharing knowledge, and ensuring consistency
+across the codebase.
 
 ## 🎯 Code Review Objectives
 
@@ -43,14 +45,14 @@ flowchart TD
 
 ### Review Requirements
 
-| Change Type | Required Reviewers | Approval Count |
-|-------------|-------------------|----------------|
-| **Feature** | 2 team members | 2 approvals |
-| **Bug Fix** | 1 team member | 1 approval |
-| **Hotfix** | 1 senior member | 1 approval |
-| **Security** | 1 security team + 1 senior | 2 approvals |
-| **Database** | 1 DBA + 1 backend | 2 approvals |
-| **Infrastructure** | 1 DevOps + 1 senior | 2 approvals |
+| Change Type        | Required Reviewers         | Approval Count |
+| ------------------ | -------------------------- | -------------- |
+| **Feature**        | 2 team members             | 2 approvals    |
+| **Bug Fix**        | 1 team member              | 1 approval     |
+| **Hotfix**         | 1 senior member            | 1 approval     |
+| **Security**       | 1 security team + 1 senior | 2 approvals    |
+| **Database**       | 1 DBA + 1 backend          | 2 approvals    |
+| **Infrastructure** | 1 DevOps + 1 senior        | 2 approvals    |
 
 ## 📝 Pull Request Guidelines
 
@@ -70,22 +72,27 @@ refactor(components): simplify form validation
 
 ```markdown
 ## 📋 Description
+
 Brief description of the changes and why they were made.
 
 ## 🔗 Related Issues
+
 - Closes #123
 - Related to #456
 
 ## 🧪 Testing
+
 - [ ] Unit tests added/updated
 - [ ] Integration tests added/updated
 - [ ] Manual testing completed
 - [ ] Accessibility testing completed
 
 ## 📸 Screenshots (if applicable)
+
 Before/after screenshots for UI changes.
 
 ## 🔍 Review Checklist
+
 - [ ] Code follows style guidelines
 - [ ] Self-review completed
 - [ ] Documentation updated
@@ -93,6 +100,7 @@ Before/after screenshots for UI changes.
 - [ ] Performance impact considered
 
 ## 🚀 Deployment Notes
+
 Any special deployment considerations or migration steps.
 ```
 
@@ -156,14 +164,16 @@ Any special deployment considerations or migration steps.
 #### Feedback Examples
 
 **Good Feedback:**
+
 ```
-🚨 Must Fix: This function doesn't handle the case where `user` is null, 
+🚨 Must Fix: This function doesn't handle the case where `user` is null,
 which could cause a runtime error on line 45.
 
 Suggestion: Consider using optional chaining: `user?.name`
 ```
 
 **Poor Feedback:**
+
 ```
 This is wrong.
 ```
@@ -216,12 +226,12 @@ assignees: ''
 
 ### Target Metrics
 
-| Metric | Target | Measurement |
-|--------|--------|-------------|
-| **Review Time** | < 24 hours | Time to first review |
-| **Merge Time** | < 48 hours | Time to merge |
-| **Review Cycles** | < 3 rounds | Average cycles per PR |
-| **Defect Escape** | < 5% | Bugs not caught in review |
+| Metric            | Target     | Measurement               |
+| ----------------- | ---------- | ------------------------- |
+| **Review Time**   | < 24 hours | Time to first review      |
+| **Merge Time**    | < 48 hours | Time to merge             |
+| **Review Cycles** | < 3 rounds | Average cycles per PR     |
+| **Defect Escape** | < 5%       | Bugs not caught in review |
 
 ## 🚀 Best Practices
 
@@ -252,9 +262,9 @@ assignees: ''
 required_status_checks:
   strict: true
   contexts:
-    - "ci/quality"
-    - "ci/tests"
-    - "ci/security"
+    - 'ci/quality'
+    - 'ci/tests'
+    - 'ci/security'
 enforce_admins: true
 required_pull_request_reviews:
   required_approving_review_count: 2
@@ -262,7 +272,7 @@ required_pull_request_reviews:
   require_code_owner_reviews: true
 restrictions:
   users: []
-  teams: ["core-team"]
+  teams: ['core-team']
 ```
 
 ### CODEOWNERS File

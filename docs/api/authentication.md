@@ -1,6 +1,7 @@
 # 🔐 ConstructTrack API Authentication
 
-This guide covers all authentication methods supported by the ConstructTrack API, including JWT tokens, API keys, and security best practices.
+This guide covers all authentication methods supported by the ConstructTrack API, including JWT
+tokens, API keys, and security best practices.
 
 ## Overview
 
@@ -14,7 +15,8 @@ The ConstructTrack API supports multiple authentication methods:
 
 ### How It Works
 
-JWT (JSON Web Token) authentication is the primary method for user authentication. It's stateless, secure, and perfect for mobile and web applications.
+JWT (JSON Web Token) authentication is the primary method for user authentication. It's stateless,
+secure, and perfect for mobile and web applications.
 
 ### Authentication Flow
 
@@ -23,16 +25,16 @@ sequenceDiagram
     participant Client
     participant API
     participant Database
-    
+
     Client->>API: POST /auth/login (email, password)
     API->>Database: Verify credentials
     Database-->>API: User data
     API-->>Client: JWT token + refresh token
-    
+
     Client->>API: API request with JWT token
     API->>API: Verify JWT token
     API-->>Client: API response
-    
+
     Client->>API: POST /auth/refresh (refresh token)
     API-->>Client: New JWT token
 ```
@@ -52,6 +54,7 @@ curl -X POST http://localhost:3001/api/v1/auth/register \
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -83,6 +86,7 @@ curl -X POST http://localhost:3001/api/v1/auth/login \
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -186,17 +190,17 @@ curl -X DELETE http://localhost:3001/api/v1/auth/api-keys/key-id \
 
 ### Permission Matrix
 
-| Action | Admin | Manager | Field Worker |
-|--------|-------|---------|--------------|
-| Create Projects | ✅ | ✅ | ❌ |
-| View Projects | ✅ | ✅ | ✅ (assigned only) |
-| Update Projects | ✅ | ✅ | ❌ |
-| Delete Projects | ✅ | ❌ | ❌ |
-| Create Tasks | ✅ | ✅ | ❌ |
-| View Tasks | ✅ | ✅ | ✅ (assigned only) |
-| Update Tasks | ✅ | ✅ | ✅ (assigned only) |
-| Manage Users | ✅ | ✅ (same org) | ❌ |
-| View Reports | ✅ | ✅ | ❌ |
+| Action          | Admin | Manager       | Field Worker       |
+| --------------- | ----- | ------------- | ------------------ |
+| Create Projects | ✅    | ✅            | ❌                 |
+| View Projects   | ✅    | ✅            | ✅ (assigned only) |
+| Update Projects | ✅    | ✅            | ❌                 |
+| Delete Projects | ✅    | ❌            | ❌                 |
+| Create Tasks    | ✅    | ✅            | ❌                 |
+| View Tasks      | ✅    | ✅            | ✅ (assigned only) |
+| Update Tasks    | ✅    | ✅            | ✅ (assigned only) |
+| Manage Users    | ✅    | ✅ (same org) | ❌                 |
+| View Reports    | ✅    | ✅            | ❌                 |
 
 ### Role-Based Access Control
 
@@ -221,11 +225,13 @@ curl -X POST http://localhost:3001/api/v1/projects \
 ### 1. Token Storage
 
 **✅ Secure Storage:**
+
 - Use secure storage mechanisms (Keychain on iOS, Keystore on Android)
 - Store tokens in httpOnly cookies for web applications
 - Never store tokens in localStorage for sensitive applications
 
 **❌ Avoid:**
+
 - Storing tokens in plain text
 - Logging tokens in console or files
 - Storing tokens in URL parameters
@@ -233,11 +239,13 @@ curl -X POST http://localhost:3001/api/v1/projects \
 ### 2. Token Transmission
 
 **✅ Secure Transmission:**
+
 - Always use HTTPS in production
 - Include tokens in Authorization header
 - Validate SSL certificates
 
 **❌ Avoid:**
+
 - Sending tokens over HTTP
 - Including tokens in URL parameters
 - Ignoring SSL certificate errors
@@ -245,6 +253,7 @@ curl -X POST http://localhost:3001/api/v1/projects \
 ### 3. Token Lifecycle
 
 **✅ Best Practices:**
+
 - Implement automatic token refresh
 - Handle token expiration gracefully
 - Logout users when tokens are revoked
@@ -259,10 +268,10 @@ async function apiCall(endpoint, options = {}) {
     const response = await fetch(endpoint, {
       ...options,
       headers: {
-        'Authorization': `Bearer ${getAccessToken()}`,
+        Authorization: `Bearer ${getAccessToken()}`,
         'Content-Type': 'application/json',
-        ...options.headers
-      }
+        ...options.headers,
+      },
     });
 
     if (response.status === 401) {
@@ -279,11 +288,11 @@ async function apiCall(endpoint, options = {}) {
     }
 
     const data = await response.json();
-    
+
     if (!data.success) {
       throw new Error(data.error.message);
     }
-    
+
     return data.data;
   } catch (error) {
     console.error('API call failed:', error);
@@ -308,6 +317,7 @@ async function apiCall(endpoint, options = {}) {
 ```
 
 **Causes:**
+
 - Missing Authorization header
 - Invalid or expired token
 - Malformed token
@@ -326,6 +336,7 @@ async function apiCall(endpoint, options = {}) {
 ```
 
 **Causes:**
+
 - User doesn't have required role
 - Accessing resources outside organization
 - API key lacks required permissions
@@ -347,6 +358,7 @@ async function apiCall(endpoint, options = {}) {
 ```
 
 **Solution:**
+
 - Implement exponential backoff
 - Respect rate limit headers
 - Use API keys for higher limits

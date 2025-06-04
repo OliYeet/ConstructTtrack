@@ -3,7 +3,12 @@
  * Predefined alert rules and rule management
  */
 
-import { AlertRule, AlertSeverity, AlertCondition, EscalationRule } from './alert-manager';
+import {
+  AlertRule,
+  AlertSeverity,
+  AlertCondition,
+  EscalationRule,
+} from './alert-manager';
 
 // Default alert rules for ConstructTrack
 export const defaultAlertRules: AlertRule[] = [
@@ -274,13 +279,13 @@ export const defaultAlertRules: AlertRule[] = [
     name: 'Service Unavailable',
     description: 'Core service is not responding',
     enabled: true,
-condition: {
-       metric: 'service_health_check',
-      operator: 'eq', 
+    condition: {
+      metric: 'service_health_check',
+      operator: 'eq',
       threshold: 0, // 0 for down, 1 for up
-       duration: 2 * 60 * 1000, // 2 minutes
-       evaluationInterval: 30 * 1000, // 30 seconds
-     },
+      duration: 2 * 60 * 1000, // 2 minutes
+      evaluationInterval: 30 * 1000, // 30 seconds
+    },
     severity: AlertSeverity.EMERGENCY,
     category: 'availability',
     tags: ['service', 'availability', 'emergency'],
@@ -306,7 +311,11 @@ condition: {
 // Rule templates for easy creation
 export const alertRuleTemplates = {
   // Performance template
-  performance: (metric: string, threshold: number, severity: AlertSeverity): Partial<AlertRule> => ({
+  performance: (
+    metric: string,
+    threshold: number,
+    severity: AlertSeverity
+  ): Partial<AlertRule> => ({
     condition: {
       metric,
       operator: 'gt',
@@ -322,7 +331,11 @@ export const alertRuleTemplates = {
   }),
 
   // Resource template
-  resource: (metric: string, threshold: number, severity: AlertSeverity): Partial<AlertRule> => ({
+  resource: (
+    metric: string,
+    threshold: number,
+    severity: AlertSeverity
+  ): Partial<AlertRule> => ({
     condition: {
       metric,
       operator: 'gt',
@@ -338,7 +351,11 @@ export const alertRuleTemplates = {
   }),
 
   // Error template
-  error: (metric: string, threshold: number, severity: AlertSeverity): Partial<AlertRule> => ({
+  error: (
+    metric: string,
+    threshold: number,
+    severity: AlertSeverity
+  ): Partial<AlertRule> => ({
     condition: {
       metric,
       operator: 'gt',
@@ -373,7 +390,10 @@ export function createAlertRule(
   return {
     // guard against duplicate IDs in runtime
     ...(() => {
-      if (process.env.NODE_ENV !== 'production' && defaultAlertRules.some(r => r.id === id)) {
+      if (
+        process.env.NODE_ENV !== 'production' &&
+        defaultAlertRules.some(r => r.id === id)
+      ) {
         throw new Error(`Duplicate alert rule id detected: ${id}`);
       }
       return {};
@@ -393,46 +413,54 @@ export function createAlertRule(
 }
 
 // Validate alert rule
-export function validateAlertRule(rule: AlertRule): { valid: boolean; errors: string[] } {
-   const errors: string[] = [];
- 
-   if (!rule.id || rule.id.trim() === '') {
-     errors.push('Rule ID is required');
-   }
- 
-   if (!rule.name || rule.name.trim() === '') {
-     errors.push('Rule name is required');
-   }
- 
-   if (!rule.condition.metric || rule.condition.metric.trim() === '') {
-     errors.push('Condition metric is required');
-   }
- 
-   if (typeof rule.condition.threshold === 'undefined') {
-     errors.push('Condition threshold is required');
-   }
+export function validateAlertRule(rule: AlertRule): {
+  valid: boolean;
+  errors: string[];
+} {
+  const errors: string[] = [];
+
+  if (!rule.id || rule.id.trim() === '') {
+    errors.push('Rule ID is required');
+  }
+
+  if (!rule.name || rule.name.trim() === '') {
+    errors.push('Rule name is required');
+  }
+
+  if (!rule.condition.metric || rule.condition.metric.trim() === '') {
+    errors.push('Condition metric is required');
+  }
+
+  if (typeof rule.condition.threshold === 'undefined') {
+    errors.push('Condition threshold is required');
+  }
 
   // Validate operator
   const validOperators = ['gt', 'gte', 'lt', 'lte', 'eq', 'neq'];
-  if (!rule.condition.operator || !validOperators.includes(rule.condition.operator)) {
-    errors.push(`Condition operator must be one of: ${validOperators.join(', ')}`);
+  if (
+    !rule.condition.operator ||
+    !validOperators.includes(rule.condition.operator)
+  ) {
+    errors.push(
+      `Condition operator must be one of: ${validOperators.join(', ')}`
+    );
   }
- 
-   if (rule.condition.duration <= 0) {
-     errors.push('Condition duration must be positive');
-   }
- 
-   if (rule.condition.evaluationInterval <= 0) {
-     errors.push('Evaluation interval must be positive');
-   }
- 
-   if (rule.cooldownPeriod < 0) {
-     errors.push('Cooldown period cannot be negative');
-   }
- 
+
+  if (rule.condition.duration <= 0) {
+    errors.push('Condition duration must be positive');
+  }
+
+  if (rule.condition.evaluationInterval <= 0) {
+    errors.push('Evaluation interval must be positive');
+  }
+
+  if (rule.cooldownPeriod < 0) {
+    errors.push('Cooldown period cannot be negative');
+  }
+
   if (!rule.severity || !Object.values(AlertSeverity).includes(rule.severity)) {
-     errors.push('Invalid alert severity');
-   }
+    errors.push('Invalid alert severity');
+  }
 
   // Validate notification channels
   if (!rule.notificationChannels || rule.notificationChannels.length === 0) {
@@ -446,13 +474,15 @@ export function validateAlertRule(rule: AlertRule): { valid: boolean; errors: st
         errors.push(`Escalation rule ${index + 1}: delay must be positive`);
       }
       if (!escalation.channels || escalation.channels.length === 0) {
-        errors.push(`Escalation rule ${index + 1}: at least one channel is required`);
+        errors.push(
+          `Escalation rule ${index + 1}: at least one channel is required`
+        );
       }
     });
   }
- 
-   return {
-     valid: errors.length === 0,
-     errors,
-   };
- }
+
+  return {
+    valid: errors.length === 0,
+    errors,
+  };
+}

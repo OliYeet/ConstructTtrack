@@ -230,26 +230,39 @@ export class PerformanceMonitor {
         },
         cpu: {
           usage: (cpuUsage.user + cpuUsage.system) / 1000000, // Convert to seconds
-          loadAverage: process.platform !== 'win32' ? (() => {
-            try {
-              // eslint-disable-next-line @typescript-eslint/no-require-imports
-              return require('os').loadavg();
-            } catch {
-              return undefined;
-            }
-          })() : undefined,
+          loadAverage:
+            process.platform !== 'win32'
+              ? (() => {
+                  try {
+                    // eslint-disable-next-line @typescript-eslint/no-require-imports
+                    return require('os').loadavg();
+                  } catch {
+                    return undefined;
+                  }
+                })()
+              : undefined,
         },
         timestamp: new Date().toISOString(),
       };
     } else if (typeof window !== 'undefined' && 'memory' in performance) {
       // Browser environment with memory API
-      const memory = (performance as { memory?: { usedJSHeapSize: number; totalJSHeapSize: number; jsHeapSizeLimit: number } }).memory;
+      const memory = (
+        performance as {
+          memory?: {
+            usedJSHeapSize: number;
+            totalJSHeapSize: number;
+            jsHeapSizeLimit: number;
+          };
+        }
+      ).memory;
 
       return {
         memory: {
           used: memory?.usedJSHeapSize || 0,
           total: memory?.totalJSHeapSize || 0,
-          percentage: memory ? (memory.usedJSHeapSize / memory.totalJSHeapSize) * 100 : 0,
+          percentage: memory
+            ? (memory.usedJSHeapSize / memory.totalJSHeapSize) * 100
+            : 0,
         },
         cpu: {
           usage: 0, // Not available in browser
@@ -262,65 +275,64 @@ export class PerformanceMonitor {
   }
 
   // Start resource monitoring
-private startResourceMonitoring(): void {
-     this.resourceTimer = setInterval(() => {
+  private startResourceMonitoring(): void {
+    this.resourceTimer = setInterval(() => {
       try {
-         const metrics = this.getResourceMetrics();
-         if (metrics) {
-           this.recordMetric(
-             'memory_usage',
-             metrics.memory.percentage,
-             'percent',
-             { type: 'memory' }
-           );
+        const metrics = this.getResourceMetrics();
+        if (metrics) {
+          this.recordMetric(
+            'memory_usage',
+            metrics.memory.percentage,
+            'percent',
+            { type: 'memory' }
+          );
 
-           this.recordMetric(
-             'memory_used',
-             metrics.memory.used,
-             'bytes',
-             { type: 'memory' }
-           );
+          this.recordMetric('memory_used', metrics.memory.used, 'bytes', {
+            type: 'memory',
+          });
 
-           if (metrics.cpu.usage > 0) {
-             // Convert CPU usage from seconds to percentage
-             // Note: This is a simplified conversion. For accurate CPU percentage,
-             // consider using a library like pidusage or implementing proper CPU sampling
-             const cpuPercentage = Math.min((metrics.cpu.usage / 1000) * 100, 100);
-             this.recordMetric(
-               'cpu_usage',
-               cpuPercentage,
-               'percent',
-               { type: 'cpu' }
-             );
-           }
-         }
+          if (metrics.cpu.usage > 0) {
+            // Convert CPU usage from seconds to percentage
+            // Note: This is a simplified conversion. For accurate CPU percentage,
+            // consider using a library like pidusage or implementing proper CPU sampling
+            const cpuPercentage = Math.min(
+              (metrics.cpu.usage / 1000) * 100,
+              100
+            );
+            this.recordMetric('cpu_usage', cpuPercentage, 'percent', {
+              type: 'cpu',
+            });
+          }
+        }
       } catch (error) {
         const logger = getLogger();
-        logger.error('Failed to collect resource metrics', error instanceof Error ? error : new Error(String(error)), {
-          metadata: { error: String(error) }
-        });
+        logger.error(
+          'Failed to collect resource metrics',
+          error instanceof Error ? error : new Error(String(error)),
+          {
+            metadata: { error: String(error) },
+          }
+        );
       }
-     }, this.config.metricsInterval);
-   }
+    }, this.config.metricsInterval);
+  }
 
   // Setup Web Vitals monitoring
   private setupWebVitalsMonitoring(): void {
     // Core Web Vitals monitoring
     if ('PerformanceObserver' in window) {
       // Largest Contentful Paint (LCP)
-      new PerformanceObserver((list) => {
+      new PerformanceObserver(list => {
         for (const entry of list.getEntries()) {
-          this.recordMetric(
-            'web_vital_lcp',
-            entry.startTime,
-            'ms',
-            { type: 'web_vital', metric: 'lcp' }
-          );
+          this.recordMetric('web_vital_lcp', entry.startTime, 'ms', {
+            type: 'web_vital',
+            metric: 'lcp',
+          });
         }
       }).observe({ entryTypes: ['largest-contentful-paint'] });
 
       // First Input Delay (FID)
-      new PerformanceObserver((list) => {
+      new PerformanceObserver(list => {
         for (const entry of list.getEntries()) {
           this.recordMetric(
             'web_vital_fid',
@@ -332,7 +344,7 @@ private startResourceMonitoring(): void {
       }).observe({ entryTypes: ['first-input'] });
 
       // Cumulative Layout Shift (CLS)
-      new PerformanceObserver((list) => {
+      new PerformanceObserver(list => {
         let clsValue = 0;
         for (const entry of list.getEntries()) {
           const layoutShiftEntry = entry as any;
@@ -340,20 +352,20 @@ private startResourceMonitoring(): void {
             clsValue += layoutShiftEntry.value;
           }
         }
-        this.recordMetric(
-          'web_vital_cls',
-          clsValue,
-          'score',
-          { type: 'web_vital', metric: 'cls' }
-        );
+        this.recordMetric('web_vital_cls', clsValue, 'score', {
+          type: 'web_vital',
+          metric: 'cls',
+        });
       }).observe({ entryTypes: ['layout-shift'] });
     }
 
     // Navigation timing
     window.addEventListener('load', () => {
       setTimeout(() => {
-        const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
-        
+        const navigation = performance.getEntriesByType(
+          'navigation'
+        )[0] as PerformanceNavigationTiming;
+
         this.recordMetric(
           'page_load_time',
           navigation.loadEventEnd - navigation.fetchStart,
@@ -387,7 +399,10 @@ private startResourceMonitoring(): void {
     const logger = getLogger();
 
     // Check response time thresholds
-    if (metric.name === 'operation_duration' || metric.name === 'api_response_time') {
+    if (
+      metric.name === 'operation_duration' ||
+      metric.name === 'api_response_time'
+    ) {
       if (metric.value > this.config.thresholds.responseTime.critical) {
         logger.error('Critical response time threshold exceeded', undefined, {
           metadata: {
@@ -465,23 +480,30 @@ private startResourceMonitoring(): void {
     currentMemoryUsage: number;
     recentMetrics: PerformanceMetric[];
   } {
-    const recentThreshold = Date.now() - (5 * 60 * 1000); // 5 minutes
+    const recentThreshold = Date.now() - 5 * 60 * 1000; // 5 minutes
     const recentMetrics = this.metrics.filter(
       metric => new Date(metric.timestamp).getTime() > recentThreshold
     );
 
     const responseTimeMetrics = this.metrics.filter(
-      metric => metric.name === 'operation_duration' || metric.name === 'api_response_time'
+      metric =>
+        metric.name === 'operation_duration' ||
+        metric.name === 'api_response_time'
     );
 
-    const averageResponseTime = responseTimeMetrics.length > 0 ?
-      responseTimeMetrics.reduce((sum, metric) => sum + metric.value, 0) / responseTimeMetrics.length :
-      0;
+    const averageResponseTime =
+      responseTimeMetrics.length > 0
+        ? responseTimeMetrics.reduce((sum, metric) => sum + metric.value, 0) /
+          responseTimeMetrics.length
+        : 0;
 
-    const memoryMetrics = this.metrics.filter(metric => metric.name === 'memory_usage');
-    const currentMemoryUsage = memoryMetrics.length > 0 ?
-      memoryMetrics[memoryMetrics.length - 1].value :
-      0;
+    const memoryMetrics = this.metrics.filter(
+      metric => metric.name === 'memory_usage'
+    );
+    const currentMemoryUsage =
+      memoryMetrics.length > 0
+        ? memoryMetrics[memoryMetrics.length - 1].value
+        : 0;
 
     return {
       totalMetrics: this.metrics.length,
@@ -521,4 +543,6 @@ export const defaultPerformanceConfig: PerformanceMonitorConfig = {
 };
 
 // Global performance monitor instance
-export const performanceMonitor = new PerformanceMonitor(defaultPerformanceConfig);
+export const performanceMonitor = new PerformanceMonitor(
+  defaultPerformanceConfig
+);

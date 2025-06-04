@@ -38,14 +38,18 @@ describe('validateRequestBody', () => {
       body: { name: '', age: -1 },
     });
 
-    await expect(validateRequestBody(request, testSchema)).rejects.toThrow(ValidationError);
+    await expect(validateRequestBody(request, testSchema)).rejects.toThrow(
+      ValidationError
+    );
   });
 
   it('should throw ValidationError for invalid JSON', async () => {
     const request = createMockRequest();
     request.json = jest.fn().mockRejectedValue(new Error('Invalid JSON'));
 
-    await expect(validateRequestBody(request, testSchema)).rejects.toThrow(ValidationError);
+    await expect(validateRequestBody(request, testSchema)).rejects.toThrow(
+      ValidationError
+    );
   });
 });
 
@@ -78,7 +82,9 @@ describe('validateQueryParams', () => {
       url: 'http://localhost:3000/api/test?page=invalid',
     });
 
-    expect(() => validateQueryParams(request, testSchema)).toThrow(ValidationError);
+    expect(() => validateQueryParams(request, testSchema)).toThrow(
+      ValidationError
+    );
   });
 });
 
@@ -104,7 +110,9 @@ describe('validatePathParams', () => {
       slug: '',
     };
 
-    expect(() => validatePathParams(params, testSchema)).toThrow(ValidationError);
+    expect(() => validatePathParams(params, testSchema)).toThrow(
+      ValidationError
+    );
   });
 });
 
@@ -146,12 +154,13 @@ describe('extractPaginationParams', () => {
 });
 
 describe('validateFileUpload', () => {
-  const createMockFile = (overrides = {}) => ({
-    name: 'test.jpg',
-    size: 1024 * 1024, // 1MB
-    type: 'image/jpeg',
-    ...overrides,
-  }) as File;
+  const createMockFile = (overrides = {}) =>
+    ({
+      name: 'test.jpg',
+      size: 1024 * 1024, // 1MB
+      type: 'image/jpeg',
+      ...overrides,
+    }) as File;
 
   it('should validate file within size limit', () => {
     const file = createMockFile();
@@ -165,30 +174,38 @@ describe('validateFileUpload', () => {
 
   it('should validate allowed file types', () => {
     const file = createMockFile({ type: 'image/png' });
-    expect(() => validateFileUpload(file, {
-      allowedTypes: ['image/jpeg', 'image/png'],
-    })).not.toThrow();
+    expect(() =>
+      validateFileUpload(file, {
+        allowedTypes: ['image/jpeg', 'image/png'],
+      })
+    ).not.toThrow();
   });
 
   it('should throw ValidationError for disallowed file type', () => {
     const file = createMockFile({ type: 'application/pdf' });
-    expect(() => validateFileUpload(file, {
-      allowedTypes: ['image/jpeg', 'image/png'],
-    })).toThrow(ValidationError);
+    expect(() =>
+      validateFileUpload(file, {
+        allowedTypes: ['image/jpeg', 'image/png'],
+      })
+    ).toThrow(ValidationError);
   });
 
   it('should validate allowed file extensions', () => {
     const file = createMockFile({ name: 'test.jpg' });
-    expect(() => validateFileUpload(file, {
-      allowedExtensions: ['jpg', 'png'],
-    })).not.toThrow();
+    expect(() =>
+      validateFileUpload(file, {
+        allowedExtensions: ['jpg', 'png'],
+      })
+    ).not.toThrow();
   });
 
   it('should throw ValidationError for disallowed file extension', () => {
     const file = createMockFile({ name: 'test.pdf' });
-    expect(() => validateFileUpload(file, {
-      allowedExtensions: ['jpg', 'png'],
-    })).toThrow(ValidationError);
+    expect(() =>
+      validateFileUpload(file, {
+        allowedExtensions: ['jpg', 'png'],
+      })
+    ).toThrow(ValidationError);
   });
 });
 
@@ -209,7 +226,9 @@ describe('validateSearchQuery', () => {
   });
 
   it('should sanitize HTML tags', () => {
-    const result = validateSearchQuery('hello <script>alert("xss")</script> world');
+    const result = validateSearchQuery(
+      'hello <script>alert("xss")</script> world'
+    );
     expect(result).toBe('hello alert("xss") world');
   });
 });
@@ -253,14 +272,18 @@ describe('commonSchemas', () => {
   });
 
   it('should validate coordinates', () => {
-    expect(() => commonSchemas.coordinates.parse({
-      latitude: 40.7128,
-      longitude: -74.0060,
-    })).not.toThrow();
-    expect(() => commonSchemas.coordinates.parse({
-      latitude: 91, // Invalid latitude
-      longitude: -74.0060,
-    })).toThrow();
+    expect(() =>
+      commonSchemas.coordinates.parse({
+        latitude: 40.7128,
+        longitude: -74.006,
+      })
+    ).not.toThrow();
+    expect(() =>
+      commonSchemas.coordinates.parse({
+        latitude: 91, // Invalid latitude
+        longitude: -74.006,
+      })
+    ).toThrow();
   });
 });
 
@@ -272,7 +295,9 @@ describe('constructTrackSchemas', () => {
       customerEmail: 'customer@example.com',
     };
 
-    expect(() => constructTrackSchemas.createProject.parse(validProject)).not.toThrow();
+    expect(() =>
+      constructTrackSchemas.createProject.parse(validProject)
+    ).not.toThrow();
   });
 
   it('should validate task creation data', () => {
@@ -282,7 +307,9 @@ describe('constructTrackSchemas', () => {
       description: 'A test task',
     };
 
-    expect(() => constructTrackSchemas.createTask.parse(validTask)).not.toThrow();
+    expect(() =>
+      constructTrackSchemas.createTask.parse(validTask)
+    ).not.toThrow();
   });
 
   it('should validate profile update data', () => {
@@ -291,6 +318,8 @@ describe('constructTrackSchemas', () => {
       phone: '+1234567890',
     };
 
-    expect(() => constructTrackSchemas.updateProfile.parse(validProfile)).not.toThrow();
+    expect(() =>
+      constructTrackSchemas.updateProfile.parse(validProfile)
+    ).not.toThrow();
   });
 });

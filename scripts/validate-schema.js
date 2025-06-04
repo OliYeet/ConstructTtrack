@@ -228,7 +228,10 @@ class SchemaValidator {
         /CREATE TABLE\s+(?:IF NOT EXISTS\s+)?(?:"[^"]+"|[a-zA-Z_]\w*(?:\.[a-zA-Z_]\w*)?)/gi
       ) || [];
     const tables = tableMatches.map(match =>
-      match.replace(/CREATE TABLE\s+(?:IF NOT EXISTS\s+)?/i, '').replace(/"/g, '').toLowerCase()
+      match
+        .replace(/CREATE TABLE\s+(?:IF NOT EXISTS\s+)?/i, '')
+        .replace(/"/g, '')
+        .toLowerCase()
     );
 
     logger.info(`Found ${tables.length} tables: ${tables.join(', ')}`);
@@ -293,12 +296,16 @@ class SchemaValidator {
 
     // Validate that essential indexes exist
     if (spatialIndexes.length === 0) {
-      logger.error('No spatial indexes found - these are critical for geometry queries');
+      logger.error(
+        'No spatial indexes found - these are critical for geometry queries'
+      );
       return false;
     }
 
     if (orgIndexes.length === 0) {
-      logger.error('No organization_id indexes found - these are critical for multi-tenant performance');
+      logger.error(
+        'No organization_id indexes found - these are critical for multi-tenant performance'
+      );
       return false;
     }
 

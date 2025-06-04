@@ -2,28 +2,31 @@
 
 > **Complete setup instructions for ConstructTrack development environment**
 
-This guide will walk you through setting up ConstructTrack for development, from initial clone to running the application.
+This guide will walk you through setting up ConstructTrack for development, from initial clone to
+running the application.
 
 ## 📋 Prerequisites
 
 ### Supported Platforms
 
-| Platform | Support Level | Notes |
-|----------|---------------|-------|
-| **macOS** | ✅ Full Support | Recommended for iOS development |
-| **Windows 10/11** | ✅ Full Support | WSL2 recommended for best experience |
-| **Linux (Ubuntu/Debian)** | ✅ Full Support | Tested on Ubuntu 20.04+ |
-| **Linux (Other)** | 🟡 Community Support | May require additional setup |
+| Platform                  | Support Level        | Notes                                |
+| ------------------------- | -------------------- | ------------------------------------ |
+| **macOS**                 | ✅ Full Support      | Recommended for iOS development      |
+| **Windows 10/11**         | ✅ Full Support      | WSL2 recommended for best experience |
+| **Linux (Ubuntu/Debian)** | ✅ Full Support      | Tested on Ubuntu 20.04+              |
+| **Linux (Other)**         | 🟡 Community Support | May require additional setup         |
 
 ### System Requirements
 
 #### Minimum Requirements
+
 - **RAM**: 8GB (16GB recommended for mobile development)
 - **Storage**: 10GB free space (20GB+ recommended)
 - **CPU**: Multi-core processor (Intel/AMD/Apple Silicon)
 - **Internet**: Stable connection for package downloads
 
 #### For Mobile Development
+
 - **macOS**: Xcode 14+ for iOS development
 - **Windows/Linux**: Android Studio for Android development
 - **RAM**: 16GB recommended for emulator performance
@@ -31,6 +34,7 @@ This guide will walk you through setting up ConstructTrack for development, from
 ### Required Software
 
 #### Node.js (v18.19.0 or higher)
+
 ```bash
 # Check Node.js version
 node --version  # Should be 18.19.0+
@@ -45,6 +49,7 @@ nvm install 18.19.0
 ```
 
 #### Package Manager
+
 ```bash
 # npm (comes with Node.js)
 npm --version   # Should be 10.0.0+
@@ -59,6 +64,7 @@ pnpm --version
 ```
 
 #### Git Version Control
+
 ```bash
 # Check Git version
 git --version  # Should be 2.30.0+
@@ -70,6 +76,7 @@ git --version  # Should be 2.30.0+
 ```
 
 #### Code Editor
+
 - **VS Code** (recommended) with extensions:
   - TypeScript and JavaScript Language Features
   - ESLint
@@ -83,6 +90,7 @@ git --version  # Should be 2.30.0+
 ### Development Tools
 
 - **Expo CLI** (for mobile development)
+
   ```bash
   npm install -g @expo/cli
   ```
@@ -200,7 +208,8 @@ npm run env:help
 4. **Use different keys** for development and production
 5. **Limit API key permissions** to minimum required scope
 
-See [Environment Variables Guide](../environment-variables.md) for detailed configuration and security best practices.
+See [Environment Variables Guide](../environment-variables.md) for detailed configuration and
+security best practices.
 
 ### 4. Database Setup
 
@@ -341,6 +350,7 @@ npm run android
 ### Common Issues
 
 **Node version conflicts**
+
 ```bash
 # Use nvm to manage Node versions
 nvm install 18
@@ -348,6 +358,7 @@ nvm use 18
 ```
 
 **Package installation failures**
+
 ```bash
 # Clear npm cache
 npm cache clean --force
@@ -358,6 +369,7 @@ npm install
 ```
 
 **Expo CLI issues**
+
 ```bash
 # Update Expo CLI
 npm install -g @expo/cli@latest
@@ -376,4 +388,5 @@ For more troubleshooting help, see [Common Issues](../troubleshooting/common-iss
 
 ---
 
-**Next Steps**: Once installation is complete, check out the [Quick Start Guide](quick-start.md) to begin development.
+**Next Steps**: Once installation is complete, check out the [Quick Start Guide](quick-start.md) to
+begin development.

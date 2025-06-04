@@ -370,12 +370,12 @@ async function validateSchemas() {
       }
     }
 
-// Mark as passed if no critical issues
+    // Mark as passed if no critical issues
     results.schemaValidation.passed = true;
     console.log(chalk.green('✅ Schema validation completed'));
 
     if (schemaIssues > 0) {
-     console.log(chalk.yellow(`⚠️  Found ${schemaIssues} schema warnings`));
+      console.log(chalk.yellow(`⚠️  Found ${schemaIssues} schema warnings`));
     }
   } catch (error) {
     results.schemaValidation.passed = false;

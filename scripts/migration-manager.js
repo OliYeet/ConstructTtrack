@@ -73,16 +73,13 @@ class MigrationManager {
       const { error } = await this.supabase.rpc('create_migration_table');
       if (error && error.code === '42883') {
         // function not found, create table directly
-        const { error: ddlError } = await this.supabase.rpc(
-          'execute_sql',
-          {
-            sql: `CREATE TABLE IF NOT EXISTS schema_migrations (
+        const { error: ddlError } = await this.supabase.rpc('execute_sql', {
+          sql: `CREATE TABLE IF NOT EXISTS schema_migrations (
               filename text primary key,
               applied_at timestamptz not null,
               checksum text
-            );`
-          }
-        );
+            );`,
+        });
 
         if (ddlError) {
           throw ddlError;

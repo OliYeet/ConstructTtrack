@@ -2,7 +2,9 @@
 
 ## Overview
 
-The ConstructTrack API is a comprehensive RESTful API designed specifically for fiber optic construction management. It provides endpoints for project management, task tracking, user management, and real-time progress monitoring.
+The ConstructTrack API is a comprehensive RESTful API designed specifically for fiber optic
+construction management. It provides endpoints for project management, task tracking, user
+management, and real-time progress monitoring.
 
 ## 🚀 Quick Start
 
@@ -13,7 +15,8 @@ The ConstructTrack API is a comprehensive RESTful API designed specifically for 
 
 ### Authentication
 
-Most endpoints require authentication using JWT tokens. Include the token in the Authorization header:
+Most endpoints require authentication using JWT tokens. Include the token in the Authorization
+header:
 
 ```bash
 curl -H "Authorization: Bearer <your-jwt-token>" \
@@ -29,6 +32,7 @@ curl https://api.constructtrack.com/v1/health
 ```
 
 Expected response:
+
 ```json
 {
   "success": true,
@@ -60,22 +64,23 @@ Expected response:
 
 ### 🔗 Core Endpoints
 
-| Endpoint | Method | Description | Auth Required |
-|----------|--------|-------------|---------------|
-| `/health` | GET | System health check | ❌ |
-| `/test` | GET, POST | API testing endpoints | ❌ |
-| `/projects` | GET, POST | Project management | ✅ |
-| `/projects/{id}` | GET, PUT, DELETE | Individual project operations | ✅ |
-| `/tasks` | GET, POST | Task management | ✅ |
-| `/users` | GET, POST | User management | ✅ |
-| `/auth/login` | POST | User authentication | ❌ |
-| `/auth/refresh` | POST | Token refresh | ✅ |
+| Endpoint         | Method           | Description                   | Auth Required |
+| ---------------- | ---------------- | ----------------------------- | ------------- |
+| `/health`        | GET              | System health check           | ❌            |
+| `/test`          | GET, POST        | API testing endpoints         | ❌            |
+| `/projects`      | GET, POST        | Project management            | ✅            |
+| `/projects/{id}` | GET, PUT, DELETE | Individual project operations | ✅            |
+| `/tasks`         | GET, POST        | Task management               | ✅            |
+| `/users`         | GET, POST        | User management               | ✅            |
+| `/auth/login`    | POST             | User authentication           | ❌            |
+| `/auth/refresh`  | POST             | Token refresh                 | ✅            |
 
 ## 🔐 Authentication
 
 ### JWT Token Authentication
 
 1. **Login** to get a JWT token:
+
 ```bash
 curl -X POST https://api.constructtrack.com/v1/auth/login \
   -H "Content-Type: application/json" \
@@ -86,6 +91,7 @@ curl -X POST https://api.constructtrack.com/v1/auth/login \
 ```
 
 2. **Use the token** in subsequent requests:
+
 ```bash
 curl -H "Authorization: Bearer <jwt-token>" \
      https://api.constructtrack.com/v1/projects
@@ -105,10 +111,13 @@ curl -H "X-API-Key: <your-api-key>" \
 All API responses follow a consistent format:
 
 ### Success Response
+
 ```json
 {
   "success": true,
-  "data": { /* response data */ },
+  "data": {
+    /* response data */
+  },
   "message": "Operation successful",
   "meta": {
     "timestamp": "2024-01-15T10:30:00Z",
@@ -119,6 +128,7 @@ All API responses follow a consistent format:
 ```
 
 ### Error Response
+
 ```json
 {
   "success": false,
@@ -127,7 +137,9 @@ All API responses follow a consistent format:
     "message": "Invalid input data",
     "field": "email",
     "statusCode": 400,
-    "details": { /* additional error info */ }
+    "details": {
+      /* additional error info */
+    }
   },
   "meta": {
     "timestamp": "2024-01-15T10:30:00Z",
@@ -138,11 +150,14 @@ All API responses follow a consistent format:
 ```
 
 ### Paginated Response
+
 ```json
 {
   "success": true,
   "data": {
-    "data": [ /* array of items */ ],
+    "data": [
+      /* array of items */
+    ],
     "pagination": {
       "page": 2,
       "limit": 20,
@@ -153,7 +168,9 @@ All API responses follow a consistent format:
     }
   },
   "message": "Data retrieved successfully",
-  "meta": { /* standard meta info */ }
+  "meta": {
+    /* standard meta info */
+  }
 }
 ```
 
@@ -161,46 +178,47 @@ All API responses follow a consistent format:
 
 ### HTTP Status Codes
 
-| Code | Description | When Used |
-|------|-------------|-----------|
-| 200 | OK | Successful GET, PUT, PATCH |
-| 201 | Created | Successful POST |
-| 204 | No Content | Successful DELETE |
-| 400 | Bad Request | Validation errors, malformed requests |
-| 401 | Unauthorized | Missing or invalid authentication |
-| 403 | Forbidden | Insufficient permissions |
-| 404 | Not Found | Resource doesn't exist |
-| 409 | Conflict | Resource already exists |
-| 429 | Too Many Requests | Rate limit exceeded |
-| 500 | Internal Server Error | Server-side errors |
-| 503 | Service Unavailable | System maintenance or overload |
+| Code | Description           | When Used                             |
+| ---- | --------------------- | ------------------------------------- |
+| 200  | OK                    | Successful GET, PUT, PATCH            |
+| 201  | Created               | Successful POST                       |
+| 204  | No Content            | Successful DELETE                     |
+| 400  | Bad Request           | Validation errors, malformed requests |
+| 401  | Unauthorized          | Missing or invalid authentication     |
+| 403  | Forbidden             | Insufficient permissions              |
+| 404  | Not Found             | Resource doesn't exist                |
+| 409  | Conflict              | Resource already exists               |
+| 429  | Too Many Requests     | Rate limit exceeded                   |
+| 500  | Internal Server Error | Server-side errors                    |
+| 503  | Service Unavailable   | System maintenance or overload        |
 
 ### Error Codes
 
-| Code | Description | HTTP Status |
-|------|-------------|-------------|
-| `VALIDATION_ERROR` | Input validation failed | 400 |
-| `AUTHENTICATION_ERROR` | Authentication required or failed | 401 |
-| `AUTHORIZATION_ERROR` | Insufficient permissions | 403 |
-| `NOT_FOUND` | Resource not found | 404 |
-| `CONFLICT` | Resource conflict | 409 |
-| `RATE_LIMIT_EXCEEDED` | Too many requests | 429 |
-| `INTERNAL_SERVER_ERROR` | Server error | 500 |
-| `DATABASE_ERROR` | Database operation failed | 500 |
-| `EXTERNAL_SERVICE_ERROR` | External service unavailable | 503 |
+| Code                     | Description                       | HTTP Status |
+| ------------------------ | --------------------------------- | ----------- |
+| `VALIDATION_ERROR`       | Input validation failed           | 400         |
+| `AUTHENTICATION_ERROR`   | Authentication required or failed | 401         |
+| `AUTHORIZATION_ERROR`    | Insufficient permissions          | 403         |
+| `NOT_FOUND`              | Resource not found                | 404         |
+| `CONFLICT`               | Resource conflict                 | 409         |
+| `RATE_LIMIT_EXCEEDED`    | Too many requests                 | 429         |
+| `INTERNAL_SERVER_ERROR`  | Server error                      | 500         |
+| `DATABASE_ERROR`         | Database operation failed         | 500         |
+| `EXTERNAL_SERVICE_ERROR` | External service unavailable      | 503         |
 
 ## 🔄 Pagination
 
 List endpoints support pagination with the following parameters:
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `page` | integer | 1 | Page number (1-based) |
-| `limit` | integer | 20 | Items per page (max 100) |
-| `sortBy` | string | - | Field to sort by |
-| `sortOrder` | string | asc | Sort order: `asc` or `desc` |
+| Parameter   | Type    | Default | Description                 |
+| ----------- | ------- | ------- | --------------------------- |
+| `page`      | integer | 1       | Page number (1-based)       |
+| `limit`     | integer | 20      | Items per page (max 100)    |
+| `sortBy`    | string  | -       | Field to sort by            |
+| `sortOrder` | string  | asc     | Sort order: `asc` or `desc` |
 
 Example:
+
 ```bash
 curl "https://api.constructtrack.com/v1/projects?page=2&limit=50&sortBy=name&sortOrder=desc"
 ```
@@ -286,7 +304,8 @@ Include this ID when reporting issues.
 
 ## 🔍 API Validation & Quality Assurance
 
-The ConstructTrack API uses automated validation to ensure the OpenAPI specification stays in sync with the actual implementation:
+The ConstructTrack API uses automated validation to ensure the OpenAPI specification stays in sync
+with the actual implementation:
 
 ### **Validation Process**
 
@@ -327,6 +346,7 @@ npm run api:test:endpoints
 ### **Validation Reports**
 
 Validation results are saved to `docs/api/validation/` and include:
+
 - Specification validation results
 - Implementation test results
 - Breaking change analysis

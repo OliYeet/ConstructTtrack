@@ -12,7 +12,6 @@ import { fileURLToPath } from 'url';
 import chalk from 'chalk';
 import inquirer from 'inquirer';
 
-
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const rootDir = join(__dirname, '..');
@@ -79,7 +78,11 @@ class EnvSetup {
       supabaseUrl = await this.question('Supabase URL: ');
       if (!supabaseUrl || supabaseUrl.trim() === '') {
         console.log(chalk.red('❌ Supabase URL is required'));
-      } else if (!supabaseUrl.match(/^https:\/\/(.*\.supabase\.co|localhost(:\d+)?)|http:\/\/localhost(:\d+)?$/)) {
+      } else if (
+        !supabaseUrl.match(
+          /^https:\/\/(.*\.supabase\.co|localhost(:\d+)?)|http:\/\/localhost(:\d+)?$/
+        )
+      ) {
         console.log(
           chalk.red(
             '❌ Supabase URL must be https://your-project-id.supabase.co, https://localhost:port, or http://localhost:port for development'
@@ -97,7 +100,9 @@ class EnvSetup {
       const minLength = isProduction ? 100 : 80; // Stricter validation for production
 
       if (key.length < minLength) {
-        const envNote = isProduction ? '' : ' (local emulator keys are typically ~88 characters)';
+        const envNote = isProduction
+          ? ''
+          : ' (local emulator keys are typically ~88 characters)';
         console.log(
           chalk.red(
             `❌ Supabase ${keyType} appears to be too short (should be ${minLength}+ characters)${envNote}`
@@ -112,7 +117,9 @@ class EnvSetup {
     let supabaseAnonKey;
     let supabaseAnonKeyValid = false;
     do {
-      supabaseAnonKey = await this.question('Supabase Anon Key: ', { mask: true });
+      supabaseAnonKey = await this.question('Supabase Anon Key: ', {
+        mask: true,
+      });
       if (!supabaseAnonKey || supabaseAnonKey.trim() === '') {
         console.log(chalk.red('❌ Supabase Anon Key is required'));
       } else if (validateSupabaseKeyLength(supabaseAnonKey, 'Anon Key')) {
@@ -125,10 +132,14 @@ class EnvSetup {
     let supabaseServiceKey;
     let supabaseServiceKeyValid = false;
     do {
-      supabaseServiceKey = await this.question('Supabase Service Role Key: ', { mask: true });
+      supabaseServiceKey = await this.question('Supabase Service Role Key: ', {
+        mask: true,
+      });
       if (!supabaseServiceKey || supabaseServiceKey.trim() === '') {
         console.log(chalk.red('❌ Supabase Service Role Key is required'));
-      } else if (validateSupabaseKeyLength(supabaseServiceKey, 'Service Role Key')) {
+      } else if (
+        validateSupabaseKeyLength(supabaseServiceKey, 'Service Role Key')
+      ) {
         supabaseServiceKeyValid = true;
       }
     } while (!supabaseServiceKeyValid);
@@ -145,7 +156,9 @@ class EnvSetup {
       'Get your token from: https://account.mapbox.com/access-tokens/\n'
     );
 
-    const mapboxToken = await this.question('MapBox Access Token: ', { mask: true });
+    const mapboxToken = await this.question('MapBox Access Token: ', {
+      mask: true,
+    });
     config.MAPBOX_ACCESS_TOKEN = mapboxToken;
     config.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN = mapboxToken;
     config.EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN = mapboxToken;
@@ -156,7 +169,8 @@ class EnvSetup {
     config.NOTION_TOKEN = await this.question('Notion Token: ', { mask: true });
     config.NOTION_DATABASE_ID = await this.question('Notion Database ID: ');
     config.NOTION_WEBHOOK_SECRET = await this.question(
-      'Notion Webhook Secret: ', { mask: true }
+      'Notion Webhook Secret: ',
+      { mask: true }
     );
 
     console.log(chalk.blue('\n🔐 Security Configuration'));
@@ -165,7 +179,9 @@ class EnvSetup {
     let jwtSecret;
     let jwtSecretValid = false;
     do {
-      jwtSecret = await this.question('JWT Secret (32+ characters): ', { mask: true });
+      jwtSecret = await this.question('JWT Secret (32+ characters): ', {
+        mask: true,
+      });
       if (!jwtSecret || jwtSecret.length < 32) {
         console.log(
           chalk.red(
@@ -193,7 +209,8 @@ class EnvSetup {
     let encryptionKeyValid = false;
     do {
       encryptionKey = await this.question(
-        'Encryption Key (exactly 32 characters): ', { mask: true }
+        'Encryption Key (exactly 32 characters): ',
+        { mask: true }
       );
       if (!encryptionKey || encryptionKey.length !== 32) {
         console.log(
@@ -255,7 +272,9 @@ class EnvSetup {
     );
     if (setupSMS.toLowerCase() === 'y') {
       config.TWILIO_ACCOUNT_SID = await this.question('Twilio Account SID: ');
-      config.TWILIO_AUTH_TOKEN = await this.question('Twilio Auth Token: ', { mask: true });
+      config.TWILIO_AUTH_TOKEN = await this.question('Twilio Auth Token: ', {
+        mask: true,
+      });
       config.TWILIO_PHONE_NUMBER = await this.question('Twilio Phone Number: ');
     }
 
@@ -264,7 +283,8 @@ class EnvSetup {
     if (setupStorage.toLowerCase() === 'y') {
       config.AWS_ACCESS_KEY_ID = await this.question('AWS Access Key ID: ');
       config.AWS_SECRET_ACCESS_KEY = await this.question(
-        'AWS Secret Access Key: ', { mask: true }
+        'AWS Secret Access Key: ',
+        { mask: true }
       );
       config.AWS_REGION =
         (await this.question('AWS Region [us-east-1]: ')) || 'us-east-1';
@@ -280,7 +300,11 @@ class EnvSetup {
       writeFileSync(envPath, envContent, 'utf8');
       // Set restrictive permissions (owner read/write only)
       chmodSync(envPath, 0o600);
-      console.log(chalk.green(`\n✅ .env file created successfully with secure permissions!`));
+      console.log(
+        chalk.green(
+          `\n✅ .env file created successfully with secure permissions!`
+        )
+      );
     } catch (error) {
       console.error(
         chalk.red(`\n❌ Failed to create .env file: ${error.message}`)

@@ -1,6 +1,7 @@
 # ⚠️ ConstructTrack API Error Reference
 
-This comprehensive guide covers all error codes, HTTP status codes, and troubleshooting information for the ConstructTrack API.
+This comprehensive guide covers all error codes, HTTP status codes, and troubleshooting information
+for the ConstructTrack API.
 
 ## Error Response Format
 
@@ -30,40 +31,41 @@ All API errors follow a consistent format:
 
 ### 2xx Success
 
-| Code | Status | Description |
-|------|--------|-------------|
-| 200 | OK | Request successful |
-| 201 | Created | Resource created successfully |
-| 202 | Accepted | Request accepted for processing |
-| 204 | No Content | Request successful, no content returned |
+| Code | Status     | Description                             |
+| ---- | ---------- | --------------------------------------- |
+| 200  | OK         | Request successful                      |
+| 201  | Created    | Resource created successfully           |
+| 202  | Accepted   | Request accepted for processing         |
+| 204  | No Content | Request successful, no content returned |
 
 ### 4xx Client Errors
 
-| Code | Status | Description | Action Required |
-|------|--------|-------------|-----------------|
-| 400 | Bad Request | Invalid request format or data | Fix request format/data |
-| 401 | Unauthorized | Authentication required or failed | Provide valid authentication |
-| 403 | Forbidden | Insufficient permissions | Check user role/permissions |
-| 404 | Not Found | Resource doesn't exist | Verify resource ID/URL |
-| 405 | Method Not Allowed | HTTP method not supported | Use correct HTTP method |
-| 409 | Conflict | Resource already exists or conflict | Resolve conflict |
-| 422 | Unprocessable Entity | Valid format but semantic errors | Fix semantic issues |
-| 429 | Too Many Requests | Rate limit exceeded | Implement rate limiting |
+| Code | Status               | Description                         | Action Required              |
+| ---- | -------------------- | ----------------------------------- | ---------------------------- |
+| 400  | Bad Request          | Invalid request format or data      | Fix request format/data      |
+| 401  | Unauthorized         | Authentication required or failed   | Provide valid authentication |
+| 403  | Forbidden            | Insufficient permissions            | Check user role/permissions  |
+| 404  | Not Found            | Resource doesn't exist              | Verify resource ID/URL       |
+| 405  | Method Not Allowed   | HTTP method not supported           | Use correct HTTP method      |
+| 409  | Conflict             | Resource already exists or conflict | Resolve conflict             |
+| 422  | Unprocessable Entity | Valid format but semantic errors    | Fix semantic issues          |
+| 429  | Too Many Requests    | Rate limit exceeded                 | Implement rate limiting      |
 
 ### 5xx Server Errors
 
-| Code | Status | Description | Action Required |
-|------|--------|-------------|-----------------|
-| 500 | Internal Server Error | Unexpected server error | Report to support |
-| 502 | Bad Gateway | Upstream service error | Retry later |
-| 503 | Service Unavailable | Service temporarily unavailable | Retry with backoff |
-| 504 | Gateway Timeout | Request timeout | Retry with longer timeout |
+| Code | Status                | Description                     | Action Required           |
+| ---- | --------------------- | ------------------------------- | ------------------------- |
+| 500  | Internal Server Error | Unexpected server error         | Report to support         |
+| 502  | Bad Gateway           | Upstream service error          | Retry later               |
+| 503  | Service Unavailable   | Service temporarily unavailable | Retry with backoff        |
+| 504  | Gateway Timeout       | Request timeout                 | Retry with longer timeout |
 
 ## Error Codes Reference
 
-### Authentication Errors (AUTH_*)
+### Authentication Errors (AUTH\_\*)
 
 #### AUTHENTICATION_ERROR
+
 - **HTTP Status**: 401
 - **Description**: Authentication required or failed
 - **Common Causes**:
@@ -73,6 +75,7 @@ All API errors follow a consistent format:
   - Malformed token
 
 **Example:**
+
 ```json
 {
   "success": false,
@@ -85,12 +88,14 @@ All API errors follow a consistent format:
 ```
 
 **Solutions:**
+
 - Verify token format
 - Check token expiration
 - Refresh token if expired
 - Re-authenticate if refresh fails
 
 #### AUTHORIZATION_ERROR
+
 - **HTTP Status**: 403
 - **Description**: Insufficient permissions
 - **Common Causes**:
@@ -99,6 +104,7 @@ All API errors follow a consistent format:
   - API key missing required scopes
 
 **Example:**
+
 ```json
 {
   "success": false,
@@ -111,13 +117,15 @@ All API errors follow a consistent format:
 ```
 
 **Solutions:**
+
 - Check user role and permissions
 - Verify organization membership
 - Request elevated permissions
 
-### Validation Errors (VALIDATION_*)
+### Validation Errors (VALIDATION\_\*)
 
 #### VALIDATION_ERROR
+
 - **HTTP Status**: 400
 - **Description**: Input validation failed
 - **Common Causes**:
@@ -127,6 +135,7 @@ All API errors follow a consistent format:
   - Invalid enum values
 
 **Example:**
+
 ```json
 {
   "success": false,
@@ -149,13 +158,15 @@ All API errors follow a consistent format:
 ```
 
 **Solutions:**
+
 - Validate input data before sending
 - Check field requirements and formats
 - Review API documentation for valid values
 
-### Resource Errors (RESOURCE_*)
+### Resource Errors (RESOURCE\_\*)
 
 #### NOT_FOUND
+
 - **HTTP Status**: 404
 - **Description**: Requested resource doesn't exist
 - **Common Causes**:
@@ -164,6 +175,7 @@ All API errors follow a consistent format:
   - Incorrect URL path
 
 **Example:**
+
 ```json
 {
   "success": false,
@@ -176,11 +188,13 @@ All API errors follow a consistent format:
 ```
 
 **Solutions:**
+
 - Verify resource ID
 - Check if resource was deleted
 - Confirm URL path is correct
 
 #### CONFLICT
+
 - **HTTP Status**: 409
 - **Description**: Resource conflict
 - **Common Causes**:
@@ -189,6 +203,7 @@ All API errors follow a consistent format:
   - Business rule violations
 
 **Example:**
+
 ```json
 {
   "success": false,
@@ -204,13 +219,15 @@ All API errors follow a consistent format:
 ```
 
 **Solutions:**
+
 - Use unique identifiers
 - Implement optimistic locking
 - Handle concurrent updates
 
-### Rate Limiting Errors (RATE_*)
+### Rate Limiting Errors (RATE\_\*)
 
 #### RATE_LIMIT_EXCEEDED
+
 - **HTTP Status**: 429
 - **Description**: Too many requests
 - **Common Causes**:
@@ -219,6 +236,7 @@ All API errors follow a consistent format:
   - Inefficient API usage
 
 **Example:**
+
 ```json
 {
   "success": false,
@@ -237,14 +255,16 @@ All API errors follow a consistent format:
 ```
 
 **Solutions:**
+
 - Implement exponential backoff
 - Respect rate limit headers
 - Use API keys for higher limits
 - Optimize request patterns
 
-### Server Errors (SERVER_*)
+### Server Errors (SERVER\_\*)
 
 #### INTERNAL_SERVER_ERROR
+
 - **HTTP Status**: 500
 - **Description**: Unexpected server error
 - **Common Causes**:
@@ -253,6 +273,7 @@ All API errors follow a consistent format:
   - Configuration issues
 
 **Example:**
+
 ```json
 {
   "success": false,
@@ -265,11 +286,13 @@ All API errors follow a consistent format:
 ```
 
 **Solutions:**
+
 - Report to support with request ID
 - Retry after delay
 - Check system status page
 
 #### DATABASE_ERROR
+
 - **HTTP Status**: 500
 - **Description**: Database operation failed
 - **Common Causes**:
@@ -278,6 +301,7 @@ All API errors follow a consistent format:
   - Data integrity violations
 
 **Example:**
+
 ```json
 {
   "success": false,
@@ -290,11 +314,13 @@ All API errors follow a consistent format:
 ```
 
 **Solutions:**
+
 - Retry with exponential backoff
 - Check database status
 - Report persistent issues
 
 #### EXTERNAL_SERVICE_ERROR
+
 - **HTTP Status**: 503
 - **Description**: External service unavailable
 - **Common Causes**:
@@ -303,6 +329,7 @@ All API errors follow a consistent format:
   - Service rate limiting
 
 **Example:**
+
 ```json
 {
   "success": false,
@@ -318,6 +345,7 @@ All API errors follow a consistent format:
 ```
 
 **Solutions:**
+
 - Retry with exponential backoff
 - Check service status pages
 - Implement fallback mechanisms
@@ -331,7 +359,7 @@ async function apiCall(endpoint, options = {}) {
   try {
     const response = await fetch(endpoint, options);
     const data = await response.json();
-    
+
     if (!data.success) {
       // Handle specific error codes
       switch (data.error.code) {
@@ -349,7 +377,7 @@ async function apiCall(endpoint, options = {}) {
       }
       throw new Error(data.error.message);
     }
-    
+
     return data.data;
   } catch (error) {
     console.error('API Error:', error);
@@ -365,10 +393,10 @@ Always include the request ID when reporting errors:
 ```javascript
 function reportError(error, requestId) {
   console.error(`Error ${error.code}: ${error.message} (Request ID: ${requestId})`);
-  
+
   // Send to error tracking service
   errorTracker.captureException(error, {
-    extra: { requestId }
+    extra: { requestId },
   });
 }
 ```
@@ -384,15 +412,15 @@ async function retryableApiCall(endpoint, options = {}, maxRetries = 3) {
       const shouldRetry = [
         'INTERNAL_SERVER_ERROR',
         'DATABASE_ERROR',
-        'EXTERNAL_SERVICE_ERROR'
+        'EXTERNAL_SERVICE_ERROR',
       ].includes(error.code);
-      
+
       if (shouldRetry && attempt < maxRetries) {
         const delay = Math.pow(2, attempt) * 1000; // Exponential backoff
         await new Promise(resolve => setTimeout(resolve, delay));
         continue;
       }
-      
+
       throw error;
     }
   }
@@ -407,22 +435,22 @@ class RateLimitedApiClient {
     this.requestQueue = [];
     this.isProcessing = false;
   }
-  
+
   async makeRequest(endpoint, options) {
     return new Promise((resolve, reject) => {
       this.requestQueue.push({ endpoint, options, resolve, reject });
       this.processQueue();
     });
   }
-  
+
   async processQueue() {
     if (this.isProcessing || this.requestQueue.length === 0) return;
-    
+
     this.isProcessing = true;
-    
+
     while (this.requestQueue.length > 0) {
       const { endpoint, options, resolve, reject } = this.requestQueue.shift();
-      
+
       try {
         const result = await apiCall(endpoint, options);
         resolve(result);
@@ -430,15 +458,13 @@ class RateLimitedApiClient {
         if (error.code === 'RATE_LIMIT_EXCEEDED') {
           // Put request back in queue and wait
           this.requestQueue.unshift({ endpoint, options, resolve, reject });
-          await new Promise(resolve => 
-            setTimeout(resolve, error.details.retryAfter * 1000)
-          );
+          await new Promise(resolve => setTimeout(resolve, error.details.retryAfter * 1000));
         } else {
           reject(error);
         }
       }
     }
-    
+
     this.isProcessing = false;
   }
 }
@@ -451,16 +477,19 @@ class RateLimitedApiClient {
 #### "Authentication required" but token is provided
 
 **Symptoms:**
+
 - 401 error despite providing Authorization header
 - Error message: "Authentication required"
 
 **Debugging Steps:**
+
 1. Check Authorization header format: `Bearer <token>`
 2. Verify token is not expired
 3. Ensure token is valid JWT format
 4. Check for extra spaces or characters
 
 **Solution:**
+
 ```bash
 # Correct format
 curl -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
@@ -473,16 +502,19 @@ curl -H "Authorization: Bearer  eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."  # Extr
 #### "Validation error" with correct data
 
 **Symptoms:**
+
 - 400 error with validation message
 - Data appears correct
 
 **Debugging Steps:**
+
 1. Check data types (string vs number)
 2. Verify required fields are present
 3. Check field length limits
 4. Validate enum values
 
 **Solution:**
+
 ```javascript
 // Incorrect - number as string
 {
@@ -498,15 +530,18 @@ curl -H "Authorization: Bearer  eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."  # Extr
 #### Rate limiting issues
 
 **Symptoms:**
+
 - 429 errors
 - Requests being rejected
 
 **Debugging Steps:**
+
 1. Check rate limit headers
 2. Monitor request frequency
 3. Implement proper delays
 
 **Solution:**
+
 ```javascript
 // Check rate limit headers
 const rateLimitRemaining = response.headers.get('X-RateLimit-Remaining');

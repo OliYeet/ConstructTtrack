@@ -80,7 +80,7 @@ class WorkspaceValidator {
       const actualWorkspaces = loadWorkspaces(this.rootDir);
 
       // Helper function to escape regex special characters
-      const escapeRegex = (string) => {
+      const escapeRegex = string => {
         return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       };
 
@@ -93,7 +93,9 @@ class WorkspaceValidator {
         });
 
         if (matchingWorkspaces.length === 0) {
-          this.addWarning(`Workspace pattern "${pattern}" does not match any existing folders`);
+          this.addWarning(
+            `Workspace pattern "${pattern}" does not match any existing folders`
+          );
         }
       }
     }
@@ -180,7 +182,9 @@ class WorkspaceValidator {
 
     for (const [depName, version] of Object.entries(allDeps)) {
       if (depName.startsWith('@constructtrack/') && version !== '*') {
-        const depType = pkg.dependencies?.[depName] ? 'dependencies' : 'devDependencies';
+        const depType = pkg.dependencies?.[depName]
+          ? 'dependencies'
+          : 'devDependencies';
         this.addWarning(
           `Package ${workspacePath} should use "*" for internal dependency ${depName} in ${depType}`
         );

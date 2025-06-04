@@ -68,7 +68,7 @@ class ConstructTrackAPI {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     });
-    
+
     this.accessToken = response.accessToken;
     return response;
   }
@@ -119,10 +119,10 @@ async function testConnectivity() {
   try {
     const health = await api.healthCheck();
     console.log('API Health:', health);
-    
+
     const testResult = await api.test();
     console.log('Test Result:', testResult);
-    
+
     const postResult = await api.testPost('Hello from JavaScript!', {
       timestamp: new Date().toISOString(),
       browser: navigator.userAgent,
@@ -178,12 +178,12 @@ async function projectManagement() {
       customerEmail: 'contact@downtown.com',
       location: {
         latitude: 40.7128,
-        longitude: -74.0060,
+        longitude: -74.006,
       },
     });
-    
+
     console.log('Created project:', newProject);
-    
+
     // Get all projects with pagination
     const projects = await api.getProjects({
       page: 1,
@@ -192,15 +192,15 @@ async function projectManagement() {
       sortBy: 'name',
       sortOrder: 'asc',
     });
-    
+
     console.log('Projects:', projects);
-    
+
     // Update project status
     const updatedProject = await api.updateProject(newProject.id, {
       status: 'completed',
       description: 'Project completed successfully',
     });
-    
+
     console.log('Updated project:', updatedProject);
   } catch (error) {
     console.error('Project management failed:', error);
@@ -258,7 +258,7 @@ function ProjectList() {
   useEffect(() => {
     async function fetchProjects() {
       if (!isAuthenticated) return;
-      
+
       try {
         setLoading(true);
         const projectsData = await api.getProjects();
@@ -324,11 +324,7 @@ export function APIProvider({ children }) {
     logout,
   };
 
-  return (
-    <APIContext.Provider value={value}>
-      {children}
-    </APIContext.Provider>
-  );
+  return <APIContext.Provider value={value}>{children}</APIContext.Provider>;
 }
 
 export function useAPI() {

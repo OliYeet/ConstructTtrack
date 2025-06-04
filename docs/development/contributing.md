@@ -2,23 +2,27 @@
 
 > **How to contribute to ConstructTrack development**
 
-We welcome contributions to ConstructTrack! This guide will help you get started with contributing code, documentation, and other improvements.
+We welcome contributions to ConstructTrack! This guide will help you get started with contributing
+code, documentation, and other improvements.
 
 ## 🎯 Ways to Contribute
 
 ### Code Contributions
+
 - **Bug fixes**: Fix issues and improve stability
 - **New features**: Implement planned features from our roadmap
 - **Performance improvements**: Optimize existing functionality
 - **Testing**: Add or improve test coverage
 
 ### Documentation
+
 - **API documentation**: Improve endpoint documentation
 - **User guides**: Create or enhance user-facing documentation
 - **Developer docs**: Improve setup and development guides
 - **Code comments**: Add helpful inline documentation
 
 ### Other Contributions
+
 - **Bug reports**: Report issues with detailed information
 - **Feature requests**: Suggest new functionality
 - **Design feedback**: Provide UI/UX improvement suggestions
@@ -27,6 +31,7 @@ We welcome contributions to ConstructTrack! This guide will help you get started
 ## 🚀 Getting Started
 
 ### 1. Fork and Clone
+
 ```bash
 # Fork the repository on GitHub
 # Then clone your fork
@@ -38,6 +43,7 @@ git remote add upstream https://github.com/OliYeet/ConstructTtrack.git
 ```
 
 ### 2. Set Up Development Environment
+
 ```bash
 # Install dependencies
 npm install
@@ -55,6 +61,7 @@ npm test
 ```
 
 ### 3. Create Feature Branch
+
 ```bash
 # Update main branch
 git checkout main
@@ -72,6 +79,7 @@ git checkout -b fix/issue-description
 ### Code Style Guidelines
 
 #### TypeScript Standards
+
 ```typescript
 // ✅ Good: Use explicit types for function parameters and returns
 interface CreateProjectParams {
@@ -80,18 +88,16 @@ interface CreateProjectParams {
   location: GeoPoint;
 }
 
-export async function createProject(
-  params: CreateProjectParams
-): Promise<ApiResponse<Project>> {
+export async function createProject(params: CreateProjectParams): Promise<ApiResponse<Project>> {
   // Implementation
 }
 
 // ✅ Good: Use const assertions for immutable data
 const PROJECT_STATUSES = ['planning', 'active', 'completed'] as const;
-type ProjectStatus = typeof PROJECT_STATUSES[number];
+type ProjectStatus = (typeof PROJECT_STATUSES)[number];
 
 // ❌ Avoid: Any types
-function processData(data: any): any { }
+function processData(data: any): any {}
 
 // ✅ Good: Use proper error handling
 try {
@@ -104,6 +110,7 @@ try {
 ```
 
 #### React Component Standards
+
 ```typescript
 // ✅ Good: Use proper TypeScript interfaces for props
 interface ProjectCardProps {
@@ -134,6 +141,7 @@ export function ProjectCard({
 ```
 
 #### CSS/Styling Standards
+
 ```typescript
 // ✅ Good: Use Tailwind utility classes with cn() helper
 import { cn } from '@shared/utils';
@@ -159,6 +167,7 @@ function Button({ variant = 'primary', className, ...props }) {
 ```
 
 #### File Naming Conventions
+
 ```
 components/
 ├── ProjectCard.tsx          # PascalCase for components
@@ -178,6 +187,7 @@ types/
 ```
 
 ### Code Quality Tools
+
 ```bash
 # Lint code (ESLint + TypeScript)
 npm run lint
@@ -196,7 +206,9 @@ npm run quality:check
 ```
 
 #### ESLint Configuration
+
 Our ESLint setup includes:
+
 - **@typescript-eslint**: TypeScript-specific rules
 - **eslint-plugin-react**: React best practices
 - **eslint-plugin-react-hooks**: Hooks rules
@@ -204,6 +216,7 @@ Our ESLint setup includes:
 - **eslint-config-prettier**: Prettier compatibility
 
 #### Prettier Configuration
+
 ```json
 {
   "semi": true,
@@ -216,6 +229,7 @@ Our ESLint setup includes:
 ```
 
 ### Commit Message Convention
+
 We follow [Conventional Commits](https://www.conventionalcommits.org/):
 
 ```
@@ -231,6 +245,7 @@ chore(deps): update dependencies
 ```
 
 **Types:**
+
 - `feat`: New feature
 - `fix`: Bug fix
 - `docs`: Documentation changes
@@ -242,6 +257,7 @@ chore(deps): update dependencies
 ### Testing Requirements
 
 #### Running Tests Locally
+
 ```bash
 # Run all tests
 npm test
@@ -268,6 +284,7 @@ npm run test:debug
 #### Test Types & Examples
 
 ##### Unit Tests
+
 Test individual functions and components in isolation:
 
 ```typescript
@@ -299,6 +316,7 @@ describe('date-helpers', () => {
 ```
 
 ##### Component Tests
+
 Test React components with user interactions:
 
 ```typescript
@@ -350,6 +368,7 @@ describe('ProjectCard', () => {
 ```
 
 ##### Integration Tests
+
 Test component interactions and API integration:
 
 ```typescript
@@ -410,6 +429,7 @@ describe('ProjectManagement Integration', () => {
 ```
 
 ##### E2E Tests (Playwright)
+
 Test complete user workflows:
 
 ```typescript
@@ -458,6 +478,7 @@ test.describe('Project Management Workflow', () => {
 #### Test Configuration
 
 ##### Jest Configuration
+
 ```javascript
 // jest.config.js
 module.exports = {
@@ -467,27 +488,28 @@ module.exports = {
   moduleNameMapping: {
     '^@/(.*)$': '<rootDir>/src/$1',
     '^@shared/(.*)$': '<rootDir>/packages/shared/$1',
-    '^@ui/(.*)$': '<rootDir>/packages/ui/$1'
+    '^@ui/(.*)$': '<rootDir>/packages/ui/$1',
   },
   collectCoverageFrom: [
     'src/**/*.{ts,tsx}',
     'packages/**/*.{ts,tsx}',
     '!**/*.d.ts',
     '!**/node_modules/**',
-    '!**/*.stories.tsx'
+    '!**/*.stories.tsx',
   ],
   coverageThreshold: {
     global: {
       branches: 80,
       functions: 80,
       lines: 80,
-      statements: 80
-    }
-  }
+      statements: 80,
+    },
+  },
 };
 ```
 
 ##### Test Setup
+
 ```typescript
 // tests/setup.ts
 import '@testing-library/jest-dom';
@@ -506,11 +528,12 @@ afterAll(() => server.close());
 global.IntersectionObserver = jest.fn().mockImplementation(() => ({
   observe: jest.fn(),
   unobserve: jest.fn(),
-  disconnect: jest.fn()
+  disconnect: jest.fn(),
 }));
 ```
 
 #### Testing Best Practices
+
 1. **Test Behavior, Not Implementation**: Focus on what the component does, not how it does it
 2. **Use Data Test IDs**: Add `data-testid` attributes for reliable element selection
 3. **Mock External Dependencies**: Mock APIs, third-party libraries, and complex dependencies
@@ -519,6 +542,7 @@ global.IntersectionObserver = jest.fn().mockImplementation(() => ({
 6. **Use Descriptive Test Names**: Test names should clearly describe what is being tested
 
 ### Code Review Process
+
 1. **Self-review**: Review your own changes before submitting
 2. **Automated checks**: Ensure all CI checks pass
 3. **Peer review**: Address feedback from reviewers
@@ -527,6 +551,7 @@ global.IntersectionObserver = jest.fn().mockImplementation(() => ({
 ## 🏗️ Architecture Guidelines
 
 ### File Organization
+
 ```
 apps/
 ├── web/                 # Next.js web application
@@ -550,6 +575,7 @@ packages/
 ```
 
 ### Component Guidelines
+
 ```typescript
 // Use TypeScript interfaces for props
 interface ButtonProps {
@@ -560,11 +586,11 @@ interface ButtonProps {
 }
 
 // Export component with proper typing
-export function Button({ 
-  variant = 'primary', 
-  size = 'md', 
-  children, 
-  onClick 
+export function Button({
+  variant = 'primary',
+  size = 'md',
+  children,
+  onClick
 }: ButtonProps) {
   return (
     <button
@@ -585,6 +611,7 @@ export type { ButtonProps };
 ```
 
 ### API Guidelines
+
 ```typescript
 // Use consistent error handling
 export async function createProject(data: CreateProjectData) {
@@ -599,9 +626,9 @@ export async function createProject(data: CreateProjectData) {
     return { success: true, data: project };
   } catch (error) {
     console.error('Failed to create project:', error);
-    return { 
-      success: false, 
-      error: error.message || 'Failed to create project' 
+    return {
+      success: false,
+      error: error.message || 'Failed to create project',
     };
   }
 }
@@ -610,6 +637,7 @@ export async function createProject(data: CreateProjectData) {
 ## 🧪 Testing Guidelines
 
 ### Unit Test Example
+
 ```typescript
 import { render, screen, fireEvent } from '@testing-library/react';
 import { Button } from '@/components/Button';
@@ -623,7 +651,7 @@ describe('Button', () => {
   it('calls onClick when clicked', () => {
     const handleClick = jest.fn();
     render(<Button onClick={handleClick}>Click me</Button>);
-    
+
     fireEvent.click(screen.getByText('Click me'));
     expect(handleClick).toHaveBeenCalledTimes(1);
   });
@@ -637,6 +665,7 @@ describe('Button', () => {
 ```
 
 ### Integration Test Example
+
 ```typescript
 import { render, screen, waitFor } from '@testing-library/react';
 import { ProjectList } from '@/components/ProjectList';
@@ -671,6 +700,7 @@ describe('ProjectList', () => {
 ## 📋 Pull Request Guidelines
 
 ### Before Submitting
+
 - [ ] Code follows project conventions
 - [ ] All tests pass
 - [ ] Documentation updated if needed
@@ -678,11 +708,14 @@ describe('ProjectList', () => {
 - [ ] Branch is up to date with main
 
 ### PR Description Template
+
 ```markdown
 ## Description
+
 Brief description of changes made.
 
 ## Type of Change
+
 - [ ] Bug fix
 - [ ] New feature
 - [ ] Documentation update
@@ -690,14 +723,17 @@ Brief description of changes made.
 - [ ] Refactoring
 
 ## Testing
+
 - [ ] Unit tests added/updated
 - [ ] Integration tests added/updated
 - [ ] Manual testing completed
 
 ## Screenshots (if applicable)
+
 Add screenshots for UI changes.
 
 ## Checklist
+
 - [ ] Code follows style guidelines
 - [ ] Self-review completed
 - [ ] Documentation updated
@@ -705,6 +741,7 @@ Add screenshots for UI changes.
 ```
 
 ### Review Process
+
 1. **Automated checks**: CI/CD pipeline runs tests and linting
 2. **Code review**: Team members review code quality and logic
 3. **Testing**: Reviewers test functionality if needed
@@ -713,49 +750,62 @@ Add screenshots for UI changes.
 ## 🐛 Bug Reports
 
 ### Bug Report Template
+
 ```markdown
 ## Bug Description
+
 Clear description of the bug.
 
 ## Steps to Reproduce
+
 1. Go to '...'
 2. Click on '...'
 3. Scroll down to '...'
 4. See error
 
 ## Expected Behavior
+
 What should happen.
 
 ## Actual Behavior
+
 What actually happens.
 
 ## Environment
+
 - OS: [e.g., macOS 12.0]
 - Browser: [e.g., Chrome 96]
 - Node.js: [e.g., 18.19.0]
 - App version: [e.g., 1.2.3]
 
 ## Additional Context
+
 Screenshots, logs, or other relevant information.
 ```
 
 ## 💡 Feature Requests
 
 ### Feature Request Template
+
 ```markdown
 ## Feature Description
+
 Clear description of the proposed feature.
 
 ## Problem Statement
+
 What problem does this solve?
 
 ## Proposed Solution
+
 How should this feature work?
 
 ## Alternatives Considered
+
 Other solutions you've considered.
 
 ## Additional Context
+
 Mockups, examples, or other relevant information.
 ```
 
@@ -771,6 +821,7 @@ We use labels to categorize issues:
 ## 🎉 Recognition
 
 Contributors are recognized in:
+
 - **README.md**: Contributors section
 - **Release notes**: Feature attribution
 - **Team meetings**: Public recognition

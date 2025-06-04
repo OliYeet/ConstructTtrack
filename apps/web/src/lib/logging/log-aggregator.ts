@@ -75,7 +75,7 @@ export class LogAggregator {
     this.buffer = [];
 
     const batch = this.createBatch(entries);
-    
+
     // Send to all enabled endpoints
     const promises = this.config.endpoints
       .filter(endpoint => endpoint.enabled)
@@ -103,7 +103,10 @@ export class LogAggregator {
   }
 
   // Send batch to external endpoint
-  private async sendToEndpoint(batch: LogBatch, endpoint: LogEndpoint): Promise<void> {
+  private async sendToEndpoint(
+    batch: LogBatch,
+    endpoint: LogEndpoint
+  ): Promise<void> {
     // Filter entries by minimum level
     const filteredEntries = batch.entries.filter(
       entry => entry.level <= endpoint.minLevel
@@ -152,8 +155,8 @@ export class LogAggregator {
       headers['Content-Encoding'] = 'gzip';
     }
 
- let attempt = 0;
- while (attempt < this.config.retryAttempts) {
+    let attempt = 0;
+    while (attempt < this.config.retryAttempts) {
       try {
         const response = await fetch(endpoint.url, {
           method: 'POST',
@@ -169,7 +172,10 @@ export class LogAggregator {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       } catch (error) {
         attempt++;
-        console.error(`Failed to send logs to ${endpoint.name} (attempt ${attempt}):`, error);
+        console.error(
+          `Failed to send logs to ${endpoint.name} (attempt ${attempt}):`,
+          error
+        );
 
         if (attempt <= this.config.retryAttempts) {
           await this.delay(this.config.retryDelay * attempt);
@@ -177,7 +183,9 @@ export class LogAggregator {
       }
     }
 
-    console.error(`Failed to send logs to ${endpoint.name} after ${this.config.retryAttempts} attempts`);
+    console.error(
+      `Failed to send logs to ${endpoint.name} after ${this.config.retryAttempts} attempts`
+    );
   }
 
   // Format payload based on endpoint format
@@ -185,17 +193,18 @@ export class LogAggregator {
     switch (format) {
       case 'json':
         return JSON.stringify(batch);
-      
+
       case 'text':
         return batch.entries
-          .map(entry => `${entry.timestamp} ${LogLevel[entry.level]} ${entry.message}`)
+          .map(
+            entry =>
+              `${entry.timestamp} ${LogLevel[entry.level]} ${entry.message}`
+          )
           .join('\n');
-      
+
       case 'syslog':
-        return batch.entries
-          .map(entry => this.formatSyslog(entry))
-          .join('\n');
-      
+        return batch.entries.map(entry => this.formatSyslog(entry)).join('\n');
+
       default:
         return JSON.stringify(batch);
     }
@@ -207,7 +216,7 @@ export class LogAggregator {
     const timestamp = new Date(entry.timestamp).toISOString();
     const hostname = process.env.HOSTNAME || 'constructtrack';
     const tag = entry.service;
-    
+
     return `<${priority}>${timestamp} ${hostname} ${tag}: ${entry.message}`;
   }
 
@@ -215,11 +224,15 @@ export class LogAggregator {
   private getSyslogPriority(level: LogLevel): number {
     // Facility: 16 (local0), Severity based on log level
     const facility = 16;
-    const severity = level <= LogLevel.ERROR ? 3 : // Error
-                    level <= LogLevel.WARN ? 4 :   // Warning
-                    level <= LogLevel.INFO ? 6 :   // Info
-                    7; // Debug
-    
+    const severity =
+      level <= LogLevel.ERROR
+        ? 3 // Error
+        : level <= LogLevel.WARN
+          ? 4 // Warning
+          : level <= LogLevel.INFO
+            ? 6 // Info
+            : 7; // Debug
+
     return facility * 8 + severity;
   }
 
@@ -262,7 +275,7 @@ export class LogAggregator {
   async shutdown(): Promise<void> {
     this.isShuttingDown = true;
     this.stopFlushTimer();
-    
+
     // Flush remaining entries
     await this.flush();
   }
@@ -298,7 +311,9 @@ export const defaultAggregatorConfig: LogAggregatorConfig = {
 };
 
 // Create aggregator instance
-export function createLogAggregator(config?: Partial<LogAggregatorConfig>): LogAggregator {
+export function createLogAggregator(
+  config?: Partial<LogAggregatorConfig>
+): LogAggregator {
   const finalConfig = { ...defaultAggregatorConfig, ...config };
   return new LogAggregator(finalConfig);
 }

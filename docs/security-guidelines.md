@@ -2,7 +2,10 @@
 
 ## Overview
 
-This document outlines the comprehensive security guidelines and best practices for the ConstructTrack fiber optic construction management application. These guidelines ensure the protection of sensitive customer data, compliance with industry regulations, and maintenance of system integrity.
+This document outlines the comprehensive security guidelines and best practices for the
+ConstructTrack fiber optic construction management application. These guidelines ensure the
+protection of sensitive customer data, compliance with industry regulations, and maintenance of
+system integrity.
 
 ## 🔐 Security Architecture
 
@@ -22,19 +25,19 @@ graph TB
     B --> C[API Security]
     C --> D[Database Security]
     D --> E[Infrastructure Security]
-    
+
     B --> F[Authentication & Authorization]
     B --> G[Input Validation]
     B --> H[Output Encoding]
-    
+
     C --> I[Rate Limiting]
     C --> J[CORS Policies]
     C --> K[Security Headers]
-    
+
     D --> L[Row Level Security]
     D --> M[Encryption at Rest]
     D --> N[Access Controls]
-    
+
     E --> O[Network Security]
     E --> P[Monitoring & Logging]
     E --> Q[Incident Response]
@@ -60,7 +63,7 @@ enum UserRole {
   FIELD_SUPERVISOR = 'field_supervisor',
   FIELD_WORKER = 'field_worker',
   CUSTOMER = 'customer',
-  READONLY = 'readonly'
+  READONLY = 'readonly',
 }
 
 // Permission matrix
@@ -71,7 +74,7 @@ const PERMISSIONS = {
   [UserRole.FIELD_SUPERVISOR]: ['project:read', 'task:*', 'report:*'],
   [UserRole.FIELD_WORKER]: ['task:read', 'task:update', 'report:create'],
   [UserRole.CUSTOMER]: ['project:read', 'report:read'],
-  [UserRole.READONLY]: ['project:read', 'task:read']
+  [UserRole.READONLY]: ['project:read', 'task:read'],
 };
 ```
 
@@ -79,12 +82,12 @@ const PERMISSIONS = {
 
 ### Data Classification
 
-| Classification | Description | Examples | Protection Level |
-|---------------|-------------|----------|------------------|
-| **Public** | Information intended for public access | Marketing materials | Basic |
-| **Internal** | Information for internal use only | Project plans, schedules | Standard |
-| **Confidential** | Sensitive business information | Customer contracts, pricing | High |
-| **Restricted** | Highly sensitive information | Personal data, financial records | Maximum |
+| Classification   | Description                            | Examples                         | Protection Level |
+| ---------------- | -------------------------------------- | -------------------------------- | ---------------- |
+| **Public**       | Information intended for public access | Marketing materials              | Basic            |
+| **Internal**     | Information for internal use only      | Project plans, schedules         | Standard         |
+| **Confidential** | Sensitive business information         | Customer contracts, pricing      | High             |
+| **Restricted**   | Highly sensitive information           | Personal data, financial records | Maximum          |
 
 ### Encryption Standards
 
@@ -113,7 +116,7 @@ const GDPR_REQUIREMENTS = {
   rightToErasure: true,
   dataProtectionOfficer: true,
   privacyByDesign: true,
-  breachNotification: '72 hours'
+  breachNotification: '72 hours',
 };
 ```
 
@@ -136,14 +139,14 @@ const ValidationSchemas = {
   phone: /^\+?[\d\s\-\(\)]{10,}$/,
   coordinates: /^-?([1-8]?\d(\.\d+)?|90(\.0+)?),\s*-?(180(\.0+)?|((1[0-7]\d)|([1-9]?\d))(\.\d+)?)$/,
   projectId: /^[a-zA-Z0-9\-_]{8,32}$/,
-  userId: /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
+  userId: /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
 };
 
 // Sanitization functions
 const sanitize = {
   html: (input: string) => input.replace(/<[^>]*>/g, ''),
   sql: (input: string) => input.replace(/['";\\]/g, ''),
-  filename: (input: string) => input.replace(/[^a-zA-Z0-9\-_.]/g, '')
+  filename: (input: string) => input.replace(/[^a-zA-Z0-9\-_.]/g, ''),
 };
 ```
 
@@ -161,7 +164,7 @@ const SECURITY_HEADERS = {
   'X-Frame-Options': 'DENY',
   'X-Content-Type-Options': 'nosniff',
   'Referrer-Policy': 'strict-origin-when-cross-origin',
-  'Permissions-Policy': 'camera=self, microphone=self, geolocation=self'
+  'Permissions-Policy': 'camera=self, microphone=self, geolocation=self',
 };
 ```
 
@@ -174,7 +177,7 @@ const RATE_LIMITS = {
   api: { windowMs: 15 * 60 * 1000, maxRequests: 100 },
   upload: { windowMs: 60 * 1000, maxRequests: 10 },
   search: { windowMs: 60 * 1000, maxRequests: 30 },
-  admin: { windowMs: 5 * 60 * 1000, maxRequests: 20 }
+  admin: { windowMs: 5 * 60 * 1000, maxRequests: 20 },
 };
 ```
 
@@ -212,12 +215,14 @@ CREATE TABLE audit_log (
 ### Field Worker App Security
 
 1. **Device Security**
+
    - Device encryption required
    - Biometric authentication
    - Remote wipe capability
    - App pinning for kiosk mode
 
 2. **Data Protection**
+
    - Local data encryption
    - Secure offline storage
    - Automatic data sync
@@ -260,12 +265,12 @@ SESSION_TIMEOUT=3600
 
 ### Security Incident Classification
 
-| Level | Description | Response Time | Escalation |
-|-------|-------------|---------------|------------|
-| **P0** | Critical security breach | 15 minutes | Immediate |
-| **P1** | High impact security issue | 1 hour | Within 2 hours |
-| **P2** | Medium impact security issue | 4 hours | Within 8 hours |
-| **P3** | Low impact security issue | 24 hours | Within 48 hours |
+| Level  | Description                  | Response Time | Escalation      |
+| ------ | ---------------------------- | ------------- | --------------- |
+| **P0** | Critical security breach     | 15 minutes    | Immediate       |
+| **P1** | High impact security issue   | 1 hour        | Within 2 hours  |
+| **P2** | Medium impact security issue | 4 hours       | Within 8 hours  |
+| **P3** | Low impact security issue    | 24 hours      | Within 48 hours |
 
 ### Incident Response Workflow
 
@@ -285,12 +290,14 @@ flowchart TD
 ### Key Security Metrics
 
 1. **Authentication Metrics**
+
    - Failed login attempts
    - Account lockouts
    - MFA bypass attempts
    - Session anomalies
 
 2. **API Security Metrics**
+
    - Rate limit violations
    - Suspicious request patterns
    - Error rate spikes
@@ -310,7 +317,7 @@ const SECURITY_ALERTS = {
   rateLimitViolations: { threshold: 10, window: '1m' },
   privilegeEscalation: { threshold: 1, window: '1m' },
   dataExfiltration: { threshold: 100, window: '10m' },
-  suspiciousActivity: { threshold: 3, window: '15m' }
+  suspiciousActivity: { threshold: 3, window: '15m' },
 };
 ```
 
@@ -319,11 +326,13 @@ const SECURITY_ALERTS = {
 ### Testing Requirements
 
 1. **Static Application Security Testing (SAST)**
+
    - Code vulnerability scanning
    - Dependency vulnerability scanning
    - Configuration security scanning
 
 2. **Dynamic Application Security Testing (DAST)**
+
    - Runtime vulnerability scanning
    - Penetration testing
    - API security testing
@@ -370,14 +379,14 @@ security_scan:
 
 ### Regular Security Tasks
 
-| Task | Frequency | Responsibility |
-|------|-----------|----------------|
-| Security patch updates | Weekly | DevOps |
-| Vulnerability scanning | Daily | Security Team |
-| Access review | Monthly | Security Team |
-| Penetration testing | Quarterly | External Vendor |
-| Security training | Quarterly | All Staff |
-| Incident response drill | Bi-annually | Security Team |
+| Task                    | Frequency   | Responsibility  |
+| ----------------------- | ----------- | --------------- |
+| Security patch updates  | Weekly      | DevOps          |
+| Vulnerability scanning  | Daily       | Security Team   |
+| Access review           | Monthly     | Security Team   |
+| Penetration testing     | Quarterly   | External Vendor |
+| Security training       | Quarterly   | All Staff       |
+| Incident response drill | Bi-annually | Security Team   |
 
 ### Security Metrics Dashboard
 

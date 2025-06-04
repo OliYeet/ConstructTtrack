@@ -2,18 +2,22 @@
 
 > **Comprehensive guide to ConstructTrack's mapping and geospatial capabilities**
 
-ConstructTrack provides advanced mapping features specifically designed for fiber optic installation projects, built on MapBox GL JS with PostGIS backend support.
+ConstructTrack provides advanced mapping features specifically designed for fiber optic installation
+projects, built on MapBox GL JS with PostGIS backend support.
 
 ## 🎯 Overview
 
 ### Core Mapping Features
-- **Interactive Fiber Route Visualization**: Real-time display of fiber optic cables and infrastructure
+
+- **Interactive Fiber Route Visualization**: Real-time display of fiber optic cables and
+  infrastructure
 - **GPS-Enabled Field Tools**: Mobile mapping for field workers
 - **Offline Map Support**: Work without internet connectivity
 - **Geospatial Data Management**: PostGIS-powered spatial queries
 - **Custom Styling**: Industry-specific map themes and symbols
 
 ### Technology Stack
+
 - **MapBox GL JS**: Web mapping engine
 - **React Native MapBox SDK**: Mobile mapping
 - **PostGIS**: Geospatial database extension
@@ -22,6 +26,7 @@ ConstructTrack provides advanced mapping features specifically designed for fibe
 ## 🗺️ Interactive Map Interface
 
 ### Basic Map Setup
+
 ```typescript
 import { Map, Source, Layer } from 'react-map-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -56,6 +61,7 @@ function ProjectMap({ project }) {
 ```
 
 ### Map Controls
+
 ```typescript
 import { NavigationControl, ScaleControl, GeolocateControl } from 'react-map-gl';
 
@@ -77,6 +83,7 @@ function MapControls() {
 ## 🛣️ Fiber Route Management
 
 ### Creating Fiber Routes
+
 ```typescript
 interface FiberRoute {
   id: string;
@@ -96,17 +103,15 @@ interface FiberRoute {
 
 // Create new fiber route
 async function createFiberRoute(route: Omit<FiberRoute, 'id'>) {
-  const { data, error } = await supabase
-    .from('fiber_routes')
-    .insert([route])
-    .select();
-    
+  const { data, error } = await supabase.from('fiber_routes').insert([route]).select();
+
   if (error) throw error;
   return data[0];
 }
 ```
 
 ### Route Visualization
+
 ```typescript
 function FiberRouteLayer({ routes }) {
   const routeData = {
@@ -160,6 +165,7 @@ function FiberRouteLayer({ routes }) {
 ## 📍 Work Area Management
 
 ### Polygon Drawing Tools
+
 ```typescript
 import MapboxDraw from '@mapbox/mapbox-gl-draw';
 import '@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css';
@@ -176,9 +182,9 @@ function WorkAreaDrawing({ onAreaCreated }) {
       },
       defaultMode: 'draw_polygon'
     });
-    
+
     setDraw(drawInstance);
-    
+
     return () => {
       if (drawInstance) {
         drawInstance.deleteAll();
@@ -210,6 +216,7 @@ function WorkAreaDrawing({ onAreaCreated }) {
 ```
 
 ### Geofencing for Mobile
+
 ```typescript
 // Mobile geofencing implementation
 import * as Location from 'expo-location';
@@ -228,7 +235,7 @@ async function setupGeofencing(workAreas: WorkArea[]) {
     longitude: area.center.longitude,
     radius: area.radius,
     notifyOnEnter: true,
-    notifyOnExit: true
+    notifyOnExit: true,
   }));
 
   await Location.startGeofencingAsync(GEOFENCE_TASK, regions);
@@ -254,6 +261,7 @@ TaskManager.defineTask(GEOFENCE_TASK, ({ data, error }) => {
 ## 📸 GPS Photo Mapping
 
 ### Photo Geotagging
+
 ```typescript
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
@@ -261,7 +269,7 @@ import * as Location from 'expo-location';
 async function captureGeotaggedPhoto() {
   // Get current location
   const location = await Location.getCurrentPositionAsync({
-    accuracy: Location.Accuracy.High
+    accuracy: Location.Accuracy.High,
   });
 
   // Capture photo
@@ -269,7 +277,7 @@ async function captureGeotaggedPhoto() {
     mediaTypes: ImagePicker.MediaTypeOptions.Images,
     allowsEditing: true,
     quality: 0.8,
-    exif: true
+    exif: true,
   });
 
   if (!result.canceled) {
@@ -279,9 +287,9 @@ async function captureGeotaggedPhoto() {
         latitude: location.coords.latitude,
         longitude: location.coords.longitude,
         accuracy: location.coords.accuracy,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       },
-      exif: result.assets[0].exif
+      exif: result.assets[0].exif,
     };
 
     return photo;
@@ -290,6 +298,7 @@ async function captureGeotaggedPhoto() {
 ```
 
 ### Photo Map Markers
+
 ```typescript
 function PhotoMarkers({ photos }) {
   return (
@@ -318,9 +327,10 @@ function PhotoMarkers({ photos }) {
 ## 🔍 Geospatial Queries
 
 ### PostGIS Integration
+
 ```sql
 -- Find projects within radius
-SELECT p.*, 
+SELECT p.*,
        ST_Distance(p.location, ST_Point($1, $2)::geography) as distance
 FROM projects p
 WHERE ST_DWithin(p.location, ST_Point($1, $2)::geography, $3)
@@ -341,15 +351,16 @@ GROUP BY project_id;
 ```
 
 ### Spatial Queries in Application
+
 ```typescript
 // Find nearby projects
 async function findNearbyProjects(lat: number, lng: number, radius: number) {
   const { data, error } = await supabase.rpc('find_nearby_projects', {
     lat,
     lng,
-    radius_meters: radius
+    radius_meters: radius,
   });
-  
+
   return data;
 }
 
@@ -359,9 +370,9 @@ async function getProjectsInBounds(bounds: MapBounds) {
     min_lat: bounds.south,
     max_lat: bounds.north,
     min_lng: bounds.west,
-    max_lng: bounds.east
+    max_lng: bounds.east,
   });
-  
+
   return data;
 }
 ```
@@ -369,6 +380,7 @@ async function getProjectsInBounds(bounds: MapBounds) {
 ## 📱 Mobile Mapping Features
 
 ### React Native MapBox Setup
+
 ```typescript
 import MapboxGL from '@rnmapbox/maps';
 
@@ -384,7 +396,7 @@ function MobileMap({ project }) {
         centerCoordinate={project.location.coordinates}
         zoomLevel={14}
       />
-      
+
       <MapboxGL.ShapeSource id="fiber-routes" shape={fiberRoutesGeoJSON}>
         <MapboxGL.LineLayer
           id="fiber-routes-layer"
@@ -401,6 +413,7 @@ function MobileMap({ project }) {
 ```
 
 ### Offline Map Caching
+
 ```typescript
 // Download offline map region
 async function downloadOfflineRegion(bounds: MapBounds, name: string) {
@@ -409,10 +422,10 @@ async function downloadOfflineRegion(bounds: MapBounds, name: string) {
     styleURL: MapboxGL.StyleURL.SatelliteStreet,
     bounds: [
       [bounds.west, bounds.south],
-      [bounds.east, bounds.north]
+      [bounds.east, bounds.north],
     ],
     minZoom: 10,
-    maxZoom: 16
+    maxZoom: 16,
   });
 
   return offlineRegion;
@@ -428,14 +441,15 @@ async function getOfflineRegions() {
 ## 🎨 Custom Map Styling
 
 ### Fiber Industry Styling
+
 ```typescript
 const fiberMapStyle = {
   version: 8,
   sources: {
     'fiber-infrastructure': {
       type: 'geojson',
-      data: fiberInfrastructureGeoJSON
-    }
+      data: fiberInfrastructureGeoJSON,
+    },
   },
   layers: [
     {
@@ -446,8 +460,8 @@ const fiberMapStyle = {
       paint: {
         'line-color': '#3b82f6',
         'line-width': 2,
-        'line-pattern': 'underground-pattern'
-      }
+        'line-pattern': 'underground-pattern',
+      },
     },
     {
       id: 'fiber-cables-aerial',
@@ -456,16 +470,17 @@ const fiberMapStyle = {
       filter: ['==', ['get', 'installation_method'], 'aerial'],
       paint: {
         'line-color': '#ef4444',
-        'line-width': 2
-      }
-    }
-  ]
+        'line-width': 2,
+      },
+    },
+  ],
 };
 ```
 
 ## 📊 Performance Optimization
 
 ### Map Performance Best Practices
+
 ```typescript
 // Cluster markers for better performance
 function ClusteredMarkers({ points }) {
@@ -517,6 +532,7 @@ function ClusteredMarkers({ points }) {
 ### Common Usage Patterns
 
 #### 1. Project Boundary Validation
+
 ```typescript
 // Validate if work location is within project boundary
 function validateWorkLocation(workPoint: GeoPoint, projectBoundary: Polygon): boolean {
@@ -539,12 +555,10 @@ const isValidLocation = useMemo(() => {
 ```
 
 #### 2. Route Progress Calculation
+
 ```typescript
 // Calculate completion percentage along fiber route
-function calculateRouteProgress(
-  completedSegments: LineString[],
-  totalRoute: LineString
-): number {
+function calculateRouteProgress(completedSegments: LineString[], totalRoute: LineString): number {
   try {
     const totalLength = turf.length(totalRoute, { units: 'meters' });
     const completedLength = completedSegments.reduce((sum, segment) => {
@@ -560,6 +574,7 @@ function calculateRouteProgress(
 ```
 
 #### 3. Offline Map Handling
+
 ```typescript
 // Handle offline map scenarios
 function OfflineMapHandler({ children }) {
@@ -608,15 +623,19 @@ function OfflineMapHandler({ children }) {
 ### Edge Cases & Error Handling
 
 #### 1. Invalid Coordinates
+
 ```typescript
 // Validate and sanitize coordinates
 function validateCoordinates(lat: number, lng: number): boolean {
   return (
     typeof lat === 'number' &&
     typeof lng === 'number' &&
-    lat >= -90 && lat <= 90 &&
-    lng >= -180 && lng <= 180 &&
-    !isNaN(lat) && !isNaN(lng)
+    lat >= -90 &&
+    lat <= 90 &&
+    lng >= -180 &&
+    lng <= 180 &&
+    !isNaN(lat) &&
+    !isNaN(lng)
   );
 }
 
@@ -661,6 +680,7 @@ function sanitizeGeoJSON(geojson: any): any {
 ```
 
 #### 2. Map Loading Failures
+
 ```typescript
 // Robust map loading with fallbacks
 function RobustMap({ fallbackStyle = 'mapbox://styles/mapbox/streets-v11', ...props }) {
@@ -701,6 +721,7 @@ function RobustMap({ fallbackStyle = 'mapbox://styles/mapbox/streets-v11', ...pr
 ```
 
 #### 3. GPS Accuracy Handling
+
 ```typescript
 // Handle varying GPS accuracy levels
 function useGPSLocation() {
@@ -709,7 +730,7 @@ function useGPSLocation() {
 
   useEffect(() => {
     const watchId = navigator.geolocation.watchPosition(
-      (position) => {
+      position => {
         const { latitude, longitude, accuracy } = position.coords;
 
         // Only update if accuracy is acceptable (within 50 meters)
@@ -720,7 +741,7 @@ function useGPSLocation() {
           console.warn(`GPS accuracy too low: ${accuracy}m`);
         }
       },
-      (error) => {
+      error => {
         console.error('GPS error:', error);
         // Handle different error types
         switch (error.code) {
@@ -738,7 +759,7 @@ function useGPSLocation() {
       {
         enableHighAccuracy: true,
         timeout: 10000,
-        maximumAge: 60000
+        maximumAge: 60000,
       }
     );
 
@@ -751,17 +772,21 @@ function useGPSLocation() {
 
 ## 📸 UI Screenshots & Visual Examples
 
-> **Note**: Screenshots and GIFs would be added here in a real implementation. For now, we provide text descriptions of key visual elements:
+> **Note**: Screenshots and GIFs would be added here in a real implementation. For now, we provide
+> text descriptions of key visual elements:
 
 ### Key Visual Elements
+
 1. **Interactive Map Interface**: Full-screen MapBox map with custom fiber industry styling
-2. **Fiber Route Visualization**: Color-coded lines showing planned, in-progress, and completed routes
+2. **Fiber Route Visualization**: Color-coded lines showing planned, in-progress, and completed
+   routes
 3. **Work Area Polygons**: Geofenced project boundaries with visual indicators
 4. **GPS Photo Markers**: Thumbnail images positioned at exact GPS coordinates
 5. **Mobile Map Controls**: Touch-optimized controls for field worker use
 6. **Offline Map Indicators**: Visual cues showing downloaded offline regions
 
 ### Recommended Screenshots
+
 - Project overview map with multiple fiber routes
 - Mobile interface showing GPS tracking and photo capture
 - Route drawing tools in action
@@ -770,4 +795,5 @@ function useGPSLocation() {
 
 ---
 
-**Next**: Explore [Mobile App Features](mobile.md) and [Real-time Features](real-time.md) for more platform-specific capabilities.
+**Next**: Explore [Mobile App Features](mobile.md) and [Real-time Features](real-time.md) for more
+platform-specific capabilities.

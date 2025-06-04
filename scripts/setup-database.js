@@ -44,12 +44,14 @@ class DatabaseSetup {
         // Skip non-portable RPC; use information_schema directly
         // If version RPC fails, try a simple query that should always work
         // The special /rest/v1/ root returns 200 when the instance is up
-        await supabase
-          .rpc('version');               // ← or any cheap harmless RPC you define
+        await supabase.rpc('version'); // ← or any cheap harmless RPC you define
         // A healthy “select 1” through the SQL endpoint is portable and always available
-        const { error: pingError } = await supabase
-          .rpc('sql', { query: 'select 1' }); // requires an exposed `sql` rpc or use /sql endpoint via fetch
-        if (pingError) { throw pingError; }
+        const { error: pingError } = await supabase.rpc('sql', {
+          query: 'select 1',
+        }); // requires an exposed `sql` rpc or use /sql endpoint via fetch
+        if (pingError) {
+          throw pingError;
+        }
       } catch {
         // Final fallback - check database connectivity
         const { error: basicError } = await supabase

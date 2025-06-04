@@ -179,7 +179,9 @@ describe('ExternalServiceError', () => {
   it('should create an external service error with default message', () => {
     const error = new ExternalServiceError('PaymentService');
 
-    expect(error.message).toBe('External service PaymentService is unavailable');
+    expect(error.message).toBe(
+      'External service PaymentService is unavailable'
+    );
     expect(error.statusCode).toBe(503);
     expect(error.code).toBe('EXTERNAL_SERVICE_ERROR');
     expect(error.details).toEqual({ service: 'PaymentService' });

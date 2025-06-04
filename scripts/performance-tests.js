@@ -54,27 +54,40 @@ class PerformanceTester {
       for (const url of config.testUrls) {
         console.log(`📊 Testing: ${url}`);
 
-        const urlHash = require('crypto').createHash('md5').update(url).digest('hex').substring(0, 8);
-        const reportPath = path.join(config.outputDir, `lighthouse-${urlHash}-${url.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 50)}.json`);
+        const urlHash = require('crypto')
+          .createHash('md5')
+          .update(url)
+          .digest('hex')
+          .substring(0, 8);
+        const reportPath = path.join(
+          config.outputDir,
+          `lighthouse-${urlHash}-${url.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 50)}.json`
+        );
 
         // Run Lighthouse
-        execSync(`npx lighthouse ${url} --output=json --output-path=${reportPath} --chrome-flags="--headless" --quiet`);
+        execSync(
+          `npx lighthouse ${url} --output=json --output-path=${reportPath} --chrome-flags="--headless" --quiet`
+        );
 
         if (fs.existsSync(reportPath)) {
           const report = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
-          
+
           this.results.lighthouse[url] = {
             performance: report.categories.performance.score * 100,
             accessibility: report.categories.accessibility.score * 100,
             bestPractices: report.categories['best-practices'].score * 100,
             seo: report.categories.seo.score * 100,
             metrics: {
-              firstContentfulPaint: report.audits['first-contentful-paint'].numericValue,
-              largestContentfulPaint: report.audits['largest-contentful-paint'].numericValue,
+              firstContentfulPaint:
+                report.audits['first-contentful-paint'].numericValue,
+              largestContentfulPaint:
+                report.audits['largest-contentful-paint'].numericValue,
               firstInputDelay: report.audits['max-potential-fid'].numericValue,
-              cumulativeLayoutShift: report.audits['cumulative-layout-shift'].numericValue,
+              cumulativeLayoutShift:
+                report.audits['cumulative-layout-shift'].numericValue,
               speedIndex: report.audits['speed-index'].numericValue,
-              totalBlockingTime: report.audits['total-blocking-time'].numericValue,
+              totalBlockingTime:
+                report.audits['total-blocking-time'].numericValue,
             },
             passed: this.checkPerformanceBudget(report.audits),
           };
@@ -154,25 +167,25 @@ class PerformanceTester {
       files: [],
     };
 
-    const walkDir = (dir) => {
+    const walkDir = dir => {
       const files = fs.readdirSync(dir);
-      
+
       files.forEach(file => {
         const filePath = path.join(dir, file);
         const stat = fs.statSync(filePath);
-        
+
         if (stat.isDirectory()) {
           walkDir(filePath);
         } else {
           const size = stat.size;
           stats.totalSize += size;
-          
+
           if (file.endsWith('.js')) {
             stats.jsSize += size;
           } else if (file.endsWith('.css')) {
             stats.cssSize += size;
           }
-          
+
           stats.files.push({
             name: path.relative(staticDir, filePath),
             size,
@@ -183,15 +196,15 @@ class PerformanceTester {
     };
 
     walkDir(staticDir);
-    
+
     // Sort files by size
     stats.files.sort((a, b) => b.size - a.size);
     stats.files = stats.files.slice(0, 20); // Top 20 largest files
-    
+
     stats.totalSizeFormatted = this.formatBytes(stats.totalSize);
     stats.jsSizeFormatted = this.formatBytes(stats.jsSize);
     stats.cssSizeFormatted = this.formatBytes(stats.cssSize);
-    
+
     return stats;
   }
 
@@ -216,10 +229,13 @@ class PerformanceTester {
 
       const runRequest = async () => {
         try {
-          const result = execSync('curl -s -o /dev/null -w "%{time_total}" http://localhost:3000', {
-            encoding: 'utf8',
-            timeout: 10000,
-          });
+          const result = execSync(
+            'curl -s -o /dev/null -w "%{time_total}" http://localhost:3000',
+            {
+              encoding: 'utf8',
+              timeout: 10000,
+            }
+          );
           return parseFloat(result) * 1000; // Convert to milliseconds
         } catch (error) {
           throw new Error(`Request failed: ${error.message}`);
@@ -237,12 +253,16 @@ class PerformanceTester {
           const results = await Promise.all(batch);
           testResults.push(...results);
         } catch (error) {
-          console.warn(`Load test batch ${Math.floor(i / concurrency) + 1} partially failed:`, error.message);
+          console.warn(
+            `Load test batch ${Math.floor(i / concurrency) + 1} partially failed:`,
+            error.message
+          );
         }
       }
 
       if (testResults.length > 0) {
-        const avgResponseTime = testResults.reduce((a, b) => a + b, 0) / testResults.length;
+        const avgResponseTime =
+          testResults.reduce((a, b) => a + b, 0) / testResults.length;
         const minResponseTime = Math.min(...testResults);
         const maxResponseTime = Math.max(...testResults);
 
@@ -270,11 +290,17 @@ class PerformanceTester {
     this.results.summary = this.calculateSummary();
 
     // Write JSON report
-    const jsonReportPath = path.join(config.outputDir, 'performance-report.json');
+    const jsonReportPath = path.join(
+      config.outputDir,
+      'performance-report.json'
+    );
     fs.writeFileSync(jsonReportPath, JSON.stringify(this.results, null, 2));
 
     // Write HTML report
-    const htmlReportPath = path.join(config.outputDir, 'performance-report.html');
+    const htmlReportPath = path.join(
+      config.outputDir,
+      'performance-report.html'
+    );
     fs.writeFileSync(htmlReportPath, this.generateHTMLReport());
 
     console.log('✅ Performance report generated');
@@ -286,15 +312,21 @@ class PerformanceTester {
   // Calculate summary
   calculateSummary() {
     const lighthouseScores = Object.values(this.results.lighthouse);
-    const avgPerformanceScore = lighthouseScores.length > 0
-      ? lighthouseScores.reduce((sum, result) => sum + result.performance, 0) / lighthouseScores.length
-      : 0;
+    const avgPerformanceScore =
+      lighthouseScores.length > 0
+        ? lighthouseScores.reduce(
+            (sum, result) => sum + result.performance,
+            0
+          ) / lighthouseScores.length
+        : 0;
 
     const allPassed = [
       ...lighthouseScores.map(r => r.passed),
       this.results.bundleSize?.passed,
       this.results.loadTesting?.passed,
-    ].filter(Boolean).every(Boolean);
+    ]
+      .filter(Boolean)
+      .every(Boolean);
 
     return {
       overallScore: Math.round(avgPerformanceScore),
@@ -310,22 +342,33 @@ class PerformanceTester {
     // Lighthouse recommendations
     Object.entries(this.results.lighthouse).forEach(([url, result]) => {
       if (result.performance < 90) {
-        recommendations.push(`Improve performance score for ${url} (currently ${result.performance}%)`);
+        recommendations.push(
+          `Improve performance score for ${url} (currently ${result.performance}%)`
+        );
       }
-      
+
       if (!result.passed) {
-        recommendations.push(`Address performance budget violations for ${url}`);
+        recommendations.push(
+          `Address performance budget violations for ${url}`
+        );
       }
     });
 
     // Bundle size recommendations
-    if (this.results.bundleSize.totalSize > this.results.bundleSize.budgets.totalSize) {
-      recommendations.push('Reduce bundle size by code splitting and tree shaking');
+    if (
+      this.results.bundleSize.totalSize >
+      this.results.bundleSize.budgets.totalSize
+    ) {
+      recommendations.push(
+        'Reduce bundle size by code splitting and tree shaking'
+      );
     }
 
     // Load testing recommendations
     if (this.results.loadTesting && !this.results.loadTesting.passed) {
-      recommendations.push('Optimize server response time and implement caching');
+      recommendations.push(
+        'Optimize server response time and implement caching'
+      );
     }
 
     return recommendations;
@@ -343,8 +386,9 @@ class PerformanceTester {
 
   // Generate HTML report
   generateHTMLReport() {
-   const lighthouseResults = Object.entries(this.results.lighthouse)
-     .map(([url, result]) => `
+    const lighthouseResults = Object.entries(this.results.lighthouse)
+      .map(
+        ([url, result]) => `
        <div class="metric">
         <h3>${this.escapeHtml(url)}</h3>
          <p>Performance: ${result.performance}%</p>
@@ -352,7 +396,9 @@ class PerformanceTester {
          <p>LCP: ${Math.round(result.metrics.largestContentfulPaint)}ms</p>
          <p>CLS: ${result.metrics.cumulativeLayoutShift.toFixed(3)}</p>
        </div>
-     `).join('');
+     `
+      )
+      .join('');
 
     return `
 <!DOCTYPE html>
@@ -386,23 +432,31 @@ class PerformanceTester {
         <p>CSS: ${this.results.bundleSize.cssSizeFormatted || 'N/A'}</p>
     </div>
 
-    ${this.results.loadTesting ? `
+    ${
+      this.results.loadTesting
+        ? `
     <div class="metric">
         <h2>Load Testing</h2>
         <p>Average Response Time: ${this.results.loadTesting.averageResponseTime}ms</p>
         <p>Min: ${this.results.loadTesting.minResponseTime}ms</p>
         <p>Max: ${this.results.loadTesting.maxResponseTime}ms</p>
     </div>
-    ` : ''}
+    `
+        : ''
+    }
 
-    ${this.results.summary.recommendations.length > 0 ? `
+    ${
+      this.results.summary.recommendations.length > 0
+        ? `
     <div class="recommendations">
         <h2>Recommendations</h2>
         <ul>
             ${this.results.summary.recommendations.map(rec => `<li>${rec}</li>`).join('')}
         </ul>
     </div>
-    ` : ''}
+    `
+        : ''
+    }
 </body>
 </html>
     `;

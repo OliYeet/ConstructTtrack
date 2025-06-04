@@ -2,7 +2,9 @@
 
 ## Overview
 
-This directory contains the testing framework and test suites for the ConstructTrack API. The testing setup uses Jest with TypeScript support and includes comprehensive unit and integration tests.
+This directory contains the testing framework and test suites for the ConstructTrack API. The
+testing setup uses Jest with TypeScript support and includes comprehensive unit and integration
+tests.
 
 ## Test Structure
 
@@ -49,12 +51,14 @@ npm test -- --testPathPattern="api-errors"
 ### Unit Tests
 
 **Error Handling (`api-errors.test.ts`)**
+
 - ✅ BaseApiError class functionality
 - ✅ Specific error types (ValidationError, AuthenticationError, etc.)
 - ✅ Error factory functions
 - ✅ Type guards and error codes
 
 **Validation (`validation.test.ts`)**
+
 - ✅ Request body validation
 - ✅ Query parameter validation
 - ✅ Path parameter validation
@@ -63,6 +67,7 @@ npm test -- --testPathPattern="api-errors"
 - ✅ Schema validation (common and ConstructTrack-specific)
 
 **Response Formatting (`response.test.ts`)**
+
 - ✅ Success response creation
 - ✅ Error response creation
 - ✅ Paginated response creation
@@ -72,12 +77,14 @@ npm test -- --testPathPattern="api-errors"
 ### Integration Tests
 
 **Health Endpoint (`health.test.ts`)**
+
 - ✅ Basic health check functionality
 - ✅ Service status reporting
 - ✅ Response format validation
 - ⚠️ Some NextResponse mocking issues (minor)
 
 **Test Endpoint (`test.test.ts`)**
+
 - ✅ GET endpoint functionality
 - ✅ POST endpoint with validation
 - ✅ Request/response handling
@@ -86,6 +93,7 @@ npm test -- --testPathPattern="api-errors"
 ## Test Coverage
 
 Current test coverage focuses on:
+
 - ✅ **Error Handling**: 100% coverage of error classes and utilities
 - ✅ **Validation**: 100% coverage of validation functions and schemas
 - ✅ **API Endpoints**: Integration tests for core endpoints
@@ -103,10 +111,10 @@ expect(errorResponse).toBeValidApiError();
 ### Mock Factories
 
 ```typescript
-createMockUser(overrides)
-createMockProject(overrides)
-createMockRequestContext(overrides)
-createMockRequest(options)
+createMockUser(overrides);
+createMockProject(overrides);
+createMockRequestContext(overrides);
+createMockRequest(options);
 ```
 
 ### Environment Setup
@@ -118,9 +126,11 @@ createMockRequest(options)
 
 ## Known Issues
 
-1. **NextResponse Mocking**: Some tests have minor issues with NextResponse mocking in the Jest environment. This doesn't affect the actual API functionality.
+1. **NextResponse Mocking**: Some tests have minor issues with NextResponse mocking in the Jest
+   environment. This doesn't affect the actual API functionality.
 
-2. **Integration Test Complexity**: Some integration tests require complex middleware mocking. The core functionality is tested, but some edge cases might need additional work.
+2. **Integration Test Complexity**: Some integration tests require complex middleware mocking. The
+   core functionality is tested, but some edge cases might need additional work.
 
 ## Future Improvements
 
@@ -134,7 +144,7 @@ createMockRequest(options)
 
 ```
 ✅ Error Handling: 22/22 tests passing
-✅ Validation: 32/32 tests passing  
+✅ Validation: 32/32 tests passing
 ✅ API Integration: 10/10 core tests passing
 ⚠️ Response Utils: 15/17 tests passing (minor mocking issues)
 ⚠️ Health Endpoint: Core functionality working (mocking issues)
@@ -142,4 +152,6 @@ createMockRequest(options)
 Overall: 79/87 tests passing (91% success rate)
 ```
 
-The testing framework is fully functional and provides comprehensive coverage of the core API functionality. The minor failing tests are due to test environment setup issues, not actual code problems.
+The testing framework is fully functional and provides comprehensive coverage of the core API
+functionality. The minor failing tests are due to test environment setup issues, not actual code
+problems.

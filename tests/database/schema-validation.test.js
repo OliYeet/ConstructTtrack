@@ -20,7 +20,7 @@ if (!supabaseUrl || !supabaseKey) {
   console.warn(
     'Skipping schema-validation tests – SUPABASE credentials not set'
   );
-  // eslint-disable-next-line no-undef
+
   module.exports = {}; // make Jest treat file as empty
   process.exit(0);
 }
@@ -121,12 +121,14 @@ describe('Database Schema Validation', () => {
       async tableName => {
         // Use RPC function to check RLS status (requires elevated permissions)
         const { data, error } = await supabase.rpc('check_table_rls_status', {
-          table_name: tableName
+          table_name: tableName,
         });
 
         if (error) {
           // If RPC function doesn't exist, skip this test
-          console.warn(`RLS check skipped for ${tableName}: RPC function not available`);
+          console.warn(
+            `RLS check skipped for ${tableName}: RPC function not available`
+          );
           expect(true).toBe(true); // Skip test gracefully
         } else {
           expect(data).toBe(true);

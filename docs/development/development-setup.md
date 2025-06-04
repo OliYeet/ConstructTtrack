@@ -2,7 +2,8 @@
 
 > **Advanced development environment configuration for ConstructTrack**
 
-This guide covers advanced development setup, tooling configuration, and best practices for contributing to ConstructTrack.
+This guide covers advanced development setup, tooling configuration, and best practices for
+contributing to ConstructTrack.
 
 ## 🛠️ Development Environment
 
@@ -11,6 +12,7 @@ This guide covers advanced development setup, tooling configuration, and best pr
 #### Core Development Stack
 
 ##### Node.js Setup (All Platforms)
+
 ```bash
 # Install Node Version Manager (nvm)
 # macOS/Linux:
@@ -30,6 +32,7 @@ npm --version   # Should show 10.x.x
 ```
 
 ##### Package Managers
+
 ```bash
 # Update npm to latest
 npm install -g npm@latest
@@ -42,6 +45,7 @@ npm install -g pnpm@latest
 ```
 
 ##### Mobile Development Tools
+
 ```bash
 # Expo CLI for React Native development
 npm install -g @expo/cli@latest
@@ -54,6 +58,7 @@ npm install -g @react-native-community/cli
 ```
 
 ##### Database and Backend Tools
+
 ```bash
 # Supabase CLI for database management
 npm install -g supabase@latest
@@ -65,6 +70,7 @@ supabase --version
 #### OS-Specific Setup Instructions
 
 ##### macOS Setup
+
 ```bash
 # Install Xcode Command Line Tools (required for native dependencies)
 xcode-select --install
@@ -86,6 +92,7 @@ sudo gem install cocoapods
 ```
 
 ##### Windows Setup
+
 ```powershell
 # Install Chocolatey (package manager)
 Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
@@ -103,6 +110,7 @@ wsl --install
 ```
 
 ##### Linux (Ubuntu/Debian) Setup
+
 ```bash
 # Update package list
 sudo apt update
@@ -126,6 +134,7 @@ export PATH=$PATH:$ANDROID_HOME/platform-tools
 ```
 
 #### Recommended VS Code Extensions
+
 ```json
 {
   "recommendations": [
@@ -144,6 +153,7 @@ export PATH=$PATH:$ANDROID_HOME/platform-tools
 ### IDE Configuration
 
 #### VS Code Settings
+
 ```json
 {
   "editor.formatOnSave": true,
@@ -163,6 +173,7 @@ export PATH=$PATH:$ANDROID_HOME/platform-tools
 ## 📦 Workspace Setup
 
 ### Monorepo Structure
+
 ```
 TiefbauApp/
 ├── apps/
@@ -178,6 +189,7 @@ TiefbauApp/
 ```
 
 ### Package Management Strategy
+
 ```bash
 # Install all dependencies
 npm install
@@ -195,6 +207,7 @@ npm run clean && npm run build
 ## 🔧 Development Scripts
 
 ### Available Commands
+
 ```bash
 # Development servers
 npm run dev              # Start both web and mobile
@@ -227,6 +240,7 @@ npm run db:reset         # Reset database to clean state
 ## 🗄️ Database Development
 
 ### Supabase Local Development
+
 ```bash
 # Initialize Supabase project
 supabase init
@@ -248,6 +262,7 @@ supabase db reset
 ```
 
 ### Database Schema Management
+
 ```sql
 -- Example migration file
 -- supabase/migrations/20250130000001_create_projects.sql
@@ -266,20 +281,22 @@ CREATE TABLE projects (
 ALTER TABLE projects ENABLE ROW LEVEL SECURITY;
 
 -- Create policies
-CREATE POLICY "Users can view projects in their organization" 
-ON projects FOR SELECT 
+CREATE POLICY "Users can view projects in their organization"
+ON projects FOR SELECT
 USING (organization_id = auth.jwt() ->> 'organization_id');
 ```
 
 ## 🧪 Testing Setup
 
 ### Testing Stack
+
 - **Jest**: Unit and integration testing
 - **React Testing Library**: Component testing
 - **Detox**: End-to-end mobile testing
 - **Playwright**: Web E2E testing
 
 ### Test Configuration
+
 ```javascript
 // jest.config.js
 module.exports = {
@@ -289,18 +306,19 @@ module.exports = {
   moduleNameMapping: {
     '^@/(.*)$': '<rootDir>/src/$1',
     '^@shared/(.*)$': '<rootDir>/packages/shared/$1',
-    '^@ui/(.*)$': '<rootDir>/packages/ui/$1'
+    '^@ui/(.*)$': '<rootDir>/packages/ui/$1',
   },
   collectCoverageFrom: [
     'src/**/*.{ts,tsx}',
     'packages/**/*.{ts,tsx}',
     '!**/*.d.ts',
-    '!**/node_modules/**'
-  ]
+    '!**/node_modules/**',
+  ],
 };
 ```
 
 ### Writing Tests
+
 ```typescript
 // Example component test
 import { render, screen } from '@testing-library/react';
@@ -315,7 +333,7 @@ describe('ProjectCard', () => {
     };
 
     render(<ProjectCard project={project} />);
-    
+
     expect(screen.getByText('Test Project')).toBeInTheDocument();
     expect(screen.getByText('active')).toBeInTheDocument();
   });
@@ -325,32 +343,28 @@ describe('ProjectCard', () => {
 ## 🎨 Styling and UI Development
 
 ### Tailwind CSS Configuration
+
 ```javascript
 // tailwind.config.js
 module.exports = {
-  content: [
-    './apps/**/*.{js,ts,jsx,tsx}',
-    './packages/ui/**/*.{js,ts,jsx,tsx}'
-  ],
+  content: ['./apps/**/*.{js,ts,jsx,tsx}', './packages/ui/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {
       colors: {
         primary: {
           50: '#eff6ff',
           500: '#3b82f6',
-          900: '#1e3a8a'
-        }
-      }
-    }
+          900: '#1e3a8a',
+        },
+      },
+    },
   },
-  plugins: [
-    require('@tailwindcss/forms'),
-    require('@tailwindcss/typography')
-  ]
+  plugins: [require('@tailwindcss/forms'), require('@tailwindcss/typography')],
 };
 ```
 
 ### Component Development
+
 ```typescript
 // Example UI component
 import { cn } from '@shared/utils';
@@ -362,12 +376,12 @@ interface ButtonProps {
   className?: string;
 }
 
-export function Button({ 
-  variant = 'primary', 
-  size = 'md', 
-  children, 
+export function Button({
+  variant = 'primary',
+  size = 'md',
+  children,
   className,
-  ...props 
+  ...props
 }: ButtonProps) {
   return (
     <button
@@ -393,6 +407,7 @@ export function Button({
 ## 📱 Mobile Development
 
 ### React Native Setup
+
 ```bash
 # iOS development (macOS only)
 cd apps/mobile
@@ -412,6 +427,7 @@ npm run web
 ```
 
 ### Mobile-Specific Configuration
+
 ```typescript
 // metro.config.js
 const { getDefaultConfig } = require('expo/metro-config');
@@ -419,13 +435,11 @@ const { getDefaultConfig } = require('expo/metro-config');
 const config = getDefaultConfig(__dirname);
 
 // Add support for monorepo
-config.watchFolders = [
-  path.resolve(__dirname, '../../packages')
-];
+config.watchFolders = [path.resolve(__dirname, '../../packages')];
 
 config.resolver.nodeModulesPaths = [
   path.resolve(__dirname, 'node_modules'),
-  path.resolve(__dirname, '../../node_modules')
+  path.resolve(__dirname, '../../node_modules'),
 ];
 
 module.exports = config;
@@ -434,6 +448,7 @@ module.exports = config;
 ## 🔄 Git Workflow
 
 ### Branch Strategy
+
 ```bash
 # Feature development
 git checkout -b feature/add-project-management
@@ -450,6 +465,7 @@ git commit -m "hotfix: fix authentication token expiry"
 ```
 
 ### Commit Message Convention
+
 ```
 type(scope): description
 
@@ -464,6 +480,7 @@ test(auth): add login flow tests
 ## 🔍 Debugging
 
 ### Web Application Debugging
+
 ```bash
 # Start with debugging enabled
 npm run web:dev:debug
@@ -476,6 +493,7 @@ react-devtools
 ```
 
 ### Mobile Application Debugging
+
 ```bash
 # Enable remote debugging
 npm run mobile:dev
@@ -488,6 +506,7 @@ npm install -g react-native-debugger
 ```
 
 ### Database Debugging
+
 ```bash
 # View database logs
 supabase logs
@@ -502,6 +521,7 @@ supabase realtime logs
 ## 🚀 Performance Optimization
 
 ### Bundle Analysis
+
 ```bash
 # Analyze web bundle
 npm run web:analyze
@@ -514,6 +534,7 @@ npm run bundle-size
 ```
 
 ### Performance Monitoring
+
 ```typescript
 // Performance monitoring setup
 import { performance } from 'perf_hooks';
@@ -521,12 +542,12 @@ import { performance } from 'perf_hooks';
 export function measurePerformance(name: string) {
   return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
     const originalMethod = descriptor.value;
-    
+
     descriptor.value = async function (...args: any[]) {
       const start = performance.now();
       const result = await originalMethod.apply(this, args);
       const end = performance.now();
-      
+
       console.log(`${name} took ${end - start} milliseconds`);
       return result;
     };
@@ -537,6 +558,7 @@ export function measurePerformance(name: string) {
 ## 📚 Documentation Development
 
 ### Documentation Standards
+
 - Use clear, concise language
 - Include code examples
 - Keep screenshots up to date
@@ -544,6 +566,7 @@ export function measurePerformance(name: string) {
 - Update status tables when adding documentation
 
 ### Building Documentation
+
 ```bash
 # Generate API documentation
 npm run docs:api
@@ -560,7 +583,9 @@ npm run docs:serve
 ### Node.js and npm Issues
 
 #### Node Version Conflicts
+
 **Problem**: Multiple Node.js versions causing issues
+
 ```bash
 # Check current Node version
 node --version
@@ -579,7 +604,9 @@ source ~/.bashrc  # or ~/.zshrc
 ```
 
 #### npm Permission Issues (macOS/Linux)
+
 **Problem**: Permission denied when installing global packages
+
 ```bash
 # Option 1: Use nvm (recommended)
 nvm install 18.19.0
@@ -596,7 +623,9 @@ sudo chown -R $(whoami) $(npm config get prefix)/{lib/node_modules,bin,share}
 ```
 
 #### Package Installation Failures
+
 **Problem**: Dependencies fail to install
+
 ```bash
 # Clear npm cache
 npm cache clean --force
@@ -619,7 +648,9 @@ npm install --global windows-build-tools
 ### Mobile Development Issues
 
 #### Expo CLI Issues
+
 **Problem**: Expo commands not working
+
 ```bash
 # Update Expo CLI
 npm uninstall -g expo-cli @expo/cli
@@ -634,7 +665,9 @@ rm -rf node_modules/.cache
 ```
 
 #### iOS Simulator Issues (macOS)
+
 **Problem**: iOS simulator not starting
+
 ```bash
 # Check Xcode installation
 xcode-select -p
@@ -651,7 +684,9 @@ open -a Simulator
 ```
 
 #### Android Emulator Issues
+
 **Problem**: Android emulator not working
+
 ```bash
 # Check Android SDK installation
 echo $ANDROID_HOME
@@ -669,7 +704,9 @@ export PATH=$PATH:$ANDROID_HOME/emulator
 ### Database and Backend Issues
 
 #### Supabase Connection Issues
+
 **Problem**: Cannot connect to Supabase
+
 ```bash
 # Check Supabase CLI
 supabase --version
@@ -686,7 +723,9 @@ supabase start
 ```
 
 #### Environment Variable Issues
+
 **Problem**: Environment variables not loading
+
 ```bash
 # Check if .env file exists
 ls -la .env*
@@ -701,7 +740,9 @@ console.log(process.env.NEXT_PUBLIC_SUPABASE_URL);
 ### Git and Version Control Issues
 
 #### Git Hooks Not Working
+
 **Problem**: Husky pre-commit hooks failing
+
 ```bash
 # Reinstall Husky
 rm -rf .husky
@@ -718,7 +759,9 @@ cat .husky/pre-commit
 ```
 
 #### Git Authentication Issues
+
 **Problem**: Git push/pull authentication failures
+
 ```bash
 # Check Git configuration
 git config --list
@@ -738,7 +781,9 @@ cat ~/.ssh/id_ed25519.pub  # Add to GitHub
 ### IDE and Editor Issues
 
 #### VS Code Extensions Not Working
+
 **Problem**: TypeScript or ESLint not working in VS Code
+
 ```bash
 # Reload VS Code window
 # Cmd+Shift+P (macOS) or Ctrl+Shift+P (Windows/Linux)
@@ -755,7 +800,9 @@ cat .vscode/settings.json
 ```
 
 #### ESLint Configuration Issues
+
 **Problem**: ESLint rules not applying
+
 ```bash
 # Check ESLint configuration
 npx eslint --print-config src/index.ts
@@ -770,7 +817,9 @@ npx eslint src/ --fix
 ### Performance Issues
 
 #### Slow Build Times
+
 **Problem**: Development builds taking too long
+
 ```bash
 # Increase Node.js memory limit
 export NODE_OPTIONS="--max-old-space-size=4096"
@@ -789,7 +838,9 @@ module.exports = {
 ```
 
 #### Memory Issues
+
 **Problem**: Out of memory errors
+
 ```bash
 # Increase Node.js heap size
 export NODE_OPTIONS="--max-old-space-size=8192"
@@ -806,7 +857,9 @@ npm run clean
 ### Network and Proxy Issues
 
 #### Corporate Firewall/Proxy
+
 **Problem**: npm install fails behind corporate firewall
+
 ```bash
 # Configure npm proxy
 npm config set proxy http://proxy.company.com:8080
@@ -825,7 +878,9 @@ npm config set strict-ssl false
 ### Getting Additional Help
 
 #### Debug Information Collection
+
 When reporting setup issues, include:
+
 ```bash
 # System information
 node --version
@@ -846,6 +901,7 @@ cat ~/.npm/_logs/*-debug.log
 ```
 
 #### Useful Diagnostic Commands
+
 ```bash
 # Check system architecture
 uname -a
@@ -867,4 +923,5 @@ curl -I https://registry.npmjs.org/
 
 ---
 
-**Next Steps**: Review [Contributing Guidelines](contributing.md) and [Code Standards](code-standards.md) before making your first contribution.
+**Next Steps**: Review [Contributing Guidelines](contributing.md) and
+[Code Standards](code-standards.md) before making your first contribution.

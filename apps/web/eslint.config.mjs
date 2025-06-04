@@ -38,11 +38,11 @@ const eslintConfig = [
   {
     rules: {
       // Temporarily relax strict rules for deployment
-      "@typescript-eslint/no-explicit-any": "warn",
-      "@typescript-eslint/no-unused-vars": "warn",
-      "@typescript-eslint/no-require-imports": "warn",
-      "react-hooks/exhaustive-deps": "warn",
-      "react/no-unescaped-entities": "warn",
+      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/no-unused-vars': 'warn',
+      '@typescript-eslint/no-require-imports': 'warn',
+      'react-hooks/exhaustive-deps': 'warn',
+      'react/no-unescaped-entities': 'warn',
     },
   },
 ];

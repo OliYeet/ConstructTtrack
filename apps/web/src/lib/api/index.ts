@@ -74,13 +74,7 @@ export {
 } from '../errors/api-errors';
 
 // Logger utilities
-export {
-  logger,
-  logRequest,
-  logResponse,
-  logError,
-  LogLevel,
-} from './logger';
+export { logger, logRequest, logResponse, logError, LogLevel } from './logger';
 
 // Type exports
 export type {

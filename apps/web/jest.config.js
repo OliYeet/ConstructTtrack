@@ -89,10 +89,13 @@ const customJestConfig = {
   // Transform configuration
   transform: {
     // TypeScript files (using absolute path to tsconfig)
-    '^.+\\.(ts|tsx)$': ['ts-jest', {
-      // TypeScript configuration file path (relative to current app)
-      tsconfig: path.resolve(currentDir, 'tsconfig.json'),
-    }],
+    '^.+\\.(ts|tsx)$': [
+      'ts-jest',
+      {
+        // TypeScript configuration file path (relative to current app)
+        tsconfig: path.resolve(currentDir, 'tsconfig.json'),
+      },
+    ],
   },
 
   // Coverage configuration (using absolute paths for robustness)

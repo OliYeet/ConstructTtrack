@@ -2,17 +2,20 @@
 
 > **RESTful API documentation for ConstructTrack platform**
 
-ConstructTrack provides a comprehensive REST API built on Supabase with real-time capabilities, geospatial support, and role-based access control.
+ConstructTrack provides a comprehensive REST API built on Supabase with real-time capabilities,
+geospatial support, and role-based access control.
 
 ## 🎯 API Design Principles
 
 ### RESTful Architecture
+
 - **Resource-based URLs**: Clear, predictable endpoint structure
 - **HTTP Methods**: Standard GET, POST, PUT, DELETE operations
 - **Status Codes**: Meaningful HTTP response codes
 - **JSON Format**: Consistent request/response format
 
 ### Security First
+
 - **JWT Authentication**: Stateless token-based auth
 - **Row Level Security**: Database-level access control
 - **Rate Limiting**: API abuse prevention
@@ -23,6 +26,7 @@ ConstructTrack provides a comprehensive REST API built on Supabase with real-tim
 ### Authentication Flow
 
 #### 1. User Login
+
 ```bash
 POST /auth/login
 Content-Type: application/json
@@ -34,6 +38,7 @@ Content-Type: application/json
 ```
 
 **Success Response (200 OK):**
+
 ```json
 {
   "success": true,
@@ -62,6 +67,7 @@ Content-Type: application/json
 ```
 
 **Error Response (401 Unauthorized):**
+
 ```json
 {
   "success": false,
@@ -78,6 +84,7 @@ Content-Type: application/json
 ```
 
 #### 2. Using Authentication Token
+
 ```bash
 # Include token in Authorization header for all authenticated requests
 GET /projects
@@ -86,6 +93,7 @@ Content-Type: application/json
 ```
 
 #### 3. Token Refresh
+
 ```bash
 POST /auth/refresh
 Content-Type: application/json
@@ -96,6 +104,7 @@ Content-Type: application/json
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -108,17 +117,19 @@ Content-Type: application/json
 ```
 
 ### Authentication Endpoints
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/auth/login` | User login |
-| POST | `/auth/register` | User registration |
-| POST | `/auth/logout` | User logout |
-| POST | `/auth/refresh` | Refresh access token |
-| POST | `/auth/reset-password` | Password reset |
+
+| Method | Endpoint               | Description          |
+| ------ | ---------------------- | -------------------- |
+| POST   | `/auth/login`          | User login           |
+| POST   | `/auth/register`       | User registration    |
+| POST   | `/auth/logout`         | User logout          |
+| POST   | `/auth/refresh`        | Refresh access token |
+| POST   | `/auth/reset-password` | Password reset       |
 
 ## 🏗️ API Structure
 
 ### Base URL
+
 ```
 Production:  https://api.constructtrack.com/v1
 Staging:     https://staging-api.constructtrack.com/v1
@@ -126,6 +137,7 @@ Development: http://localhost:3000/api/v1
 ```
 
 ### Standard Response Format
+
 ```json
 {
   "success": true,
@@ -139,6 +151,7 @@ Development: http://localhost:3000/api/v1
 ```
 
 ### Error Response Format
+
 ```json
 {
   "success": false,
@@ -164,12 +177,14 @@ Development: http://localhost:3000/api/v1
 ### Projects API
 
 #### List Projects
+
 ```bash
 GET /projects?status=active&limit=10&offset=0
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
 
 **Response (200 OK):**
+
 ```json
 {
   "success": true,
@@ -204,12 +219,14 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
 
 #### Get Project Details
+
 ```bash
 GET /projects/proj_123
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
 
 **Response (200 OK):**
+
 ```json
 {
   "success": true,
@@ -234,8 +251,8 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
       "tasks_completed": 12,
       "tasks_total": 34,
       "team_size": 8,
-      "budget_used": 125000.00,
-      "budget_total": 350000.00
+      "budget_used": 125000.0,
+      "budget_total": 350000.0
     },
     "team": [
       {
@@ -251,6 +268,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
 
 #### Create Project
+
 ```bash
 POST /projects
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
@@ -273,6 +291,7 @@ Content-Type: application/json
 ```
 
 **Response (201 Created):**
+
 ```json
 {
   "success": true,
@@ -287,6 +306,7 @@ Content-Type: application/json
 ```
 
 #### Update Project
+
 ```bash
 PUT /projects/proj_123
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
@@ -300,12 +320,14 @@ Content-Type: application/json
 ```
 
 #### Delete Project
+
 ```bash
 DELETE /projects/proj_123
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
 
 **Response (200 OK):**
+
 ```json
 {
   "success": true,
@@ -314,6 +336,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
 
 ### Users API
+
 ```bash
 # List users (admin only)
 GET /users
@@ -335,6 +358,7 @@ PUT /users/{id}/role
 ```
 
 ### Tasks API
+
 ```bash
 # List tasks
 GET /tasks
@@ -365,6 +389,7 @@ PUT /tasks/{id}/status
 ## 🗺️ Geospatial API
 
 ### Location-Based Queries
+
 ```bash
 # Find projects near location
 GET /projects/nearby?lat=37.7749&lng=-122.4194&radius=5000
@@ -387,6 +412,7 @@ POST /search/geospatial
 ```
 
 ### Mapping Data
+
 ```bash
 # Get fiber routes
 GET /mapping/routes?project_id=proj_123
@@ -410,6 +436,7 @@ POST /mapping/routes
 ## 📸 File Management API
 
 ### File Upload
+
 ```bash
 # Upload file
 POST /files/upload
@@ -438,6 +465,7 @@ Content-Type: multipart/form-data
 ```
 
 ### File Management
+
 ```bash
 # List files
 GET /files?project_id=proj_123&category=progress_photo
@@ -452,25 +480,29 @@ DELETE /files/{id}
 ## 🔄 Real-time API
 
 ### WebSocket Connection
+
 ```javascript
 // Connect to real-time updates
 const ws = new WebSocket('wss://api.constructtrack.com/realtime');
 
 // Subscribe to project updates
-ws.send(JSON.stringify({
-  type: 'subscribe',
-  channel: 'projects:proj_123',
-  token: 'your_jwt_token'
-}));
+ws.send(
+  JSON.stringify({
+    type: 'subscribe',
+    channel: 'projects:proj_123',
+    token: 'your_jwt_token',
+  })
+);
 
 // Receive real-time updates
-ws.onmessage = (event) => {
+ws.onmessage = event => {
   const update = JSON.parse(event.data);
   console.log('Real-time update:', update);
 };
 ```
 
 ### Subscription Channels
+
 - `projects:{project_id}` - Project updates
 - `tasks:{task_id}` - Task status changes
 - `users:{user_id}` - User-specific notifications
@@ -479,6 +511,7 @@ ws.onmessage = (event) => {
 ## 📊 Analytics API
 
 ### Project Analytics
+
 ```bash
 # Project progress summary
 GET /analytics/projects/{id}/progress
@@ -493,6 +526,7 @@ GET /analytics/time-tracking?project_id=proj_123&start_date=2025-01-01
 ## 🔍 Search API
 
 ### Full-Text Search
+
 ```bash
 # Search across all resources
 GET /search?q=fiber+installation&type=projects,tasks
@@ -518,14 +552,16 @@ POST /search/advanced
 ## 📈 Rate Limiting
 
 ### Rate Limits
-| Endpoint Type | Limit | Window |
-|---------------|-------|--------|
-| Authentication | 5 requests | 1 minute |
-| Read Operations | 100 requests | 1 minute |
-| Write Operations | 30 requests | 1 minute |
-| File Uploads | 10 requests | 1 minute |
+
+| Endpoint Type    | Limit        | Window   |
+| ---------------- | ------------ | -------- |
+| Authentication   | 5 requests   | 1 minute |
+| Read Operations  | 100 requests | 1 minute |
+| Write Operations | 30 requests  | 1 minute |
+| File Uploads     | 10 requests  | 1 minute |
 
 ### Rate Limit Headers
+
 ```
 X-RateLimit-Limit: 100
 X-RateLimit-Remaining: 95
@@ -535,18 +571,20 @@ X-RateLimit-Reset: 1643723400
 ## 🛠️ Error Handling
 
 ### HTTP Status Codes
-| Code | Meaning | Description |
-|------|---------|-------------|
-| 200 | OK | Request successful |
-| 201 | Created | Resource created |
-| 400 | Bad Request | Invalid request data |
-| 401 | Unauthorized | Authentication required |
-| 403 | Forbidden | Insufficient permissions |
-| 404 | Not Found | Resource not found |
-| 429 | Too Many Requests | Rate limit exceeded |
-| 500 | Internal Server Error | Server error |
+
+| Code | Meaning               | Description              |
+| ---- | --------------------- | ------------------------ |
+| 200  | OK                    | Request successful       |
+| 201  | Created               | Resource created         |
+| 400  | Bad Request           | Invalid request data     |
+| 401  | Unauthorized          | Authentication required  |
+| 403  | Forbidden             | Insufficient permissions |
+| 404  | Not Found             | Resource not found       |
+| 429  | Too Many Requests     | Rate limit exceeded      |
+| 500  | Internal Server Error | Server error             |
 
 ### Error Codes
+
 - `VALIDATION_ERROR` - Input validation failed
 - `AUTHENTICATION_REQUIRED` - Valid token required
 - `INSUFFICIENT_PERMISSIONS` - Access denied
@@ -556,15 +594,18 @@ X-RateLimit-Reset: 1643723400
 ## 📚 API Documentation
 
 ### Interactive Documentation
+
 - **Swagger UI**: Available at `/api/docs`
 - **Postman Collection**: Download from `/api/postman`
 - **OpenAPI Spec**: Available at `/api/openapi.json`
 
 ### SDK Libraries
+
 - **JavaScript/TypeScript**: `@constructtrack/api-client`
 - **React Hooks**: `@constructtrack/react-hooks`
 - **React Native**: `@constructtrack/react-native-sdk`
 
 ---
 
-**Next**: Explore specific API endpoints in [Projects API](projects.md), [Users API](users.md), and [Mapping API](mapping.md).
+**Next**: Explore specific API endpoints in [Projects API](projects.md), [Users API](users.md), and
+[Mapping API](mapping.md).

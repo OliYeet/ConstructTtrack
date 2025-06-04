@@ -18,7 +18,10 @@ const config = {
   specFile: path.join(__dirname, '../docs/api/openapi.yaml'),
   htmlFile: path.join(__dirname, '../docs/api/index.html'),
   markdownFile: path.join(__dirname, '../docs/api/README.md'),
-  postmanFile: path.join(__dirname, '../docs/api/constructtrack.postman_collection.json'),
+  postmanFile: path.join(
+    __dirname,
+    '../docs/api/constructtrack.postman_collection.json'
+  ),
 };
 
 // Swagger/OpenAPI configuration
@@ -171,15 +174,15 @@ class DocumentationGenerator {
 
     try {
       const specs = swaggerJSDoc(swaggerOptions);
-      
+
       // Write YAML file
       const yaml = require('js-yaml');
-      const yamlStr = yaml.dump(specs, { 
+      const yamlStr = yaml.dump(specs, {
         indent: 2,
         lineWidth: 120,
         noRefs: true,
       });
-      
+
       fs.writeFileSync(config.specFile, yamlStr);
       console.log('✅ OpenAPI YAML generated:', config.specFile);
 
@@ -201,10 +204,13 @@ class DocumentationGenerator {
 
     try {
       // Use Redoc to generate HTML documentation
-      execSync(`npx @redocly/cli build-docs "${config.specFile}" --output "${config.outputDir}"`, {
-        stdio: 'inherit',
-        timeout: 30000,
-      });
+      execSync(
+        `npx @redocly/cli build-docs "${config.specFile}" --output "${config.outputDir}"`,
+        {
+          stdio: 'inherit',
+          timeout: 30000,
+        }
+      );
       console.log('✅ HTML documentation generated:', config.htmlFile);
     } catch (error) {
       console.error('❌ Failed to generate HTML docs:', error);
@@ -262,12 +268,12 @@ X-API-Key: <your-api-key>
     if (specs.paths) {
       Object.entries(specs.paths).forEach(([path, methods]) => {
         markdown += `### ${path}\n\n`;
-        
+
         Object.entries(methods).forEach(([method, operation]) => {
           if (typeof operation === 'object' && operation.summary) {
             markdown += `#### ${method.toUpperCase()} ${path}\n\n`;
             markdown += `${operation.summary}\n\n`;
-            
+
             if (operation.description) {
               markdown += `${operation.description}\n\n`;
             }
@@ -290,9 +296,11 @@ X-API-Key: <your-api-key>
             // Add responses
             if (operation.responses) {
               markdown += `**Responses:**\n\n`;
-              Object.entries(operation.responses).forEach(([code, response]) => {
-                markdown += `- \`${code}\` - ${response.description || 'No description'}\n`;
-              });
+              Object.entries(operation.responses).forEach(
+                ([code, response]) => {
+                  markdown += `- \`${code}\` - ${response.description || 'No description'}\n`;
+                }
+              );
               markdown += '\n';
             }
 
@@ -357,7 +365,8 @@ For API support, please contact:
         name: 'ConstructTrack API',
         description: specs.info.description,
         version: specs.info.version,
-        schema: 'https://schema.getpostman.com/json/collection/v2.1.0/collection.json',
+        schema:
+          'https://schema.getpostman.com/json/collection/v2.1.0/collection.json',
       },
       auth: {
         type: 'bearer',
@@ -414,7 +423,10 @@ For API support, please contact:
             };
 
             // Add request body for POST/PUT/PATCH
-            if (['post', 'put', 'patch'].includes(method) && operation.requestBody) {
+            if (
+              ['post', 'put', 'patch'].includes(method) &&
+              operation.requestBody
+            ) {
               request.request.body = {
                 mode: 'raw',
                 raw: JSON.stringify({}, null, 2),
@@ -482,9 +494,9 @@ For API support, please contact:
       await this.generateHTMLDocs();
       await this.generateMarkdownDocs(specs);
       await this.generatePostmanCollection(specs);
-      
+
       const isValid = await this.validateDocumentation();
-      
+
       if (isValid) {
         console.log('🎉 API documentation generated successfully!');
         console.log(`📁 Documentation available at: ${config.outputDir}`);

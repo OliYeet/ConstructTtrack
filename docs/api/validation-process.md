@@ -1,10 +1,12 @@
 # 🔍 OpenAPI Validation Process
 
-This document describes the comprehensive validation process for the ConstructTrack API to ensure the OpenAPI specification stays in sync with the actual implementation.
+This document describes the comprehensive validation process for the ConstructTrack API to ensure
+the OpenAPI specification stays in sync with the actual implementation.
 
 ## Overview
 
-The validation process consists of multiple layers of checks that run automatically in CI/CD and can be executed locally during development. This prevents specification drift and ensures API quality.
+The validation process consists of multiple layers of checks that run automatically in CI/CD and can
+be executed locally during development. This prevents specification drift and ensures API quality.
 
 ## Validation Components
 
@@ -13,10 +15,12 @@ The validation process consists of multiple layers of checks that run automatica
 **Purpose**: Validates the OpenAPI specification syntax and structure.
 
 **Tools Used**:
+
 - `@apidevtools/swagger-cli` - OpenAPI spec validation
 - `@apidevtools/swagger-parser` - Spec parsing and validation
 
 **What it checks**:
+
 - Valid YAML/JSON syntax
 - OpenAPI 3.0 compliance
 - Schema definitions
@@ -30,11 +34,13 @@ The validation process consists of multiple layers of checks that run automatica
 **Purpose**: Tests actual API endpoints against the specification.
 
 **Tools Used**:
+
 - Custom testing script (`scripts/validate-api-implementation.js`)
 - Fetch API for HTTP requests
 - JSON schema validation
 
 **What it checks**:
+
 - Endpoint availability
 - Response status codes
 - Response structure
@@ -48,10 +54,12 @@ The validation process consists of multiple layers of checks that run automatica
 **Purpose**: Identifies breaking changes between specification versions.
 
 **Tools Used**:
+
 - `openapi-diff` - Specification comparison
 - Custom diff analysis script
 
 **What it checks**:
+
 - Removed endpoints
 - Changed response schemas
 - Modified request parameters
@@ -64,6 +72,7 @@ The validation process consists of multiple layers of checks that run automatica
 **Purpose**: Identifies security issues in the API specification.
 
 **What it checks**:
+
 - HTTPS enforcement
 - Security scheme definitions
 - Authentication requirements
@@ -76,11 +85,13 @@ The validation process consists of multiple layers of checks that run automatica
 **Purpose**: Comprehensive testing of all API endpoints.
 
 **Tools Used**:
+
 - Custom endpoint testing script
 - Real HTTP requests
 - Response validation
 
 **What it checks**:
+
 - All endpoints are accessible
 - Correct response formats
 - Error handling
@@ -125,16 +136,19 @@ npm run api:diff
 ### Development Best Practices
 
 1. **Validate before committing**:
+
    ```bash
    npm run api:validate:spec
    ```
 
 2. **Test implementation changes**:
+
    ```bash
    npm run api:validate:implementation
    ```
 
 3. **Check for breaking changes**:
+
    ```bash
    npm run api:diff
    ```
@@ -148,9 +162,11 @@ npm run api:diff
 
 ### GitHub Actions Workflow
 
-The validation process is automated through GitHub Actions (`.github/workflows/openapi-validation.yml`):
+The validation process is automated through GitHub Actions
+(`.github/workflows/openapi-validation.yml`):
 
 #### Triggers
+
 - Push to `main` or `develop` branches
 - Pull requests to `main` or `develop`
 - Changes to API specification or implementation
@@ -159,24 +175,28 @@ The validation process is automated through GitHub Actions (`.github/workflows/o
 #### Jobs
 
 1. **validate-openapi-spec**
+
    - Validates specification syntax
    - Runs comprehensive validation
    - Generates documentation
    - Uploads validation artifacts
 
 2. **validate-api-implementation**
+
    - Sets up test environment
    - Starts API server
    - Tests endpoints against specification
    - Uploads test results
 
 3. **check-breaking-changes**
+
    - Compares with base branch
    - Generates diff report
    - Comments on PR if breaking changes found
    - Uploads diff artifacts
 
 4. **security-scan**
+
    - Runs security audit
    - Scans specification for security issues
    - Reports vulnerabilities
@@ -196,16 +216,19 @@ When a pull request is created:
 4. **Status checks** prevent merging if validation fails
 
 Example PR comment for breaking changes:
+
 ```markdown
 ## ⚠️ Breaking Changes Detected
 
 This PR introduces **2 breaking change(s)** to the API specification.
 
 ### Breaking Changes:
+
 1. **Removed endpoint** at `/api/v1/old-endpoint`
 2. **Changed response schema** at `/api/v1/projects`
 
 ### Recommendations:
+
 - 🔴 Consider incrementing the major version (e.g., v1.0.0 → v2.0.0)
 - 📚 Provide a migration guide for API consumers
 - 🔄 Consider maintaining backward compatibility
@@ -216,16 +239,19 @@ This PR introduces **2 breaking change(s)** to the API specification.
 ### Report Types
 
 1. **Specification Validation Report**
+
    - Syntax errors and warnings
    - Schema validation results
    - Reference integrity checks
 
 2. **Implementation Test Report**
+
    - Endpoint test results
    - Response validation
    - Performance metrics
 
 3. **Breaking Change Report**
+
    - Detailed diff analysis
    - Impact assessment
    - Version recommendations
@@ -238,6 +264,7 @@ This PR introduces **2 breaking change(s)** to the API specification.
 ### Report Storage
 
 Reports are stored in `docs/api/validation/` with timestamps:
+
 - `validation-report-{timestamp}.json`
 - `implementation-test-report-{timestamp}.json`
 - `openapi-diff-{timestamp}.json`
@@ -288,19 +315,21 @@ npm run api:diff -- --json
 ### Common Issues
 
 1. **API server not running**
+
    ```bash
    # Start the development server
    npm run web:dev
-   
+
    # Wait for server to be ready
    curl http://localhost:3001/api/v1/health
    ```
 
 2. **Specification syntax errors**
+
    ```bash
    # Validate YAML syntax
    npm run api:validate:spec
-   
+
    # Check for common issues
    - Indentation errors
    - Missing required fields
@@ -308,19 +337,21 @@ npm run api:diff -- --json
    ```
 
 3. **Breaking change false positives**
+
    ```bash
    # Review diff manually
    npm run api:diff -- --verbose
-   
+
    # Check if changes are intentional
    # Update version accordingly
    ```
 
 4. **Test failures**
+
    ```bash
    # Run with verbose output
    npm run api:validate:implementation -- --verbose
-   
+
    # Check server logs
    # Verify test data
    ```
@@ -375,4 +406,5 @@ npm run api:diff -- --json
 - API performance metrics
 - Security scan results
 
-This validation process ensures high API quality and prevents specification drift, making the ConstructTrack API reliable and maintainable.
+This validation process ensures high API quality and prevents specification drift, making the
+ConstructTrack API reliable and maintainable.
