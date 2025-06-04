@@ -1,0 +1,21 @@
+{
+  "version": 2,
+  "buildCommand": "npm run web:build",
+  "outputDirectory": "apps/web/.next",
+  "installCommand": "npm ci",
+  "framework": "nextjs",
+  "functions": {
+    "apps/web/src/app/api/**/*.ts": {
+      "runtime": "nodejs18.x"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/$1"
+    }
+  ],
+  "env": {
+    "NODE_ENV": "production"
+  }
+}
