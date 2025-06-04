@@ -161,7 +161,7 @@ const SECURITY_HEADERS = {
   // Prefer nonces or hashes for inline scripts to retain strict CSP
   'Content-Security-Policy':
     "default-src 'self'; script-src 'self' 'strict-dynamic'; object-src 'none'; base-uri 'none'",
-  'X-Frame-Options': 'DENY',
+  'X-Frame-Options': 'SAMEORIGIN',
   'X-Content-Type-Options': 'nosniff',
   'Referrer-Policy': 'strict-origin-when-cross-origin',
   'Permissions-Policy': 'camera=self, microphone=self, geolocation=self',

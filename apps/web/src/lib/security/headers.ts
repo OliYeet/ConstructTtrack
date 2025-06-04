@@ -104,7 +104,7 @@ export const defaultSecurityConfig: SecurityHeadersConfig = {
   },
   xFrameOptions: {
     enabled: true,
-    value: 'DENY',
+    value: 'SAMEORIGIN',
   },
   xContentTypeOptions: {
     enabled: true,
