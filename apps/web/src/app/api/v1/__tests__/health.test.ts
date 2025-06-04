@@ -13,7 +13,7 @@ type RequestWithContext = NextRequest & { context?: RequestContext };
 // Mock the middleware to return the GET handler directly
 jest.mock('@/lib/api/middleware', () => ({
   withApiMiddleware: jest.fn(handlers => {
-    return async (request, context) => {
+    return async (request: Request, context: RequestContext) => {
       const handler = handlers.GET;
       if (handler) {
         return await handler(request, context);

@@ -14,7 +14,7 @@ type RequestWithContext = NextRequest & { context?: RequestContext };
 jest.mock('@/lib/api/middleware', () => ({
   withApiMiddleware: jest.fn(handlers => {
     // Return a function that routes to the correct handler based on method
-    return async (request, context) => {
+    return async (request: Request, context: RequestContext) => {
       const method = request.method;
       const handler = handlers[method];
       if (handler) {

@@ -21,6 +21,7 @@
     ],
     "baseUrl": ".",
     "paths": {
+      "@/*": ["./apps/web/src/*"],
       "@constructtrack/shared": ["./packages/shared"],
       "@constructtrack/shared/*": ["./packages/shared/*"],
       "@constructtrack/ui": ["./packages/ui"],
