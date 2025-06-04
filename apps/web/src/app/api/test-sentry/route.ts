@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
             },
           },
           {
-            type: 'test',
+            type: 'api',
             severity: 'medium',
             category: 'api',
             recoverable: true,

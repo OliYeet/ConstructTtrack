@@ -15,6 +15,9 @@ project: "constructtrack",
 // Only print logs for uploading source maps in CI
 silent: !process.env.CI,
 
+// Disable Sentry CLI operations during build to prevent permission errors
+dryRun: process.env.VERCEL === '1',
+
 // For all available options, see:
 // https://docs.sentry.io/platforms/javascript/guides/nextjs/manual-setup/
 
