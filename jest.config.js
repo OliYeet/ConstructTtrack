@@ -9,19 +9,17 @@ const baseConfig = {
   // Test environment
   testEnvironment: 'node',
 
-  // Node.js globals
-  globals: {
-    'ts-jest': {
-      useESM: true,
-    },
-  },
-
   // Module file extensions
   moduleFileExtensions: ['js', 'json', 'ts', 'tsx'],
 
   // Transform files
   transform: {
-    '^.+\\.(ts|tsx)$': 'ts-jest',
+    '^.+\\.(ts|tsx)$': [
+      'ts-jest',
+      {
+        useESM: true,
+      },
+    ],
     '^.+\\.(js|jsx)$': 'babel-jest',
   },
 
