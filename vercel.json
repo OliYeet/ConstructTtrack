@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "buildCommand": "npm run build --workspace=apps/web",
+  "buildCommand": "npm run web:build",
   "outputDirectory": "apps/web/.next",
   "installCommand": "npm ci --include-workspace-root",
   "framework": null,
