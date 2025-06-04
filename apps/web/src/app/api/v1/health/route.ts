@@ -3,9 +3,9 @@
  * Simple health check endpoint to verify API functionality
  */
 
-import { NextRequest } from 'next/server';
-
+import { withApiMiddleware } from '@/lib/api/middleware';
 import { createSuccessResponse } from '@/lib/api/response';
+import { RequestContext, ApiRequest } from '@/types/api';
 
 // Health check response interface
 interface HealthCheckResponse {
@@ -41,7 +41,12 @@ async function checkDatabase(): Promise<'healthy' | 'unhealthy'> {
 }
 
 // GET /api/v1/health
-export async function GET(_request: NextRequest) {
+async function handleGet(
+  request: ApiRequest,
+  _context: { params: Record<string, string> }
+) {
+  const requestContext = (request as ApiRequest & { context?: RequestContext })
+    .context;
   const startTime = Date.now();
 
   // Check all services
@@ -74,6 +79,10 @@ export async function GET(_request: NextRequest) {
   return createSuccessResponse(
     healthData,
     `System is ${overallStatus} (${responseTime}ms)`,
-    statusCode
+    statusCode,
+    requestContext?.requestId
   );
 }
+
+// Export wrapped handler
+export const GET = withApiMiddleware({ GET: handleGet });

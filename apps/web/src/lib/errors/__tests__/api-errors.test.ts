@@ -199,7 +199,7 @@ describe('ExternalServiceError', () => {
 
 describe('Error Factory Functions', () => {
   it('should create validation error using factory', () => {
-    const error = createValidationError('email', 'Invalid email format');
+    const error = createValidationError('Invalid email format', 'email');
 
     expect(error).toBeInstanceOf(ValidationError);
     expect(error.field).toBe('email');

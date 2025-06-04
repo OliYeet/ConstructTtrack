@@ -68,4 +68,107 @@ process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
 });
 
+// Mock browser APIs
+global.fetch = jest.fn();
+global.localStorage = {
+  getItem: jest.fn(),
+  setItem: jest.fn(),
+  removeItem: jest.fn(),
+  clear: jest.fn(),
+};
+global.sessionStorage = {
+  getItem: jest.fn(),
+  setItem: jest.fn(),
+  removeItem: jest.fn(),
+  clear: jest.fn(),
+};
+
+// Mock Next.js Web APIs
+global.Request = class Request {
+  constructor(input, init = {}) {
+    this.url = typeof input === 'string' ? input : input.url;
+    this.method = init.method || 'GET';
+    this.headers = new Headers(init.headers);
+    this.body = init.body;
+  }
+
+  async json() {
+    return JSON.parse(this.body || '{}');
+  }
+
+  async text() {
+    return this.body || '';
+  }
+};
+
+global.Response = class Response {
+  constructor(body, init = {}) {
+    this.body = body;
+    this.status = init.status || 200;
+    this.statusText = init.statusText || 'OK';
+    this.headers = new Headers(init.headers);
+  }
+
+  async json() {
+    return JSON.parse(this.body || '{}');
+  }
+
+  async text() {
+    return this.body || '';
+  }
+};
+
+global.Headers = class Headers {
+  constructor(init = {}) {
+    this.map = new Map();
+    if (init) {
+      Object.entries(init).forEach(([key, value]) => {
+        this.map.set(key.toLowerCase(), value);
+      });
+    }
+  }
+
+  get(name) {
+    return this.map.get(name.toLowerCase());
+  }
+
+  set(name, value) {
+    this.map.set(name.toLowerCase(), value);
+  }
+
+  has(name) {
+    return this.map.has(name.toLowerCase());
+  }
+};
+
+// Mock Next.js NextResponse
+global.NextResponse = class NextResponse extends global.Response {
+  static json(data, init = {}) {
+    return new NextResponse(JSON.stringify(data), {
+      ...init,
+      headers: {
+        'content-type': 'application/json',
+        ...init.headers,
+      },
+    });
+  }
+
+  static redirect(url, init = {}) {
+    return new NextResponse(null, {
+      ...init,
+      status: init.status || 302,
+      headers: {
+        location: url,
+        ...init.headers,
+      },
+    });
+  }
+};
+
+// Mock Next.js server module
+jest.mock('next/server', () => ({
+  NextResponse: global.NextResponse,
+  NextRequest: global.Request,
+}));
+
 module.exports = {};
