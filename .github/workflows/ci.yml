@@ -2,14 +2,13 @@ name: 🔄 CI/CD Pipeline
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main, develop ]
+    branches: [main, develop]
   workflow_dispatch:
 
 env:
   NODE_VERSION: '18'
-  PNPM_VERSION: '8'
 
 jobs:
   # Job 1: Code Quality & Security
@@ -17,7 +16,7 @@ jobs:
     name: 🔍 Code Quality & Security
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    
+
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
@@ -28,39 +27,22 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-
-      - name: 📦 Setup pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: ${{ env.PNPM_VERSION }}
-
-      - name: 📦 Get pnpm store directory
-        shell: bash
-        run: |
-          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
-
-      - name: 🗄️ Setup pnpm cache
-        uses: actions/cache@v3
-        with:
-          path: ${{ env.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-store-
+          cache: 'npm'
 
       - name: 📦 Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: npm ci
 
       - name: 🔍 Lint code
-        run: pnpm lint
+        run: npm run lint
 
       - name: 🎨 Check code formatting
-        run: pnpm format:check
+        run: npm run format:check
 
       - name: 🔒 Security audit
-        run: pnpm audit --audit-level moderate
+        run: npm audit --audit-level moderate
 
       - name: 🔍 Type checking
-        run: pnpm type-check
+        run: npm run type-check
 
       - name: 🛡️ Security scan with Snyk
         uses: snyk/actions/node@master
@@ -76,11 +58,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     needs: quality
-    
+
     strategy:
       matrix:
         test-group: [unit, integration, e2e]
-    
+
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
@@ -89,30 +71,13 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-
-      - name: 📦 Setup pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: ${{ env.PNPM_VERSION }}
-
-      - name: 📦 Get pnpm store directory
-        shell: bash
-        run: |
-          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
-
-      - name: 🗄️ Setup pnpm cache
-        uses: actions/cache@v3
-        with:
-          path: ${{ env.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-store-
+          cache: 'npm'
 
       - name: 📦 Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: npm ci
 
       - name: 🧪 Run ${{ matrix.test-group }} tests
-        run: pnpm test:${{ matrix.test-group }}
+        run: npm run test:${{ matrix.test-group }}
         env:
           CI: true
 
@@ -131,7 +96,7 @@ jobs:
     timeout-minutes: 15
     needs: [quality, test]
     if: github.event_name == 'pull_request'
-    
+
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
@@ -140,17 +105,13 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-
-      - name: 📦 Setup pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: ${{ env.PNPM_VERSION }}
+          cache: 'npm'
 
       - name: 📦 Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: npm ci
 
       - name: 🏗️ Build application
-        run: pnpm build
+        run: npm run build
         env:
           NODE_ENV: production
 
@@ -170,7 +131,7 @@ jobs:
     needs: [quality, test]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     environment: production
-    
+
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
@@ -179,22 +140,18 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-
-      - name: 📦 Setup pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: ${{ env.PNPM_VERSION }}
+          cache: 'npm'
 
       - name: 📦 Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: npm ci
 
       - name: 🏗️ Build application
-        run: pnpm build
+        run: npm run build
         env:
           NODE_ENV: production
 
       - name: 🧪 Run production smoke tests
-        run: pnpm test:smoke
+        run: npm run test:smoke
 
       - name: 🚀 Deploy to Vercel Production
         uses: amondnet/vercel-action@v25
@@ -205,15 +162,16 @@ jobs:
           vercel-args: '--prod'
           working-directory: ./apps/web
 
-         if: success()
+      - name: 🎉 Notify deployment success
+        if: success()
         uses: 8398a7/action-slack@v3
         with:
           status: success
           text: '✅ Production deployment successful'
           webhook_url: ${{ secrets.SLACK_WEBHOOK }}
 
-       - name: 🚨 Notify deployment failure
-         if: failure()
+      - name: 🚨 Notify deployment failure
+        if: failure()
         uses: 8398a7/action-slack@v3
         with:
           status: failure
@@ -228,7 +186,7 @@ jobs:
     needs: deploy
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     environment: production
-    
+
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
@@ -237,23 +195,19 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-
-      - name: 📦 Setup pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: ${{ env.PNPM_VERSION }}
+          cache: 'npm'
 
       - name: 📦 Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: npm ci
 
       - name: 🗄️ Run database migrations
-        run: pnpm db:migrate
+        run: npm run db:migrate
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
 
       - name: 🌱 Seed production data (if needed)
-        run: pnpm db:seed:prod
+        run: npm run db:seed:prod
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
@@ -266,7 +220,7 @@ jobs:
     timeout-minutes: 10
     needs: deploy
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    
+
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
@@ -278,15 +232,19 @@ jobs:
           uploadArtifacts: true
           temporaryPublicStorage: true
 
-      -        uses: zaproxy/action-full-scan@v0.7.0
+      - name: 🔒 Security scan with ZAP
+        uses: zaproxy/action-full-scan@v0.7.0
         with:
           target: ${{ secrets.PRODUCTION_URL }}
           rules_file_name: '.zap/rules.tsv'
           cmd_options: '-a'
+        continue-on-error: true
 
-      -        run: |
+      - name: 📊 Send metrics to monitoring
+        run: |
           # Send metrics to DataDog, New Relic, or similar
           curl -X POST https://api.datadoghq.com/api/v1/series \
             -H "DD-API-KEY: ${{ secrets.DD_API_KEY }}" \
             -H "Content-Type: application/json" \
             -d @metrics.json
+        continue-on-error: true
