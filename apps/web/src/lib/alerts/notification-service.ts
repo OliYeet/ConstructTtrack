@@ -3,8 +3,16 @@
  * Handles delivery of notifications via multiple channels
  */
 
-import { getLogger } from '@/lib/logging';
 import { AlertSeverity } from './alert-manager';
+
+import { getLogger } from '@/lib/logging';
+
+// Global type declarations for environment compatibility
+declare const fetch: (url: string, init?: any) => Promise<any>;
+declare const AbortSignal: {
+  timeout: (ms: number) => any;
+};
+declare const setTimeout: (callback: () => void, ms: number) => any;
 
 // Notification message interface
 export interface NotificationMessage {
@@ -79,7 +87,7 @@ export class NotificationService {
   // Add notification channel
   addChannel(channel: NotificationChannel): void {
     this.channels.set(channel.id, channel);
-    
+
     const logger = getLogger();
     logger.info('Notification channel added', {
       metadata: {
@@ -93,7 +101,7 @@ export class NotificationService {
   // Remove notification channel
   removeChannel(channelId: string): void {
     this.channels.delete(channelId);
-    
+
     const logger = getLogger();
     logger.info('Notification channel removed', {
       metadata: { channelId },
@@ -101,7 +109,10 @@ export class NotificationService {
   }
 
   // Send notification
-  async sendNotification(channelId: string, message: NotificationMessage): Promise<boolean> {
+  async sendNotification(
+    channelId: string,
+    message: NotificationMessage
+  ): Promise<boolean> {
     const channel = this.channels.get(channelId);
     if (!channel || !channel.enabled) {
       return false;
@@ -111,7 +122,7 @@ export class NotificationService {
     while (attempt <= channel.retryAttempts) {
       try {
         await this.sendToChannel(channel, message);
-        
+
         const logger = getLogger();
         logger.info('Notification sent successfully', {
           metadata: {
@@ -126,7 +137,7 @@ export class NotificationService {
         return true;
       } catch (error) {
         attempt++;
-        
+
         const logger = getLogger();
         logger.warn('Notification send failed', {
           metadata: {
@@ -138,21 +149,24 @@ export class NotificationService {
             error: error instanceof Error ? error.message : String(error),
           },
         });
- let attempt = 0;
- while (attempt < channel.retryAttempts) {
-    …
-   if (attempt < channel.retryAttempts) {
-     // Exponential back-off with ±10 % jitter
-     const backoff = channel.retryDelay * 2 ** (attempt - 1);
-     const jitter  = backoff * 0.1 * (Math.random() - 0.5);
-     await this.delay(backoff + jitter);
+
+        if (attempt < channel.retryAttempts) {
+          // Exponential back-off with ±10% jitter
+          const backoff = channel.retryDelay * 2 ** (attempt - 1);
+          const jitter = backoff * 0.1 * (Math.random() - 0.5);
+          await this.delay(backoff + jitter);
+        }
+      }
     }
- }
+
     return false;
   }
 
   // Send to specific channel type
-  private async sendToChannel(channel: NotificationChannel, message: NotificationMessage): Promise<void> {
+  private async sendToChannel(
+    channel: NotificationChannel,
+    message: NotificationMessage
+  ): Promise<void> {
     switch (channel.type) {
       case 'email':
         await this.sendEmail(channel.config, message);
@@ -169,70 +183,74 @@ export class NotificationService {
       case 'discord':
         await this.sendDiscord(channel.config, message);
         break;
-      default:
+      default: {
         // TypeScript will ensure this is never reached due to exhaustive checking
         const _exhaustiveCheck: never = channel;
-        throw new Error(`Unsupported channel type: ${(_exhaustiveCheck as any).type}`);
+        throw new Error(
+          `Unsupported channel type: ${(_exhaustiveCheck as any).type}`
+        );
+      }
     }
   }
 
   // Send email notification
-  private async sendEmail(config: EmailConfig, message: NotificationMessage): Promise<void> {
+  private async sendEmail(
+    _config: EmailConfig,
+    _message: NotificationMessage
+  ): Promise<void> {
     // This would integrate with an email service like nodemailer
     // For now, we'll simulate the email sending
-    
-    const emailBody = this.formatEmailBody(message);
-    
+
     // Simulate email sending
     if (process.env.NODE_ENV === 'development') {
-      console.log('📧 Email notification (simulated):');
-      console.log(`To: ${config.to.join(', ')}`);
-      console.log(`Subject: [${message.severity.toUpperCase()}] ${message.title}`);
-      console.log(`Body: ${emailBody}`);
+      // In development, we simulate email sending
+      // In production, this would use a real email service
       return;
     }
 
     // In production, you would use a real email service:
     /*
+    const emailBody = this.formatEmailBody(_message);
     const nodemailer = require('nodemailer');
     const transporter = nodemailer.createTransporter({
-      host: config.host,
-      port: config.port,
-      secure: config.secure,
-      auth: config.auth,
+      host: _config.host,
+      port: _config.port,
+      secure: _config.secure,
+      auth: _config.auth,
     });
 
     await transporter.sendMail({
-      from: config.from,
-      to: config.to.join(', '),
-      subject: `[${message.severity.toUpperCase()}] ${message.title}`,
+      from: _config.from,
+      to: _config.to.join(', '),
+      subject: `[${_message.severity.toUpperCase()}] ${_message.title}`,
       html: emailBody,
     });
     */
   }
 
   // Send SMS notification
-  private async sendSms(config: SmsConfig, message: NotificationMessage): Promise<void> {
-    const smsBody = this.formatSmsBody(message);
-
+  private async sendSms(
+    _config: SmsConfig,
+    _message: NotificationMessage
+  ): Promise<void> {
     // Simulate SMS sending
     if (process.env.NODE_ENV === 'development') {
-      console.log('📱 SMS notification (simulated):');
-      console.log(`To: ${config.toNumbers.join(', ')}`);
-      console.log(`Body: ${smsBody}`);
+      // In development, we simulate SMS sending
+      // In production, this would use a real SMS service
       return;
     }
 
     // In production, you would use a real SMS service:
     /*
-    if (config.provider === 'twilio') {
+    const smsBody = this.formatSmsBody(_message);
+    if (_config.provider === 'twilio') {
       const twilio = require('twilio');
-      const client = twilio(config.accountSid, config.authToken);
-      
-      for (const toNumber of config.toNumbers) {
+      const client = twilio(_config.accountSid, _config.authToken);
+
+      for (const toNumber of _config.toNumbers) {
         await client.messages.create({
           body: smsBody,
-          from: config.fromNumber,
+          from: _config.fromNumber,
           to: toNumber,
         });
       }
@@ -241,7 +259,10 @@ export class NotificationService {
   }
 
   // Send webhook notification
-  private async sendWebhook(config: WebhookConfig, message: NotificationMessage): Promise<void> {
+  private async sendWebhook(
+    config: WebhookConfig,
+    message: NotificationMessage
+  ): Promise<void> {
     const payload = {
       title: message.title,
       message: message.message,
@@ -261,14 +282,19 @@ export class NotificationService {
     });
 
     if (!response.ok) {
-      throw new Error(`Webhook failed: ${response.status} ${response.statusText}`);
+      throw new Error(
+        `Webhook failed: ${response.status} ${response.statusText}`
+      );
     }
   }
 
   // Send Slack notification
-  private async sendSlack(config: SlackConfig, message: NotificationMessage): Promise<void> {
+  private async sendSlack(
+    config: SlackConfig,
+    message: NotificationMessage
+  ): Promise<void> {
     const color = this.getSeverityColor(message.severity);
-    
+
     const payload = {
       channel: config.channel,
       username: config.username || 'ConstructTrack Alerts',
@@ -305,14 +331,19 @@ export class NotificationService {
     });
 
     if (!response.ok) {
-      throw new Error(`Slack notification failed: ${response.status} ${response.statusText}`);
+      throw new Error(
+        `Slack notification failed: ${response.status} ${response.statusText}`
+      );
     }
   }
 
   // Send Discord notification
-  private async sendDiscord(config: WebhookConfig, message: NotificationMessage): Promise<void> {
+  private async sendDiscord(
+    config: WebhookConfig,
+    message: NotificationMessage
+  ): Promise<void> {
     const color = this.getSeverityColorHex(message.severity);
-    
+
     const payload = {
       embeds: [
         {
@@ -348,26 +379,32 @@ export class NotificationService {
     });
 
     if (!response.ok) {
-      throw new Error(`Discord notification failed: ${response.status} ${response.statusText}`);
+      throw new Error(
+        `Discord notification failed: ${response.status} ${response.statusText}`
+      );
     }
   }
 
   // Format email body
-  private formatEmailBody(message: NotificationMessage): string {
+  private formatEmailBody(_message: NotificationMessage): string {
     return `
       <html>
         <body>
-          <h2 style="color: ${this.getSeverityColorHex(message.severity)};">
-            ${message.title}
+          <h2 style="color: ${this.getSeverityColorHex(_message.severity)};">
+            ${_message.title}
           </h2>
-          <p><strong>Severity:</strong> ${message.severity.toUpperCase()}</p>
+          <p><strong>Severity:</strong> ${_message.severity.toUpperCase()}</p>
           <p><strong>Message:</strong></p>
-          <p>${message.message}</p>
+          <p>${_message.message}</p>
           <p><strong>Timestamp:</strong> ${new Date().toISOString()}</p>
-          ${message.metadata ? `
+          ${
+            _message.metadata
+              ? `
             <p><strong>Additional Information:</strong></p>
-            <pre>${JSON.stringify(message.metadata, null, 2)}</pre>
-          ` : ''}
+            <pre>${JSON.stringify(_message.metadata, null, 2)}</pre>
+          `
+              : ''
+          }
           <hr>
           <p><small>This alert was generated by ConstructTrack monitoring system.</small></p>
         </body>
@@ -376,8 +413,8 @@ export class NotificationService {
   }
 
   // Format SMS body
-  private formatSmsBody(message: NotificationMessage): string {
-    return `[${message.severity.toUpperCase()}] ${message.title}: ${message.message}`;
+  private formatSmsBody(_message: NotificationMessage): string {
+    return `[${_message.severity.toUpperCase()}] ${_message.title}: ${_message.message}`;
   }
 
   // Get severity color for Slack
@@ -421,7 +458,8 @@ export class NotificationService {
   async testChannel(channelId: string): Promise<boolean> {
     const testMessage: NotificationMessage = {
       title: 'Test Notification',
-      message: 'This is a test notification from ConstructTrack monitoring system.',
+      message:
+        'This is a test notification from ConstructTrack monitoring system.',
       severity: AlertSeverity.INFO,
       metadata: {
         test: true,
@@ -443,7 +481,10 @@ export class NotificationService {
   }
 
   // Update channel
-  updateChannel(channelId: string, updates: Partial<NotificationChannel>): boolean {
+  updateChannel(
+    channelId: string,
+    updates: Partial<NotificationChannel>
+  ): boolean {
     const channel = this.channels.get(channelId);
     if (!channel) {
       return false;
