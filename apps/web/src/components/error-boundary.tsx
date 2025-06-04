@@ -6,7 +6,6 @@
 'use client';
 
 import * as Sentry from '@sentry/nextjs';
-
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 
 import { getLogger } from '@/lib/logging';
@@ -51,7 +50,7 @@ export class ErrorBoundary extends Component<
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     // Report to Sentry with React context
-    Sentry.withScope((scope) => {
+    Sentry.withScope(scope => {
       scope.setTags({
         component: 'error-boundary',
         level: this.props.level || 'component',
@@ -64,7 +63,10 @@ export class ErrorBoundary extends Component<
       });
 
       scope.setContext('browser_info', {
-        userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : undefined,
+        userAgent:
+          typeof window !== 'undefined'
+            ? window.navigator.userAgent
+            : undefined,
         url: typeof window !== 'undefined' ? window.location.href : undefined,
         timestamp: new Date().toISOString(),
       });

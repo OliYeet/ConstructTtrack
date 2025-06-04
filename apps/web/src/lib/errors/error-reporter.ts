@@ -7,6 +7,7 @@
 import * as Sentry from '@sentry/nextjs';
 
 import { ErrorClassification } from './global-handler';
+
 import { getLogger } from '@/lib/logging';
 // import { ErrorSeverity } from './global-handler';
 
@@ -274,7 +275,7 @@ export class ErrorReporter {
   private async sendToSentry(error: Error, report: ErrorReport): Promise<void> {
     try {
       // Set Sentry context
-      Sentry.withScope((scope) => {
+      Sentry.withScope(scope => {
         // Set user context
         if (report.context.userId) {
           scope.setUser({ id: report.context.userId });
@@ -311,7 +312,9 @@ export class ErrorReporter {
         }
 
         // Set level based on severity
-        const sentryLevel = this.mapSeverityToSentryLevel(report.classification.severity);
+        const sentryLevel = this.mapSeverityToSentryLevel(
+          report.classification.severity
+        );
         scope.setLevel(sentryLevel);
 
         // Capture the error
@@ -322,7 +325,10 @@ export class ErrorReporter {
       await logger.warn('Failed to send error to Sentry', {
         metadata: {
           reportId: report.id,
-          error: sentryError instanceof Error ? sentryError.message : String(sentryError),
+          error:
+            sentryError instanceof Error
+              ? sentryError.message
+              : String(sentryError),
         },
       });
     }

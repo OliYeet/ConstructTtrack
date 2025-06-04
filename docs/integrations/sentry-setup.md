@@ -2,7 +2,8 @@
 
 > **Comprehensive error monitoring and performance tracking for ConstructTrack**
 
-This document outlines the Sentry integration setup for ConstructTrack, providing real-time error monitoring, performance tracking, and user feedback collection.
+This document outlines the Sentry integration setup for ConstructTrack, providing real-time error
+monitoring, performance tracking, and user feedback collection.
 
 ## 🎯 Overview
 
@@ -83,13 +84,13 @@ await errorReporter.reportError(
     source: 'api',
     url: request.url,
     userId: 'user123',
-    additionalData: { customField: 'value' }
+    additionalData: { customField: 'value' },
   },
   {
     type: 'validation',
     severity: 'medium',
     category: 'user_input',
-    recoverable: true
+    recoverable: true,
   }
 );
 ```
@@ -99,7 +100,7 @@ await errorReporter.reportError(
 Enhanced `ErrorBoundary` component captures React errors:
 
 ```tsx
-<ErrorBoundary level="page" showDetails={true}>
+<ErrorBoundary level='page' showDetails={true}>
   <YourComponent />
 </ErrorBoundary>
 ```
@@ -126,6 +127,7 @@ Video-like reproduction of user sessions with errors:
 ### Test Endpoints
 
 1. **Sentry Example Page**: `/sentry-example-page`
+
    - Official Sentry test page
    - Tests frontend and backend errors
    - Connectivity diagnostics
@@ -176,6 +178,7 @@ curl -X POST /api/test-sentry \
 ### Sentry Dashboard
 
 Access your Sentry dashboard at:
+
 - **Issues**: https://lumenfront.sentry.io/issues/?project=constructtrack
 - **Performance**: https://lumenfront.sentry.io/performance/?project=constructtrack
 - **Releases**: https://lumenfront.sentry.io/releases/?project=constructtrack
@@ -231,11 +234,13 @@ SENTRY_PROJECT=constructtrack
 ### Common Issues
 
 1. **No errors appearing in Sentry**
+
    - Check DSN configuration
    - Verify network connectivity
    - Check ad blocker settings
 
 2. **Source maps not working**
+
    - Verify auth token
    - Check build configuration
    - Ensure source maps are uploaded

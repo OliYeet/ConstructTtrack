@@ -4,10 +4,10 @@
  */
 
 import * as Sentry from '@sentry/nextjs';
-
 import { NextRequest, NextResponse } from 'next/server';
-import { ErrorSeverity } from '@/lib/errors/global-handler';
+
 import { errorReporter } from '@/lib/errors/error-reporter';
+import { ErrorSeverity } from '@/lib/errors/global-handler';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
 
       case 'sentry-direct':
         // Test direct Sentry reporting
-        Sentry.withScope((scope) => {
+        Sentry.withScope(scope => {
           scope.setTags({
             test_type: 'direct',
             component: 'test-api',
@@ -69,14 +69,14 @@ export async function GET(request: NextRequest) {
         await Sentry.startSpan(
           {
             name: 'test-performance',
-            op: 'test'
+            op: 'test',
           },
-          async (span) => {
+          async _span => {
             // Simulate some work
             await Sentry.startSpan(
               {
                 name: 'test-operation',
-                op: 'test-operation'
+                op: 'test-operation',
               },
               async () => {
                 // Simulate async work
@@ -90,8 +90,9 @@ export async function GET(request: NextRequest) {
 
       case 'user-feedback': {
         // Test user feedback
-        const eventId = Sentry.captureException(new Error('Error with user feedback'));
-        
+        // Capture exception for user feedback test
+        Sentry.captureException(new Error('Error with user feedback'));
+
         // Simulate user feedback using current Sentry API
         Sentry.captureFeedback({
           name: 'Test User',
@@ -103,9 +104,16 @@ export async function GET(request: NextRequest) {
 
       default:
         return NextResponse.json(
-          { 
+          {
             error: 'Invalid error type',
-            availableTypes: ['basic', 'async', 'custom', 'sentry-direct', 'performance', 'user-feedback']
+            availableTypes: [
+              'basic',
+              'async',
+              'custom',
+              'sentry-direct',
+              'performance',
+              'user-feedback',
+            ],
           },
           { status: 400 }
         );
@@ -116,7 +124,6 @@ export async function GET(request: NextRequest) {
       timestamp: new Date().toISOString(),
       note: 'Check your Sentry dashboard for the error report',
     });
-
   } catch (error) {
     // This catch block will handle the thrown test errors
     return NextResponse.json({
@@ -133,7 +140,7 @@ export async function POST(request: NextRequest) {
     const { message, level = 'error', tags = {}, context = {} } = body;
 
     // Custom error reporting with provided data
-    Sentry.withScope((scope) => {
+    Sentry.withScope(scope => {
       scope.setLevel(level as Sentry.SeverityLevel);
       scope.setTags({
         component: 'test-api',
@@ -149,7 +156,10 @@ export async function POST(request: NextRequest) {
       if (message) {
         Sentry.captureException(new Error(message));
       } else {
-        Sentry.captureMessage('Custom test message', level as Sentry.SeverityLevel);
+        Sentry.captureMessage(
+          'Custom test message',
+          level as Sentry.SeverityLevel
+        );
       }
     });
 
@@ -158,12 +168,11 @@ export async function POST(request: NextRequest) {
       data: { message, level, tags, context },
       timestamp: new Date().toISOString(),
     });
-
   } catch (error) {
     return NextResponse.json(
-      { 
+      {
         error: 'Failed to process custom error test',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
     );
