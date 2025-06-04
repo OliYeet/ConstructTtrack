@@ -44,7 +44,7 @@ describe('/api/v1/health', () => {
       timestamp: new Date().toISOString(),
     };
 
-    const response = await GET(request);
+    const response = await GET(request, { params: Promise.resolve({}) });
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -71,7 +71,7 @@ describe('/api/v1/health', () => {
       timestamp: new Date().toISOString(),
     };
 
-    const response = await GET(request);
+    const response = await GET(request, { params: Promise.resolve({}) });
     const data = await response.json();
 
     expect(response.status).toBe(503);
@@ -93,7 +93,7 @@ describe('/api/v1/health', () => {
       timestamp: new Date().toISOString(),
     };
 
-    const response = await GET(request);
+    const response = await GET(request, { params: Promise.resolve({}) });
     const data = await response.json();
 
     expect(data.meta.requestId).toBe(requestId);
@@ -111,7 +111,7 @@ describe('/api/v1/health', () => {
     delete (request as RequestWithContext).context;
 
     // This should not throw, but handle the error gracefully
-    const response = await GET(request);
+    const response = await GET(request, { params: Promise.resolve({}) });
 
     // The response should still be valid, even if there's an internal error
     expect(response).toBeDefined();
@@ -128,7 +128,7 @@ describe('/api/v1/health', () => {
       timestamp: new Date().toISOString(),
     };
 
-    const response = await GET(request);
+    const response = await GET(request, { params: Promise.resolve({}) });
     const data = await response.json();
 
     // Verify response structure
@@ -165,7 +165,7 @@ describe('/api/v1/health', () => {
       timestamp: new Date().toISOString(),
     };
 
-    const response = await GET(request);
+    const response = await GET(request, { params: Promise.resolve({}) });
     const data = await response.json();
 
     // Verify timestamp is valid ISO string

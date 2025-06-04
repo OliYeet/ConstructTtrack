@@ -42,7 +42,7 @@ describe('/api/v1/test GET', () => {
       timestamp: new Date().toISOString(),
     };
 
-    const response = await GET(request);
+    const response = await GET(request, { params: Promise.resolve({}) });
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -71,7 +71,7 @@ describe('/api/v1/test GET', () => {
       user: mockUser,
     };
 
-    const response = await GET(request);
+    const response = await GET(request, { params: Promise.resolve({}) });
     const data = await response.json();
 
     expect(data.data.user).toEqual(mockUser);
@@ -89,7 +89,7 @@ describe('/api/v1/test GET', () => {
       // No user
     };
 
-    const response = await GET(request);
+    const response = await GET(request, { params: Promise.resolve({}) });
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -120,7 +120,7 @@ describe('/api/v1/test POST', () => {
       timestamp: new Date().toISOString(),
     };
 
-    const response = await POST(request);
+    const response = await POST(request, { params: Promise.resolve({}) });
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -148,7 +148,9 @@ describe('/api/v1/test POST', () => {
     };
 
     // This should throw a validation error
-    await expect(POST(request)).rejects.toThrow();
+    await expect(
+      POST(request, { params: Promise.resolve({}) })
+    ).rejects.toThrow();
   });
 
   it('should handle request body without optional data field', async () => {
@@ -167,7 +169,7 @@ describe('/api/v1/test POST', () => {
       timestamp: new Date().toISOString(),
     };
 
-    const response = await POST(request);
+    const response = await POST(request, { params: Promise.resolve({}) });
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -198,7 +200,7 @@ describe('/api/v1/test POST', () => {
       user: mockUser,
     };
 
-    const response = await POST(request);
+    const response = await POST(request, { params: Promise.resolve({}) });
     const data = await response.json();
 
     expect(data.data.user).toEqual(mockUser);
@@ -221,7 +223,9 @@ describe('/api/v1/test POST', () => {
       timestamp: new Date().toISOString(),
     };
 
-    await expect(POST(request1)).rejects.toThrow();
+    await expect(
+      POST(request1, { params: Promise.resolve({}) })
+    ).rejects.toThrow();
 
     // Test maximum length
     const longMessage = {
@@ -239,7 +243,9 @@ describe('/api/v1/test POST', () => {
       timestamp: new Date().toISOString(),
     };
 
-    await expect(POST(request2)).rejects.toThrow();
+    await expect(
+      POST(request2, { params: Promise.resolve({}) })
+    ).rejects.toThrow();
   });
 
   it('should handle complex data structures', async () => {
@@ -268,7 +274,7 @@ describe('/api/v1/test POST', () => {
       timestamp: new Date().toISOString(),
     };
 
-    const response = await POST(request);
+    const response = await POST(request, { params: Promise.resolve({}) });
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -291,7 +297,7 @@ describe('/api/v1/test POST', () => {
       timestamp: new Date().toISOString(),
     };
 
-    const response = await POST(request);
+    const response = await POST(request, { params: Promise.resolve({}) });
     const data = await response.json();
 
     // Verify response structure
