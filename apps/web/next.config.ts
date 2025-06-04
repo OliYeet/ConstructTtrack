@@ -7,7 +7,7 @@ const nextConfig: NextConfig = {
 
 // Only apply Sentry configuration if we have proper authentication
 // This prevents 403 errors during Vercel builds
-const shouldUseSentry = process.env.SENTRY_AUTH_TOKEN || process.env.VERCEL !== '1';
+const shouldUseSentry = process.env.SENTRY_AUTH_TOKEN && process.env.VERCEL !== '1';
 
 export default shouldUseSentry ? withSentryConfig(nextConfig, {
 // For all available options, see:

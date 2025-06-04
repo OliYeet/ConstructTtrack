@@ -6,6 +6,7 @@
 import * as Sentry from '@sentry/nextjs';
 
 import { NextRequest, NextResponse } from 'next/server';
+import { ErrorSeverity } from '@/lib/errors/global-handler';
 import { errorReporter } from '@/lib/errors/error-reporter';
 
 export async function GET(request: NextRequest) {
@@ -39,7 +40,7 @@ export async function GET(request: NextRequest) {
           },
           {
             type: 'api',
-            severity: 'medium',
+            severity: ErrorSeverity.MEDIUM,
             category: 'api',
             recoverable: true,
           }
