@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "buildCommand": "npm run web:build",
+  "buildCommand": "cd /vercel/path0 && npm run web:build",
   "outputDirectory": "apps/web/.next",
   "installCommand": "npm ci --include-workspace-root",
   "framework": null,
