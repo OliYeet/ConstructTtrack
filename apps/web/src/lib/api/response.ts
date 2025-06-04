@@ -4,7 +4,6 @@
  */
 
 import { NextResponse } from 'next/server';
-
 import { BaseApiError } from '@/lib/errors/api-errors';
 import { ApiResponse, ApiError, PaginatedResponse } from '@/types/api';
 
@@ -19,6 +18,30 @@ const generateRequestId = (): string => {
   return `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 };
 
+/**
+ * Adds standard security headers to the provided response object.
+ */
+export function addSecurityHeaders<T = unknown>(
+  response: NextResponse<T>
+): NextResponse<T> {
+  response.headers.set(
+    'Strict-Transport-Security',
+    'max-age=63072000; includeSubDomains; preload'
+  );
+  response.headers.set('X-Frame-Options', 'DENY');
+  response.headers.set('X-Content-Type-Options', 'nosniff');
+  response.headers.set('Referrer-Policy', 'no-referrer');
+  response.headers.set(
+    'Content-Security-Policy',
+    "default-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'self';"
+  );
+  response.headers.set(
+    'Permissions-Policy',
+    'camera=(), microphone=(), geolocation=()'
+  );
+  return response;
+}
+
 // Success Response Helper
 export function createSuccessResponse<T>(
   data: T,
@@ -26,7 +49,7 @@ export function createSuccessResponse<T>(
   statusCode: number = 200,
   requestId?: string
 ): NextResponse<ApiResponse<T>> {
-  const response: ApiResponse<T> = {
+  const responsePayload: ApiResponse<T> = {
     success: true,
     data,
     message,
@@ -37,7 +60,8 @@ export function createSuccessResponse<T>(
     },
   };
 
-  return NextResponse.json(response, { status: statusCode });
+  const res = NextResponse.json(responsePayload, { status: statusCode });
+  return addSecurityHeaders(res);
 }
 
 // Error Response Helper
@@ -52,11 +76,9 @@ export function createErrorResponse(
     apiError = error.toApiError();
     statusCode = error.statusCode;
   } else if ('statusCode' in error && 'code' in error) {
-    // Already an ApiError
     apiError = error as ApiError;
     statusCode = apiError.statusCode;
   } else {
-    // Generic Error
     apiError = {
       code: 'INTERNAL_SERVER_ERROR',
       message: error.message || 'An unexpected error occurred',
@@ -65,7 +87,7 @@ export function createErrorResponse(
     statusCode = 500;
   }
 
-  const response: ApiResponse = {
+  const responsePayload: ApiResponse = {
     success: false,
     error: apiError,
     meta: {
@@ -75,7 +97,8 @@ export function createErrorResponse(
     },
   };
 
-  return NextResponse.json(response, { status: statusCode });
+  const res = NextResponse.json(responsePayload, { status: statusCode });
+  return addSecurityHeaders(res);
 }
 
 // Paginated Response Helper
@@ -108,13 +131,14 @@ export function createPaginatedResponse<T>(
 
 // No Content Response (204)
 export function createNoContentResponse(requestId?: string): NextResponse {
-  return new NextResponse(null, {
+  const res = new NextResponse(null, {
     status: 204,
     headers: {
       'X-Request-ID': requestId || generateRequestId(),
       'X-API-Version': API_CONFIG.version,
     },
   });
+  return addSecurityHeaders(res);
 }
 
 // Created Response (201)
@@ -150,7 +174,7 @@ export function createMethodNotAllowedResponse(
   allowedMethods: string[],
   requestId?: string
 ): NextResponse<ApiResponse> {
-  const response: ApiResponse = {
+  const responsePayload: ApiResponse = {
     success: false,
     error: {
       code: 'METHOD_NOT_ALLOWED',
@@ -164,16 +188,19 @@ export function createMethodNotAllowedResponse(
     },
   };
 
-  return NextResponse.json(response, {
+  const res = NextResponse.json(responsePayload, {
     status: 405,
     headers: {
       Allow: allowedMethods.join(', '),
     },
   });
+  return addSecurityHeaders(res);
 }
 
 // CORS Headers Helper
-export function addCorsHeaders(response: NextResponse): NextResponse {
+export function addCorsHeaders<T = unknown>(
+  response: NextResponse<T>
+): NextResponse<T> {
   response.headers.set('Access-Control-Allow-Origin', '*');
   response.headers.set(
     'Access-Control-Allow-Methods',
@@ -184,7 +211,7 @@ export function addCorsHeaders(response: NextResponse): NextResponse {
     'Content-Type, Authorization'
   );
   response.headers.set('Access-Control-Max-Age', '86400');
-  return response;
+  return addSecurityHeaders(response);
 }
 
 // Options Response for CORS

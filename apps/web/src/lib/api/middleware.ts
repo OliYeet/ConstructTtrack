@@ -11,6 +11,7 @@ import {
   createErrorResponse,
   createMethodNotAllowedResponse,
   addCorsHeaders,
+  addSecurityHeaders,
 } from '@/lib/api/response';
 import { BaseApiError, InternalServerError } from '@/lib/errors/api-errors';
 import {
@@ -121,9 +122,10 @@ export function withApiMiddleware(
 
       // Handle CORS preflight
       if (request.method === 'OPTIONS') {
-        if (options.cors !== false) {
-          return addCorsHeaders(new NextResponse(null, { status: 200 }));
-        }
+        const optionsResponse = new NextResponse(null, { status: 200 });
+        if (options.cors !== false) addCorsHeaders(optionsResponse);
+        addSecurityHeaders(optionsResponse);
+        return optionsResponse;
       }
 
       // Check if method is allowed
@@ -136,11 +138,8 @@ export function withApiMiddleware(
           allowedMethods,
           requestContext.requestId
         );
-
-        if (options.cors !== false) {
-          addCorsHeaders(response);
-        }
-
+        if (options.cors !== false) addCorsHeaders(response);
+        addSecurityHeaders(response);
         const duration = Date.now() - startTime;
         logResponse(request, 405, duration, requestContext);
         return response;
@@ -154,11 +153,8 @@ export function withApiMiddleware(
             new BaseApiError('Rate limit exceeded', 429, 'RATE_LIMIT_EXCEEDED'),
             requestContext.requestId
           );
-
-          if (options.cors !== false) {
-            addCorsHeaders(response);
-          }
-
+          if (options.cors !== false) addCorsHeaders(response);
+          addSecurityHeaders(response);
           const duration = Date.now() - startTime;
           logResponse(request, 429, duration, requestContext);
           return response;
@@ -172,11 +168,8 @@ export function withApiMiddleware(
             new BaseApiError('Authentication required', 401, 'UNAUTHORIZED'),
             requestContext.requestId
           );
-
-          if (options.cors !== false) {
-            addCorsHeaders(response);
-          }
-
+          if (options.cors !== false) addCorsHeaders(response);
+          addSecurityHeaders(response);
           const duration = Date.now() - startTime;
           logResponse(request, 401, duration, requestContext);
           return response;
@@ -190,11 +183,8 @@ export function withApiMiddleware(
             new BaseApiError('Authentication required', 401, 'UNAUTHORIZED'),
             requestContext.requestId
           );
-
-          if (options.cors !== false) {
-            addCorsHeaders(response);
-          }
-
+          if (options.cors !== false) addCorsHeaders(response);
+          addSecurityHeaders(response);
           const duration = Date.now() - startTime;
           logResponse(request, 401, duration, requestContext);
           return response;
@@ -209,11 +199,8 @@ export function withApiMiddleware(
             ),
             requestContext.requestId
           );
-
-          if (options.cors !== false) {
-            addCorsHeaders(response);
-          }
-
+          if (options.cors !== false) addCorsHeaders(response);
+          addSecurityHeaders(response);
           const duration = Date.now() - startTime;
           logResponse(request, 403, duration, requestContext);
           return response;
@@ -238,10 +225,9 @@ export function withApiMiddleware(
         { params }
       );
 
-      // Add CORS headers if enabled
-      if (options.cors !== false) {
-        addCorsHeaders(response);
-      }
+      // Add CORS and security headers if enabled
+      if (options.cors !== false) addCorsHeaders(response);
+      addSecurityHeaders(response);
 
       // Log response (both old and new systems)
       const duration = Date.now() - startTime;
@@ -282,10 +268,9 @@ export function withApiMiddleware(
 
       const response = createErrorResponse(apiError, requestContext?.requestId);
 
-      // Add CORS headers if enabled
-      if (options.cors !== false) {
-        addCorsHeaders(response);
-      }
+      // Add CORS and security headers if enabled
+      if (options.cors !== false) addCorsHeaders(response);
+      addSecurityHeaders(response);
 
       // Log error response
       const duration = Date.now() - startTime;
