@@ -75,8 +75,8 @@ export async function GET(request: NextRequest) {
             // Simulate some work
             await Sentry.startSpan(
               {
-                op: 'test-operation',
-                description: 'Testing performance monitoring'
+                name: 'test-operation',
+                op: 'test-operation'
               },
               async () => {
                 // Simulate async work
