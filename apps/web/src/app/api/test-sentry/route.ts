@@ -65,24 +65,26 @@ export async function GET(request: NextRequest) {
         break;
 
       case 'performance': {
-        // Test performance monitoring
-        const transaction = Sentry.startTransaction({
-          name: 'test-performance',
-          op: 'test',
-        });
-
-        Sentry.getCurrentHub().configureScope((scope) => scope.setSpan(transaction));
-
-        const span = transaction.startChild({
-          op: 'test-operation',
-          description: 'Testing performance monitoring',
-        });
-
-        // Simulate some work
-        await new Promise(resolve => setTimeout(resolve, 200));
-
-        span.finish();
-        transaction.finish();
+        // Test performance monitoring using current Sentry API
+        await Sentry.startSpan(
+          {
+            name: 'test-performance',
+            op: 'test'
+          },
+          async (span) => {
+            // Simulate some work
+            await Sentry.startSpan(
+              {
+                op: 'test-operation',
+                description: 'Testing performance monitoring'
+              },
+              async () => {
+                // Simulate async work
+                await new Promise(resolve => setTimeout(resolve, 200));
+              }
+            );
+          }
+        );
         break;
       }
 
