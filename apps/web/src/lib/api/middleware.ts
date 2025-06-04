@@ -139,7 +139,7 @@ export function withApiMiddleware(
           requestContext.requestId
         );
         if (options.cors !== false) addCorsHeaders(response);
-        addSecurityHeaders(response);
+        // addSecurityHeaders(response);
         const duration = Date.now() - startTime;
         logResponse(request, 405, duration, requestContext);
         return response;
@@ -154,7 +154,7 @@ export function withApiMiddleware(
             requestContext.requestId
           );
           if (options.cors !== false) addCorsHeaders(response);
-          addSecurityHeaders(response);
+          // addSecurityHeaders(response);
           const duration = Date.now() - startTime;
           logResponse(request, 429, duration, requestContext);
           return response;
@@ -169,7 +169,7 @@ export function withApiMiddleware(
             requestContext.requestId
           );
           if (options.cors !== false) addCorsHeaders(response);
-          addSecurityHeaders(response);
+          // addSecurityHeaders(response);
           const duration = Date.now() - startTime;
           logResponse(request, 401, duration, requestContext);
           return response;
@@ -184,7 +184,7 @@ export function withApiMiddleware(
             requestContext.requestId
           );
           if (options.cors !== false) addCorsHeaders(response);
-          addSecurityHeaders(response);
+          // addSecurityHeaders(response);
           const duration = Date.now() - startTime;
           logResponse(request, 401, duration, requestContext);
           return response;
@@ -200,7 +200,7 @@ export function withApiMiddleware(
             requestContext.requestId
           );
           if (options.cors !== false) addCorsHeaders(response);
-          addSecurityHeaders(response);
+          // addSecurityHeaders(response);
           const duration = Date.now() - startTime;
           logResponse(request, 403, duration, requestContext);
           return response;
@@ -270,7 +270,7 @@ export function withApiMiddleware(
 
       // Add CORS and security headers if enabled
       if (options.cors !== false) addCorsHeaders(response);
-      addSecurityHeaders(response);
+      // addSecurityHeaders(response);
 
       // Log error response
       const duration = Date.now() - startTime;

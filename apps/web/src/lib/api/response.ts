@@ -211,11 +211,12 @@ export function addCorsHeaders<T = unknown>(
     'Content-Type, Authorization'
   );
   response.headers.set('Access-Control-Max-Age', '86400');
-  return addSecurityHeaders(response);
+  return response;
 }
 
 // Options Response for CORS
 export function createOptionsResponse(): NextResponse {
   const response = new NextResponse(null, { status: 200 });
-  return addCorsHeaders(response);
+  // Apply CORS first, then security headers explicitly
+  return addSecurityHeaders(addCorsHeaders(response));
 }
