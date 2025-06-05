@@ -59,7 +59,7 @@ const channelHandlerRegistry: WeakMap<
  * Registry of active channels, keyed by table name.  Ensures we never create
  * more than one channel for the same table.
  */
-let activeChannels: Map<string, RealtimeChannel> = new Map();
+const activeChannels: Map<string, RealtimeChannel> = new Map();
 
 /**
  * Subscribe to a single table, wiring all events (`*`) to `handler`.
