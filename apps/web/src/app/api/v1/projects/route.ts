@@ -4,6 +4,7 @@
  */
 
 import { NextRequest } from 'next/server';
+import type { RequestContext } from '@/types/api';
 import { z } from 'zod';
 
 import { withAuth } from '@/lib/api/middleware';
@@ -103,14 +104,9 @@ function transformProject(row: ProjectRow): ProjectResponse {
 // GET /api/v1/projects - List projects
 async function handleGet(
   request: NextRequest,
-
-  _: { params: Record<string, string> }
+  _context: { params: Record<string, string> },
+  requestContext: RequestContext
 ) {
-  const context = (
-    request as NextRequest & {
-      context: { requestId: string; organizationId: string };
-    }
-  ).context;
   const queryParams = validateQueryParams(request, listProjectsSchema);
 
   // Dynamically import Supabase client
@@ -120,7 +116,7 @@ async function handleGet(
   let query = supabase
     .from('projects')
     .select('*', { count: 'exact' })
-    .eq('organization_id', context.organizationId!);
+    .eq('organization_id', requestContext.organizationId!);
 
   // Apply filters
   if (queryParams.status) {
@@ -161,21 +157,16 @@ async function handleGet(
     page,
     limit,
     'Projects retrieved successfully',
-    context.requestId
+    requestContext.requestId
   );
 }
 
 // POST /api/v1/projects - Create project
 async function handlePost(
   request: NextRequest,
-
-  _: { params: Record<string, string> }
+  _context: { params: Record<string, string> },
+  requestContext: RequestContext
 ) {
-  const context = (
-    request as NextRequest & {
-      context: { requestId: string; organizationId: string };
-    }
-  ).context;
   const projectData = await validateRequestBody(
     request,
     constructTrackSchemas.createProject
@@ -186,7 +177,7 @@ async function handlePost(
 
   // Prepare data for insertion
   const insertData = {
-    organization_id: context.organizationId!,
+    organization_id: requestContext.organizationId!,
     name: projectData.name,
     description: projectData.description || null,
     start_date: projectData.startDate || null,
@@ -219,7 +210,7 @@ async function handlePost(
   return createCreatedResponse(
     project,
     'Project created successfully',
-    context.requestId
+    requestContext.requestId
   );
 }
 
