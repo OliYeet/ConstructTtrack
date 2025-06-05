@@ -236,6 +236,7 @@ export function getVersionInfo(version?: ApiVersion) {
 
   return createSuccessResponse({
     supportedVersions: versions.map(v => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { version, ...metadata } = VERSION_REGISTRY[v];
       return {
         version: v,
