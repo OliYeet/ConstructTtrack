@@ -1,9 +1,9 @@
 /**
  * Real-time Performance Metrics Types
- * 
- * Defines interfaces and types for monitoring real-time WebSocket and 
+ *
+ * Defines interfaces and types for monitoring real-time WebSocket and
  * event-driven performance in ConstructTrack's fiber installation workflows.
- * 
+ *
  * Based on Charlie's strategic plan (LUM-582):
  * - P90/P99 latency from DB commit → client receive (<250ms goal)
  * - Alert if error ratio >1% or average latency >500ms for 5 min
@@ -14,18 +14,18 @@ import { EVENT_TYPES } from '../../../../../src/types/realtime-protocol';
 // Real-time event latency tracking
 export interface RealtimeLatencyMetric {
   eventId: string;
-  eventType: typeof EVENT_TYPES[number];
+  eventType: (typeof EVENT_TYPES)[number];
   timestamps: {
-    dbCommit?: number;          // Database commit timestamp
-    eventSourced?: number;      // Event sourcing log timestamp
-    websocketSent?: number;     // WebSocket gateway send timestamp
-    clientReceived?: number;    // Client acknowledgment timestamp
+    dbCommit?: number; // Database commit timestamp
+    eventSourced?: number; // Event sourcing log timestamp
+    websocketSent?: number; // WebSocket gateway send timestamp
+    clientReceived?: number; // Client acknowledgment timestamp
   };
   latencies: {
-    dbToEventSource?: number;   // DB commit → event sourcing
-    eventSourceToWs?: number;   // Event sourcing → WebSocket
-    wsToClient?: number;        // WebSocket → client
-    endToEnd?: number;          // Total DB commit → client receive
+    dbToEventSource?: number; // DB commit → event sourcing
+    eventSourceToWs?: number; // Event sourcing → WebSocket
+    wsToClient?: number; // WebSocket → client
+    endToEnd?: number; // Total DB commit → client receive
   };
   metadata: {
     userId?: string;
@@ -49,8 +49,8 @@ export interface WebSocketConnectionMetric {
     disconnected?: number;
   };
   metrics: {
-    connectionTime?: number;    // Time to establish connection
-    totalDuration?: number;     // Total connection duration
+    connectionTime?: number; // Time to establish connection
+    totalDuration?: number; // Total connection duration
     messagesSent: number;
     messagesReceived: number;
     bytesTransferred: number;
@@ -150,24 +150,24 @@ export interface PercentileStats {
 // Real-time alert thresholds (based on Charlie's requirements)
 export interface RealtimeAlertThresholds {
   latency: {
-    endToEndP99Warning: number;     // Default: 250ms (Charlie's goal)
-    endToEndP99Critical: number;    // Default: 500ms
-    averageWarning: number;         // Default: 200ms
-    averageCritical: number;        // Default: 500ms (Charlie's 5min threshold)
+    endToEndP99Warning: number; // Default: 250ms (Charlie's goal)
+    endToEndP99Critical: number; // Default: 500ms
+    averageWarning: number; // Default: 200ms
+    averageCritical: number; // Default: 500ms (Charlie's 5min threshold)
   };
   errorRate: {
-    warningThreshold: number;       // Default: 0.5% (0.005)
-    criticalThreshold: number;      // Default: 1% (0.01) - Charlie's threshold
+    warningThreshold: number; // Default: 0.5% (0.005)
+    criticalThreshold: number; // Default: 1% (0.01) - Charlie's threshold
   };
   connections: {
-    maxConnectionTime: number;      // Default: 5000ms
+    maxConnectionTime: number; // Default: 5000ms
     maxReconnectionAttempts: number; // Default: 5
-    minSuccessRate: number;         // Default: 95% (0.95)
+    minSuccessRate: number; // Default: 95% (0.95)
   };
   throughput: {
-    minEventsPerSecond: number;     // Default: 1
-    maxEventsPerSecond: number;     // Default: 1000
-    maxMessageSize: number;         // Default: 1MB
+    minEventsPerSecond: number; // Default: 1
+    maxEventsPerSecond: number; // Default: 1000
+    maxMessageSize: number; // Default: 1MB
   };
 }
 
@@ -175,8 +175,8 @@ export interface RealtimeAlertThresholds {
 export interface RealtimeAlertConfig {
   enabled: boolean;
   thresholds: RealtimeAlertThresholds;
-  evaluationWindow: number;          // Time window for alert evaluation (ms)
-  cooldownPeriod: number;           // Minimum time between alerts (ms)
+  evaluationWindow: number; // Time window for alert evaluation (ms)
+  cooldownPeriod: number; // Minimum time between alerts (ms)
   channels: {
     email?: string[];
     webhook?: string[];
@@ -187,9 +187,9 @@ export interface RealtimeAlertConfig {
 // Real-time monitoring configuration
 export interface RealtimeMonitoringConfig {
   enabled: boolean;
-  metricsRetentionPeriod: number;   // How long to keep metrics in memory (ms)
-  maxMetricsInMemory: number;       // Maximum number of metrics to store
-  samplingRate: number;             // Percentage of events to sample (0-1)
+  metricsRetentionPeriod: number; // How long to keep metrics in memory (ms)
+  maxMetricsInMemory: number; // Maximum number of metrics to store
+  samplingRate: number; // Percentage of events to sample (0-1)
   enableLatencyTracking: boolean;
   enableConnectionTracking: boolean;
   enableSubscriptionTracking: boolean;
@@ -212,27 +212,27 @@ export const defaultRealtimeMonitoringConfig: RealtimeMonitoringConfig = {
   alertConfig: {
     enabled: true,
     evaluationWindow: 5 * 60 * 1000, // 5 minutes (Charlie's requirement)
-    cooldownPeriod: 15 * 60 * 1000,  // 15 minutes between alerts
+    cooldownPeriod: 15 * 60 * 1000, // 15 minutes between alerts
     thresholds: {
       latency: {
-        endToEndP99Warning: 250,      // Charlie's goal: <250ms
-        endToEndP99Critical: 500,     // Charlie's alert threshold
+        endToEndP99Warning: 250, // Charlie's goal: <250ms
+        endToEndP99Critical: 500, // Charlie's alert threshold
         averageWarning: 200,
-        averageCritical: 500,         // Charlie's 5min threshold
+        averageCritical: 500, // Charlie's 5min threshold
       },
       errorRate: {
-        warningThreshold: 0.005,      // 0.5%
-        criticalThreshold: 0.01,      // 1% - Charlie's threshold
+        warningThreshold: 0.005, // 0.5%
+        criticalThreshold: 0.01, // 1% - Charlie's threshold
       },
       connections: {
-        maxConnectionTime: 5000,      // 5 seconds
+        maxConnectionTime: 5000, // 5 seconds
         maxReconnectionAttempts: 5,
-        minSuccessRate: 0.95,         // 95%
+        minSuccessRate: 0.95, // 95%
       },
       throughput: {
         minEventsPerSecond: 0.1,
         maxEventsPerSecond: 1000,
-        maxMessageSize: 1024 * 1024,  // 1MB
+        maxMessageSize: 1024 * 1024, // 1MB
       },
     },
     channels: {
@@ -242,7 +242,7 @@ export const defaultRealtimeMonitoringConfig: RealtimeMonitoringConfig = {
 };
 
 // Metric collection events
-export type RealtimeMetricEvent = 
+export type RealtimeMetricEvent =
   | { type: 'latency'; metric: RealtimeLatencyMetric }
   | { type: 'connection'; metric: WebSocketConnectionMetric }
   | { type: 'subscription'; metric: RealtimeSubscriptionMetric }
