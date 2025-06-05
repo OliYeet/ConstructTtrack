@@ -94,9 +94,9 @@ async function logDetailedRequest(
         } else if (contentType.includes('application/x-www-form-urlencoded')) {
           const formData = await clonedRequest.formData();
           const formDataObj: Record<string, string> = {};
-          formData.forEach((value, key) => {
+          for (const [key, value] of formData) {
             formDataObj[key] = value.toString();
-          });
+          }
           body = formDataObj;
         } else if (contentType.includes('text/')) {
           body = await clonedRequest.text();
