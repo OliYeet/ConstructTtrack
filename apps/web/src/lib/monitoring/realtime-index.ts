@@ -12,6 +12,15 @@
  * - Integration with existing monitoring systems
  */
 
+// Import functions for internal use
+import {
+  realtimeMonitoringIntegration,
+  SupabaseRealtimeIntegration,
+  WebSocketGatewayIntegration,
+  EventSourcingIntegration,
+} from './realtime-integration';
+import { realtimePerformanceMonitor } from './realtime-performance-monitor';
+
 // Core monitoring components
 export {
   RealtimePerformanceMonitor,
