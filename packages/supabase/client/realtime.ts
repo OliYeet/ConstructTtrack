@@ -58,29 +58,21 @@ export const subscribeToTable = <
 ): RealtimeChannel => {
   const tableName = String(table);
 
-  // Re-use existing channel if already present.
+  // -------------------------------------------------------------------------
+  // Ensure a single channel per table
+  // -------------------------------------------------------------------------
   let channel = activeChannels.get(tableName);
+  let isNewChannel = false;
 
   if (!channel) {
     channel = supabase.channel(`public:${tableName}`);
-
-    // Basic error/status handling for robustness.
-    channel.subscribe((status) => {
-      if (status === 'SUBSCRIBED') return;
-      if (status === 'TIMED_OUT' || status === 'CHANNEL_ERROR') {
-        // eslint-disable-next-line no-console
-        console.error(
-          `[supabase:realtime] Channel error (${status}) on table "${tableName}".`,
-        );
-      }
-      if (status === 'CLOSED') {
-        activeChannels.delete(tableName);
-      }
-    });
-
     activeChannels.set(tableName, channel);
+    isNewChannel = true;
   }
 
+  // -------------------------------------------------------------------------
+  // Attach the event listener *before* subscribing to avoid missing messages
+  // -------------------------------------------------------------------------
   channel.on(
     'postgres_changes',
     { schema: 'public', table: tableName, event: '*' },
@@ -93,6 +85,24 @@ export const subscribeToTable = <
       );
     },
   );
+
+  // -------------------------------------------------------------------------
+  // Subscribe only once, and only for newly–created channels
+  // -------------------------------------------------------------------------
+  if (isNewChannel) {
+    channel.subscribe((status) => {
+      if (status === 'SUBSCRIBED') return;
+      if (status === 'TIMED_OUT' || status === 'CHANNEL_ERROR') {
+        // eslint-disable-next-line no-console
+        console.error(
+          `[supabase:realtime] Channel error (${status}) on table "${tableName}".`,
+        );
+      }
+      if (status === 'CLOSED') {
+        activeChannels.delete(tableName);
+      }
+    });
+  }
 
   return channel;
 };
