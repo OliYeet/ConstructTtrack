@@ -72,12 +72,14 @@ export class RealtimeMonitoringIntegration {
     realtimePerformanceMonitor.on('stats', (stats) => {
       const logger = getLogger();
       logger.info('Real-time performance stats calculated', {
-        stats: {
-          totalEvents: stats.totalEvents,
-          errorRate: stats.errorStats.errorRate,
-          p99Latency: stats.latencyStats.endToEnd.p99,
-          activeConnections: stats.connectionStats.activeConnections,
-          eventsPerSecond: stats.throughputStats.eventsPerSecond,
+        metadata: {
+          stats: {
+            totalEvents: stats.totalEvents,
+            errorRate: stats.errorStats.errorRate,
+            p99Latency: stats.latencyStats.endToEnd.p99,
+            activeConnections: stats.connectionStats.activeConnections,
+            eventsPerSecond: stats.throughputStats.eventsPerSecond,
+          },
         },
       });
     });
@@ -91,10 +93,12 @@ export class RealtimeMonitoringIntegration {
         if (metric.latencies.endToEnd && metric.latencies.endToEnd > 1000) {
           const logger = getLogger();
           logger.warn('High latency real-time event detected', {
-            eventId: metric.eventId,
-            eventType: metric.eventType,
-            endToEndLatency: metric.latencies.endToEnd,
-            channel: metric.metadata.channel,
+            metadata: {
+              eventId: metric.eventId,
+              eventType: metric.eventType,
+              endToEndLatency: metric.latencies.endToEnd,
+              channel: metric.metadata.channel,
+            },
           });
         }
       }
@@ -224,15 +228,22 @@ export class SupabaseRealtimeIntegration {
     error?: { code: string; message: string }
   ): void {
     const now = Date.now();
-    
+
+    const timestamps: any = {
+      connectionStart: now,
+      lastActivity: now,
+    };
+
+    if (status === 'connected') {
+      timestamps.connectionEstablished = now;
+    } else if (status === 'disconnected') {
+      timestamps.disconnected = now;
+    }
+
     realtimePerformanceMonitor.recordConnectionMetric({
       connectionId,
       status,
-      timestamps: {
-        [status === 'connecting' ? 'connectionStart' : 
-         status === 'connected' ? 'connectionEstablished' :
-         status === 'disconnected' ? 'disconnected' : 'lastActivity']: now,
-      },
+      timestamps,
       lastError: error ? { ...error, timestamp: now } : undefined,
     });
   }
@@ -310,14 +321,22 @@ export class WebSocketGatewayIntegration {
     error?: { code: string; message: string }
   ): void {
     const now = Date.now();
-    
+
+    const timestamps: any = {
+      connectionStart: now,
+      lastActivity: now,
+    };
+
+    if (status === 'connected') {
+      timestamps.connectionEstablished = now;
+    } else if (status === 'disconnected') {
+      timestamps.disconnected = now;
+    }
+
     realtimePerformanceMonitor.recordConnectionMetric({
       connectionId,
       status,
-      timestamps: {
-        [status === 'connected' ? 'connectionEstablished' :
-         status === 'disconnected' ? 'disconnected' : 'lastActivity']: now,
-      },
+      timestamps,
       lastError: error ? { ...error, timestamp: now } : undefined,
     });
   }
@@ -329,6 +348,7 @@ export class WebSocketGatewayIntegration {
     messagesReceived: number,
     bytesTransferred: number
   ): void {
+    const now = Date.now();
     realtimePerformanceMonitor.recordConnectionMetric({
       connectionId,
       metrics: {
@@ -338,7 +358,8 @@ export class WebSocketGatewayIntegration {
         reconnectionAttempts: 0,
       },
       timestamps: {
-        lastActivity: Date.now(),
+        connectionStart: now,
+        lastActivity: now,
       },
     });
   }

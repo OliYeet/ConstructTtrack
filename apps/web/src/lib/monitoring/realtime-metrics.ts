@@ -9,14 +9,14 @@
  * - Alert if error ratio >1% or average latency >500ms for 5 min
  */
 
-import { EVENT_TYPES } from '../../../types/realtime-protocol';
+import { EVENT_TYPES } from '../../../../../src/types/realtime-protocol';
 
 // Real-time event latency tracking
 export interface RealtimeLatencyMetric {
   eventId: string;
   eventType: typeof EVENT_TYPES[number];
   timestamps: {
-    dbCommit: number;           // Database commit timestamp
+    dbCommit?: number;          // Database commit timestamp
     eventSourced?: number;      // Event sourcing log timestamp
     websocketSent?: number;     // WebSocket gateway send timestamp
     clientReceived?: number;    // Client acknowledgment timestamp
@@ -32,8 +32,8 @@ export interface RealtimeLatencyMetric {
     organizationId?: string;
     workOrderId?: string;
     sectionId?: string;
-    channel: string;
-    messageSize: number;
+    channel?: string;
+    messageSize?: number;
   };
 }
 

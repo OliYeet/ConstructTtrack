@@ -368,7 +368,7 @@ export class RealtimePerformanceMonitor {
 
     // Filter metrics within the evaluation window
     const recentLatencyMetrics = this.latencyMetrics.filter(
-      m => m.timestamps.dbCommit >= windowStart
+      m => m.timestamps.dbCommit && m.timestamps.dbCommit >= windowStart
     );
 
     const recentErrorMetrics = this.errorMetrics.filter(
@@ -425,7 +425,7 @@ export class RealtimePerformanceMonitor {
     const eventsPerSecond = totalEvents / windowDurationSeconds;
 
     const totalBytes = recentLatencyMetrics.reduce(
-      (sum, m) => sum + m.metadata.messageSize, 0
+      (sum, m) => sum + (m.metadata.messageSize || 0), 0
     );
     const bytesPerSecond = totalBytes / windowDurationSeconds;
 
@@ -738,7 +738,9 @@ export class RealtimePerformanceMonitor {
     // Log alert
     const logger = getLogger();
     logger.warn('Real-time performance alert triggered', {
-      alert,
+      metadata: {
+        alert,
+      },
     });
 
     // Record alert metric in main performance monitor
@@ -761,7 +763,7 @@ export class RealtimePerformanceMonitor {
 
     // Clean up latency metrics
     this.latencyMetrics = this.latencyMetrics.filter(
-      m => m.timestamps.dbCommit >= cutoff
+      m => m.timestamps.dbCommit && m.timestamps.dbCommit >= cutoff
     );
 
     // Clean up error metrics

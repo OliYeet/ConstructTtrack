@@ -91,7 +91,9 @@ export class RealtimeAlertManager {
     }
 
     const logger = getLogger();
-    logger.info('Sending real-time alert', { alert });
+    logger.info('Sending real-time alert', {
+      metadata: { alert }
+    });
 
     // Send to all enabled channels
     const sendPromises = Array.from(this.alertChannels.values())
@@ -135,9 +137,11 @@ export class RealtimeAlertManager {
       
       const logger = getLogger();
       logger.error('Failed to send alert to channel', {
-        alert: alert.id,
-        channel: channel.type,
-        error: notification.error,
+        metadata: {
+          alert: alert.id,
+          channel: channel.type,
+          error: notification.error,
+        },
       });
     }
 
@@ -151,11 +155,13 @@ export class RealtimeAlertManager {
     
     const logLevel = alert.severity === 'critical' ? 'error' : 'warn';
     logger[logLevel](`🚨 REAL-TIME ALERT [${alert.severity.toUpperCase()}]`, {
-      id: alert.id,
-      type: alert.type,
-      message: alert.message,
-      details: alert.details,
-      timestamp: new Date(alert.timestamp).toISOString(),
+      metadata: {
+        id: alert.id,
+        type: alert.type,
+        message: alert.message,
+        details: alert.details,
+        timestamp: new Date(alert.timestamp).toISOString(),
+      },
     });
   }
 
@@ -166,12 +172,14 @@ export class RealtimeAlertManager {
     // TODO: Implement email sending with your preferred service (SendGrid, AWS SES, etc.)
     const logger = getLogger();
     logger.info('Email alert would be sent', {
-      recipient,
-      alert: {
-        id: alert.id,
-        type: alert.type,
-        severity: alert.severity,
-        message: alert.message,
+      metadata: {
+        recipient,
+        alert: {
+          id: alert.id,
+          type: alert.type,
+          severity: alert.severity,
+          message: alert.message,
+        },
       },
     });
 
