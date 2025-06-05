@@ -15,11 +15,9 @@ global.fetch = jest.fn();
 
 describe('API Contract Testing', () => {
   let validator: SchemaValidator;
-  // let runner: ContractTestRunner;
 
   beforeEach(() => {
     validator = new SchemaValidator();
-    runner = new ContractTestRunner();
     jest.clearAllMocks();
   });
 

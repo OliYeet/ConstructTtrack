@@ -59,14 +59,14 @@ describe('Enhanced Request/Response Logging', () => {
   let mockEnhancedLogResponse: jest.Mock;
   let mockEnhancedLogError: jest.Mock;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     jest.clearAllMocks();
 
     // Get the mocked functions
-    // const logging = require('@/lib/logging');
-    // mockEnhancedLogRequest = logging.logRequest;
-    // mockEnhancedLogResponse = logging.logResponse;
-    // mockEnhancedLogError = logging.logError;
+    const logging = await import('@/lib/logging');
+    mockEnhancedLogRequest = logging.logRequest as jest.Mock;
+    mockEnhancedLogResponse = logging.logResponse as jest.Mock;
+    mockEnhancedLogError = logging.logError as jest.Mock;
   });
 
   it('should perform basic logging when detailed logging is disabled', async () => {

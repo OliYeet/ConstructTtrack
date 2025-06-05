@@ -309,6 +309,7 @@ describe('API Monitoring System', () => {
         severity: 'medium' as const,
         timestamp: Date.now(),
         resolved: false,
+        resolvedAt: undefined as number | undefined,
         metadata: {},
       };
 

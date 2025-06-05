@@ -383,6 +383,7 @@ describe('API Performance Monitoring System', () => {
         severity: 'warning' as const,
         message: 'Test alert',
         resolved: false,
+        resolvedAt: undefined as number | undefined,
       };
 
       performanceMonitor['alerts'].push(alert);

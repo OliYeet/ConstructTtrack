@@ -93,7 +93,11 @@ async function logDetailedRequest(
           body = await clonedRequest.json();
         } else if (contentType.includes('application/x-www-form-urlencoded')) {
           const formData = await clonedRequest.formData();
-          body = Object.fromEntries(formData.entries());
+          const formDataObj: Record<string, string> = {};
+          formData.forEach((value, key) => {
+            formDataObj[key] = value.toString();
+          });
+          body = formDataObj;
         } else if (contentType.includes('text/')) {
           body = await clonedRequest.text();
         }

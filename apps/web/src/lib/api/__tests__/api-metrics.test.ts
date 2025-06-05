@@ -60,18 +60,18 @@ describe('Enhanced API Metrics', () => {
   // let mockEnhancedLogResponse: jest.Mock;
   let mockEnhancedLogError: jest.Mock;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     jest.clearAllMocks();
 
     // Get the mocked functions
-    // const logging = require('@/lib/logging');
-    // mockEnhancedLogRequest = logging.logRequest;
+    const logging = await import('@/lib/logging');
+    mockEnhancedLogRequest = logging.logRequest as jest.Mock;
     // mockEnhancedLogResponse = logging.logResponse;
-    // mockEnhancedLogError = logging.logError;
+    mockEnhancedLogError = logging.logError as jest.Mock;
 
     // Get the mocked API metrics tracker
-    // const apiMetrics = require('@/lib/monitoring/api-metrics');
-    // mockApiMetricsTracker = apiMetrics.apiMetricsTracker;
+    const apiMetrics = await import('@/lib/monitoring/api-metrics');
+    mockApiMetricsTracker = apiMetrics.apiMetricsTracker;
   });
 
   it('should perform basic metrics collection when detailed metrics is disabled', async () => {
