@@ -13,12 +13,14 @@ type RequestWithContext = NextRequest & { context?: RequestContext };
 // Mock the middleware to return the handlers directly
 jest.mock('@/lib/api/middleware', () => ({
   withApiMiddleware: jest.fn(handlers => {
-    // Return a function that routes to the correct handler based on method
+    // Return a function that routes to the correct handler based on HTTP method
     return async (request: Request, context: RequestContext) => {
       const method = request.method;
       const handler = handlers[method];
       if (handler) {
-        return await handler(request, context);
+        // Pass Request, an (unused) empty route-context object, and the
+        // RequestContext as the third argument, matching the new handler sig.
+        return await handler(request, {}, context);
       }
       throw new Error(`Method ${method} not allowed`);
     };
