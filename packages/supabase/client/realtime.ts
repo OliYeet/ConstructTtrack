@@ -1,13 +1,15 @@
-import { type RealtimeChannel, type RealtimePostgresChangesPayload } from '@supabase/supabase-js';
+import {
+  type RealtimeChannel,
+  type RealtimePostgresChangesPayload,
+} from '@supabase/supabase-js';
 
-import { supabase } from './index';
+import { supabase } from './core';
 import type { Database } from '../types/database';
 
-/**
- * All tables we actively maintain real-time listeners for.
- *
- * Extend this tuple if more tables need to be managed centrally.
- */
+// ---------------------------------------------------------------------------
+// Table meta
+// ---------------------------------------------------------------------------
+
 export const managedTableNames = [
   'projects',
   'fiber_routes',
@@ -17,33 +19,36 @@ export const managedTableNames = [
   'customer_agreements',
 ] as const;
 
-/**
- * Convenience union type of the managed table names.
- */
 export type ManagedTableName = (typeof managedTableNames)[number];
 
-/**
- * Generic dispatch signature for table change events.
- *
- * `payload`  – Raw Postgres change payload for the corresponding table.
- * `table`    – Name of the table that produced the change.
- */
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
 export type RealtimeDispatch<
   T extends ManagedTableName | keyof Database['public']['Tables'] = ManagedTableName,
 > = (
   payload: RealtimePostgresChangesPayload<
-    // prettier-ignore
     Database['public']['Tables'][T & keyof Database['public']['Tables']]['Row']
   >,
   table: T,
 ) => void;
 
+// ---------------------------------------------------------------------------
+// Internals – global channel registry
+// ---------------------------------------------------------------------------
+
 /**
- * Subscribe to a single table and forward every INSERT/UPDATE/DELETE
- * payload to the provided handler.
+ * Registry of active channels, keyed by table name.  Ensures we never create
+ * more than one channel for the same table.
+ */
+let activeChannels: Map<string, RealtimeChannel> = new Map();
+
+/**
+ * Subscribe to a single table, wiring all events (`*`) to `handler`.
  *
- * The returned `RealtimeChannel` should be stored if you need to manage
- * the subscription life-cycle manually (e.g. for ad-hoc listeners).
+ * If a channel for the given table already exists, that channel is re-used and
+ * the new handler is simply attached to it.
  */
 export const subscribeToTable = <
   T extends keyof Database['public']['Tables'],
@@ -51,66 +56,70 @@ export const subscribeToTable = <
   table: T,
   handler: RealtimeDispatch<T>,
 ): RealtimeChannel => {
-  const channel = supabase
-    .channel(`public:${String(table)}`)
-    .on(
-      'postgres_changes',
-      { schema: 'public', table: table as string, event: '*' },
-      (payload) => {
-        handler(
-          payload as RealtimePostgresChangesPayload<
-            Database['public']['Tables'][T]['Row']
-          >,
-          table,
+  const tableName = String(table);
+
+  // Re-use existing channel if already present.
+  let channel = activeChannels.get(tableName);
+
+  if (!channel) {
+    channel = supabase.channel(`public:${tableName}`);
+
+    // Basic error/status handling for robustness.
+    channel.subscribe((status) => {
+      if (status === 'SUBSCRIBED') return;
+      if (status === 'TIMED_OUT' || status === 'CHANNEL_ERROR') {
+        // eslint-disable-next-line no-console
+        console.error(
+          `[supabase:realtime] Channel error (${status}) on table "${tableName}".`,
         );
-      },
-    )
-    .subscribe();
+      }
+      if (status === 'CLOSED') {
+        activeChannels.delete(tableName);
+      }
+    });
+
+    activeChannels.set(tableName, channel);
+  }
+
+  channel.on(
+    'postgres_changes',
+    { schema: 'public', table: tableName, event: '*' },
+    (payload) => {
+      handler(
+        payload as RealtimePostgresChangesPayload<
+          Database['public']['Tables'][T]['Row']
+        >,
+        table,
+      );
+    },
+  );
 
   return channel;
 };
 
-// ------------------------------------------------------------------
-// Centralised, application-wide real-time management helpers
-// ------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// Centralised subscription helpers
+// ---------------------------------------------------------------------------
 
 /**
- * Internally tracked channels created by `initRealtimeSubscriptions`.
- * Cleared by `removeRealtimeSubscriptions`.
- */
-let activeChannels: RealtimeChannel[] = [];
-
-/**
- * Initialise real-time listeners for every table listed in
- * `managedTableNames`.  
- *
- * If initialised more than once, any previous set of listeners is first
- * removed to ensure subscriptions do not accumulate.
+ * Initialises real-time listeners for all `managedTableNames`.
+ * Re-invoking this function will clear any existing listeners first.
  */
 export const initRealtimeSubscriptions = (
   dispatch: RealtimeDispatch<ManagedTableName>,
 ) => {
-  // Remove any existing listeners to avoid duplicates.
   removeRealtimeSubscriptions();
 
-  activeChannels = managedTableNames.map((table) =>
+  managedTableNames.forEach((table) =>
     subscribeToTable(table, dispatch as RealtimeDispatch<typeof table>),
   );
 };
 
 /**
- * Disconnect and clean up all channels previously created via
- * `initRealtimeSubscriptions`.
- *
- * Safe to call even if no active channels exist.
+ * Clean-up helper that disconnects and removes *all* active channels created
+ * via any of this module’s helpers.
  */
 export const removeRealtimeSubscriptions = () => {
-  if (activeChannels.length === 0) return;
-
-  activeChannels.forEach((channel) => {
-    // `removeChannel` handles both open and already-closed channels.
-    supabase.removeChannel(channel);
-  });
-
-  activeChannels = [];
+  activeChannels.forEach((channel) => supabase.removeChannel(channel));
+  activeChannels.clear();
 };
