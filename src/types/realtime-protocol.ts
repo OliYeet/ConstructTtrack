@@ -10,10 +10,28 @@
 // Protocol Version
 export const PROTOCOL_VERSION = 'v1.alpha' as const;
 
+/**
+ * All allowed event type literals for the v1.alpha protocol.
+ * Keeping the list in a single readonly tuple guarantees
+ * compile-time exhaustiveness and enables fast runtime validation.
+ */
+export const EVENT_TYPES = [
+  'FiberSectionStarted',
+  'CablePulled',
+  'SpliceCompleted',
+  'InspectionPassed',
+  'SectionClosed',
+  'WorkOrderUpdated',
+  'FiberSectionProgress',
+] as const;
+
+/** Union of every event `type` literal. */
+export type EventType = (typeof EVENT_TYPES)[number];
+
 // Base Event Structure
 export interface BaseEvent {
   id: string;
-  type: string;
+  type: EventType;
   version: typeof PROTOCOL_VERSION;
   timestamp: string; // ISO 8601
   workOrderId: string;
@@ -189,9 +207,27 @@ export const CHANNEL_PATTERNS = {
 
 // Event Type Guards
 export const isRealtimeEvent = (obj: unknown): obj is RealtimeEvent => {
-  return (
-    typeof obj === 'object' && obj !== null && 'type' in obj && 'version' in obj
-  );
+  if (typeof obj !== 'object' || obj === null) return false;
+
+  const candidate = obj as Record<string, unknown>;
+
+  // Validate mandatory base fields and their types
+  if (
+    typeof candidate.id !== 'string' ||
+    typeof candidate.type !== 'string' ||
+    typeof candidate.version !== 'string' ||
+    typeof candidate.timestamp !== 'string' ||
+    typeof candidate.workOrderId !== 'string' ||
+    typeof candidate.userId !== 'string'
+  ) {
+    return false;
+  }
+
+  // Ensure protocol version and event type are recognised
+  if (candidate.version !== PROTOCOL_VERSION) return false;
+  if (!EVENT_TYPES.includes(candidate.type as EventType)) return false;
+
+  return true;
 };
 
 export const isFiberSectionStartedEvent = (
