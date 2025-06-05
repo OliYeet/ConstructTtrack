@@ -109,15 +109,18 @@ export function withApiMiddleware(
       // Create request context with authentication
       requestContext = await createRequestContext(request);
 
-      // Expose context for downstream handlers
-      (request as unknown as {
-        context?: RequestContext;
-        user?: RequestContext['user'];
-      }).context = requestContext;
-      (request as unknown as {
-        context?: RequestContext;
-        user?: RequestContext['user'];
-      }).user = requestContext.user;
+      /**
+       * Call a route‐specific handler while explicitly passing the
+       * `RequestContext` rather than mutating the `NextRequest`.
+       */
+      const invokeHandlerWithContext = async (
+        handler: ApiHandler,
+        req: NextRequest,
+        params: Record<string, string>,
+        ctx: RequestContext
+      ): Promise<NextResponse> => {
+        return handler(req, { params }, ctx);
+      };
 
       // Log incoming request (both old and new systems)
       logRequest(request, requestContext);
@@ -243,12 +246,11 @@ export function withApiMiddleware(
 
       // Execute handler
       const params = await context.params;
-      const response = await handler(
-        request as NextRequest & {
-          context: RequestContext;
-          user?: RequestContext['user'];
-        },
-        { params }
+      const response = await invokeHandlerWithContext(
+        handler,
+        request,
+        params,
+        requestContext!
       );
 
       // Add CORS headers if enabled
