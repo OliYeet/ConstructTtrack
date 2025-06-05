@@ -44,7 +44,7 @@ async function checkDatabase(): Promise<'healthy' | 'unhealthy'> {
 async function handleGet(
   request: ApiRequest,
   _context: { params: Record<string, string> },
-  requestContext: RequestContext
+  requestContext?: RequestContext
 ) {
   const startTime = Date.now();
 
@@ -79,7 +79,7 @@ async function handleGet(
     healthData,
     `System is ${overallStatus} (${responseTime}ms)`,
     statusCode,
-    requestContext.requestId
+    requestContext?.requestId
   );
 }
 
