@@ -5,6 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { withApiMiddleware } from '../middleware';
+import { createRequestContext } from '../auth';
 
 // Mock the enhanced logging module
 jest.mock('@/lib/logging', () => ({
@@ -322,12 +323,13 @@ describe('Enhanced API Metrics', () => {
 
   it('should record anonymous user metrics for unauthenticated requests', async () => {
     // Mock unauthenticated context
-    // const mockCreateRequestContext = require('../auth').createRequestContext;
-    // mockCreateRequestContext.mockReturnValueOnce({
-    //   requestId: 'test-request-id',
-    //   user: null,
-    //   organizationId: null,
-    // });
+    (
+      createRequestContext as jest.MockedFunction<typeof createRequestContext>
+    ).mockReturnValueOnce({
+      requestId: 'test-request-id',
+      user: null,
+      organizationId: null,
+    });
 
     const handler = withApiMiddleware(
       {

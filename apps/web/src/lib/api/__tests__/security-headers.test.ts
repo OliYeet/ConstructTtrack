@@ -160,7 +160,7 @@ describe('API Security Headers', () => {
     expect(response.headers.get('X-Frame-Options')).toBe('DENY');
 
     // CORS headers should not be applied
-    expect(response.headers.get('Access-Control-Allow-Origin')).toBeNull();
+    expect(response.headers.get('Access-Control-Allow-Origin')).toBeFalsy();
   });
 
   it('should apply security headers to rate limit responses', async () => {

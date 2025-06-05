@@ -24,7 +24,6 @@ import {
   logRequest as enhancedLogRequest,
   logResponse as enhancedLogResponse,
   logError as enhancedLogError,
-  getLogger,
 } from '@/lib/logging';
 import { apiMetricsTracker } from '@/lib/monitoring/api-metrics';
 // import { performanceMonitor } from '@/lib/monitoring/performance-monitor';
@@ -109,12 +108,12 @@ async function logDetailedRequest(
       }
     }
 
-    // Use the structured logger directly for detailed logging
-    const logger = getLogger();
-    await logger.info('Detailed API Request', {
+    // Use enhancedLogRequest for detailed logging
+    await enhancedLogRequest(request, {
       requestId: context?.requestId,
       userId: context?.user?.id,
       organizationId: context?.organizationId,
+      user: context?.user,
       metadata: {
         detailedLogging: true,
         url: {
@@ -180,12 +179,12 @@ async function logDetailedResponse(
       responseBody = '[Unable to parse response body]';
     }
 
-    // Use the structured logger directly for detailed response logging
-    const logger = getLogger();
-    await logger.info('Detailed API Response', {
+    // Use enhancedLogResponse for detailed response logging
+    await enhancedLogResponse(request, response.status, duration, {
       requestId: context?.requestId,
       userId: context?.user?.id,
       organizationId: context?.organizationId,
+      user: context?.user,
       response: {
         statusCode: response.status,
         contentLength,
@@ -239,11 +238,11 @@ async function recordDetailedMetrics(
     // Request size metrics
     const contentLength = request.headers.get('content-length');
     if (contentLength) {
-      const logger = getLogger();
-      await logger.info('API Metric: Request Size', {
+      await enhancedLogRequest(request, {
         requestId: context?.requestId,
         userId: context?.user?.id,
         organizationId: context?.organizationId,
+        user: context?.user,
         metadata: {
           metricType: 'request_size',
           value: parseInt(contentLength, 10),
@@ -256,11 +255,11 @@ async function recordDetailedMetrics(
     // Response size metrics
     const responseSize = response.headers.get('content-length');
     if (responseSize) {
-      const logger = getLogger();
-      await logger.info('API Metric: Response Size', {
+      await enhancedLogRequest(request, {
         requestId: context?.requestId,
         userId: context?.user?.id,
         organizationId: context?.organizationId,
+        user: context?.user,
         metadata: {
           metricType: 'response_size',
           value: parseInt(responseSize, 10),
@@ -272,11 +271,11 @@ async function recordDetailedMetrics(
 
     // User activity metrics
     if (context?.user) {
-      const logger = getLogger();
-      await logger.info('API Metric: User Activity', {
+      await enhancedLogRequest(request, {
         requestId: context?.requestId,
         userId: context?.user?.id,
         organizationId: context?.organizationId,
+        user: context?.user,
         metadata: {
           metricType: 'user_activity',
           value: 1,
@@ -292,11 +291,11 @@ async function recordDetailedMetrics(
 
     // Error rate metrics
     if (response.status >= 400) {
-      const logger = getLogger();
-      await logger.info('API Metric: Error Rate', {
+      await enhancedLogRequest(request, {
         requestId: context?.requestId,
         userId: context?.user?.id,
         organizationId: context?.organizationId,
+        user: context?.user,
         metadata: {
           metricType: 'api_error',
           value: 1,
@@ -310,11 +309,11 @@ async function recordDetailedMetrics(
     }
 
     // Performance metrics by endpoint
-    const logger = getLogger();
-    await logger.info('API Metric: Endpoint Performance', {
+    await enhancedLogRequest(request, {
       requestId: context?.requestId,
       userId: context?.user?.id,
       organizationId: context?.organizationId,
+      user: context?.user,
       performance: {
         duration,
         memoryUsage:
@@ -331,11 +330,11 @@ async function recordDetailedMetrics(
     // Rate limiting metrics (if rate limited)
     const rateLimitRemaining = response.headers.get('X-RateLimit-Remaining');
     if (rateLimitRemaining) {
-      const logger = getLogger();
-      await logger.info('API Metric: Rate Limit Usage', {
+      await enhancedLogRequest(request, {
         requestId: context?.requestId,
         userId: context?.user?.id,
         organizationId: context?.organizationId,
+        user: context?.user,
         metadata: {
           metricType: 'rate_limit_usage',
           value: parseInt(rateLimitRemaining, 10),
@@ -378,6 +377,7 @@ export function withApiMiddleware(
   ): Promise<NextResponse> {
     const startTime = Date.now();
     let requestContext: RequestContext | undefined;
+    let rateLimitHeaders: Record<string, string> = {};
 
     try {
       // Create request context with authentication
@@ -453,6 +453,9 @@ export function withApiMiddleware(
           logResponse(request, 429, duration, requestContext);
           return response;
         }
+
+        // Store rate limit headers for later application to successful responses
+        rateLimitHeaders = rateLimitResult.headers || {};
       }
 
       // Authentication check
@@ -595,10 +598,7 @@ export function withApiMiddleware(
               setImmediate(async () => {
                 try {
                   const params = await context.params;
-                  const freshResponse = await handler(
-                    request as NextRequest & { context: RequestContext },
-                    { params }
-                  );
+                  const freshResponse = await handler(request, { params });
 
                   if (freshResponse.ok && freshResponse.status === 200) {
                     const responseClone = freshResponse.clone();
@@ -644,10 +644,11 @@ export function withApiMiddleware(
 
       // Execute handler
       const params = await context.params;
-      const response = await handler(
-        request as NextRequest & { context: RequestContext },
-        { params }
-      );
+      let response = await handler(request, { params });
+
+      // Prepare headers for modification
+      let needsNewResponse = false;
+      const newHeaders = new Headers(response.headers);
 
       // Cache successful GET responses
       if (
@@ -689,15 +690,16 @@ export function withApiMiddleware(
               response.headers.get('Content-Type') || 'application/json',
           });
 
-          // Add cache headers to response
+          // Add cache headers
           const entry = await cacheManager.get(cacheKey);
           if (entry) {
-            response.headers.set('ETag', entry.etag);
-            response.headers.set('X-Cache', 'MISS');
-            response.headers.set(
+            newHeaders.set('ETag', entry.etag);
+            newHeaders.set('X-Cache', 'MISS');
+            newHeaders.set(
               'Cache-Control',
               cacheManager.getCacheControlHeader(entry, false)
             );
+            needsNewResponse = true;
           }
         } catch (error) {
           await enhancedLogError(
@@ -707,6 +709,24 @@ export function withApiMiddleware(
             requestContext
           );
         }
+      }
+
+      // Add rate limit headers if available
+      if (rateLimitHeaders && Object.keys(rateLimitHeaders).length > 0) {
+        Object.entries(rateLimitHeaders).forEach(([key, value]) => {
+          newHeaders.set(key, value);
+        });
+        needsNewResponse = true;
+      }
+
+      // Create new response with all headers if needed
+      if (needsNewResponse) {
+        const responseBody = await response.clone().text();
+        response = new NextResponse(responseBody, {
+          status: response.status,
+          statusText: response.statusText,
+          headers: newHeaders,
+        });
       }
 
       // Apply security and CORS headers

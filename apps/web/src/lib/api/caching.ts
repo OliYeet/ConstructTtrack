@@ -470,23 +470,40 @@ export function withCaching(
         // Cache successful responses
         if (response.ok && response.status === 200) {
           try {
+            // Clone response once for both caching and new response creation
             const responseClone = response.clone();
-            const data = await responseClone.json();
+            const responseBody = await responseClone.text();
+
+            // Parse data for caching
+            let data;
+            try {
+              data = JSON.parse(responseBody);
+            } catch {
+              data = responseBody;
+            }
 
             await manager.set(cacheKey, data, cacheConfig, {
               'Content-Type':
                 response.headers.get('Content-Type') || 'application/json',
             });
 
-            // Add cache headers to response
+            // Add cache headers to response by creating a new response
             const entry = await manager.get(cacheKey);
             if (entry) {
-              response.headers.set('ETag', entry.etag);
-              response.headers.set('X-Cache', 'MISS');
-              response.headers.set(
+              const newHeaders = new Headers(response.headers);
+              newHeaders.set('ETag', entry.etag);
+              newHeaders.set('X-Cache', 'MISS');
+              newHeaders.set(
                 'Cache-Control',
                 manager.getCacheControlHeader(entry, false)
               );
+
+              // Create new response with cache headers
+              return new NextResponse(responseBody, {
+                status: response.status,
+                statusText: response.statusText,
+                headers: newHeaders,
+              });
             }
           } catch (error) {
             logger.error('Failed to cache response', error);

@@ -7,10 +7,11 @@ import { jest } from '@jest/globals';
 import { createSuccessResponse } from '../response';
 import { withAuth } from '../middleware';
 import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 import { createMockRequest } from '../../../tests/setup';
+import { createRequestContext } from '@/lib/api/auth';
 
-// Import the mocked supabase client
-import { supabase } from '@constructtrack/supabase/client';
+// Import the mocked supabase client (for type checking only)
 
 // Mock the Supabase client methods before tests
 jest.mock('@constructtrack/supabase/client', () => ({
@@ -24,6 +25,113 @@ jest.mock('@constructtrack/supabase/client', () => ({
       single: jest.fn(),
     })),
   },
+}));
+
+// Mock other dependencies
+jest.mock('@/lib/logging', () => ({
+  logRequest: jest.fn(),
+  logResponse: jest.fn(),
+  logError: jest.fn(),
+  enhancedLogRequest: jest.fn(),
+  enhancedLogResponse: jest.fn(),
+  enhancedLogError: jest.fn(),
+  getLogger: jest.fn(() => ({
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+    debug: jest.fn(),
+  })),
+}));
+
+jest.mock('@/lib/monitoring/api-metrics', () => ({
+  apiMetricsTracker: {
+    recordRequestStart: jest.fn(() => 'test-request-id'),
+    recordRequestEnd: jest.fn(),
+  },
+}));
+
+jest.mock('@/lib/security/headers', () => ({
+  applySecurityHeaders: jest.fn(response => response),
+  applyApiHeaders: jest.fn(response => response),
+  defaultSecurityConfig: {},
+}));
+
+jest.mock('@/lib/security/rate-limiting', () => ({
+  createRateLimitMiddleware: jest.fn(() =>
+    jest.fn(async () => ({ allowed: true, headers: {} }))
+  ),
+  rateLimitConfigs: { api: {} },
+}));
+
+jest.mock('../caching', () => ({
+  cacheManager: {
+    generateKey: jest.fn(() => 'test-cache-key'),
+    get: jest.fn(() => null),
+    set: jest.fn(),
+    isStale: jest.fn(() => false),
+    createCachedResponse: jest.fn(),
+    getCacheControlHeader: jest.fn(() => 'public, max-age=300'),
+  },
+  cacheConfigs: {
+    short: { ttl: 60 },
+    medium: { ttl: 300 },
+    long: { ttl: 3600 },
+  },
+  CacheStrategy: {
+    CACHE_FIRST: 'CACHE_FIRST',
+    STALE_WHILE_REVALIDATE: 'STALE_WHILE_REVALIDATE',
+  },
+}));
+
+jest.mock('../response', () => ({
+  addCorsHeaders: jest.fn(response => response),
+  createErrorResponse: jest.fn((error, requestId) => {
+    const status = error?.status || 500;
+    return NextResponse.json(
+      {
+        success: false,
+        error: {
+          code: error?.code || 'UNKNOWN_ERROR',
+          message: error?.message || 'Test error',
+          statusCode: status,
+        },
+        meta: {
+          timestamp: new Date().toISOString(),
+          version: 'v1',
+          requestId,
+        },
+      },
+      { status }
+    );
+  }),
+  createMethodNotAllowedResponse: jest.fn((_allowedMethods, _requestId) =>
+    NextResponse.json({ error: 'Method not allowed' }, { status: 405 })
+  ),
+  createSuccessResponse: jest.fn(data =>
+    NextResponse.json({
+      success: true,
+      data,
+      meta: {
+        timestamp: new Date().toISOString(),
+        version: 'v1',
+      },
+    })
+  ),
+}));
+
+// Mock the auth module
+jest.mock('@/lib/api/auth', () => ({
+  createRequestContext: jest.fn(),
+}));
+
+// Mock the error classes
+jest.mock('@/lib/errors/api-errors', () => ({
+  BaseApiError: jest.fn().mockImplementation((message, status, code) => ({
+    message,
+    status,
+    code,
+  })),
+  InternalServerError: jest.fn(),
 }));
 
 // Simple handler used to confirm successful auth
@@ -44,31 +152,20 @@ describe('Authentication middleware (`withAuth`)', () => {
   });
 
   it('allows request with a valid token', async () => {
-    // Mock Supabase auth & profile queries
-    const mockGetUser = supabase.auth.getUser as jest.MockedFunction<
-      typeof supabase.auth.getUser
-    >;
-    mockGetUser.mockResolvedValueOnce({
-      data: { user: { id: 'user-123', email: 'test@example.com' } },
-      error: null,
-    } as any);
-
-    const mockFrom = supabase.from as jest.MockedFunction<typeof supabase.from>;
-    const mockSingle = (jest.fn() as any).mockResolvedValueOnce({
-      data: {
+    // Mock createRequestContext to return context with user
+    (
+      createRequestContext as jest.MockedFunction<typeof createRequestContext>
+    ).mockResolvedValueOnce({
+      user: {
+        id: 'user-123',
+        email: 'test@example.com',
         role: 'field_worker',
-        organization_id: 'org-123',
-        full_name: 'Test User',
+        organizationId: 'org-123',
       },
-      error: null,
+      organizationId: 'org-123',
+      requestId: 'test-request-id',
+      timestamp: new Date().toISOString(),
     });
-
-    const mockChain = {
-      select: jest.fn().mockReturnThis(),
-      eq: jest.fn().mockReturnThis(),
-      single: mockSingle,
-    };
-    mockFrom.mockReturnValueOnce(mockChain as any);
 
     const request = createMockRequest({
       method: 'GET',
@@ -84,6 +181,16 @@ describe('Authentication middleware (`withAuth`)', () => {
   });
 
   it('rejects request when token is missing', async () => {
+    // Mock createRequestContext to return context without user
+    (
+      createRequestContext as jest.MockedFunction<typeof createRequestContext>
+    ).mockResolvedValueOnce({
+      user: null,
+      organizationId: null,
+      requestId: 'test-request-id',
+      timestamp: new Date().toISOString(),
+    });
+
     const request = createMockRequest({
       method: 'GET',
       url: 'http://localhost/api/v1/protected',
@@ -97,13 +204,15 @@ describe('Authentication middleware (`withAuth`)', () => {
   });
 
   it('rejects request when token is invalid', async () => {
-    const mockGetUser = supabase.auth.getUser as jest.MockedFunction<
-      typeof supabase.auth.getUser
-    >;
-    mockGetUser.mockResolvedValueOnce({
-      data: { user: null },
-      error: { message: 'Invalid token' },
-    } as any);
+    // Mock createRequestContext to return context without user (invalid token)
+    (
+      createRequestContext as jest.MockedFunction<typeof createRequestContext>
+    ).mockResolvedValueOnce({
+      user: null,
+      organizationId: null,
+      requestId: 'test-request-id',
+      timestamp: new Date().toISOString(),
+    });
 
     const request = createMockRequest({
       method: 'GET',
