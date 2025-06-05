@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access */
 describe('realtime integration – complete lifecycle', () => {
   let mockClient: any;
   const channelEvents: any[] = [];
