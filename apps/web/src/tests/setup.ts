@@ -12,15 +12,29 @@ if (
   typeof (Response as any).json !== 'function'
 ) {
   (Response as any).json = function json(data: unknown, init?: ResponseInit) {
-    // @ts-expect-error - Headers type compatibility issue in test environment
-    const headers = new Headers(
-      // @ts-expect-error - Headers constructor type issue
-      init?.headers || [['Content-Type', 'application/json']]
-    );
+    // Create headers with default content type
+    const defaultHeaders = [['Content-Type', 'application/json']] as [
+      string,
+      string,
+    ][];
+    const headers = new Headers(defaultHeaders);
+
+    // Add any additional headers from init
+    if (init?.headers) {
+      if (Array.isArray(init.headers)) {
+        init.headers.forEach(([key, value]) => headers.set(key, value));
+      } else if (init.headers instanceof Headers) {
+        init.headers.forEach((value, key) => headers.set(key, value));
+      } else {
+        Object.entries(init.headers).forEach(([key, value]) =>
+          headers.set(key, value)
+        );
+      }
+    }
+
     return new Response(JSON.stringify(data), {
       ...init,
-      // @ts-expect-error - Headers type compatibility issue
-      headers,
+      headers: headers as HeadersInit,
     });
   };
 }
@@ -44,6 +58,8 @@ declare const global: any;
 declare const Headers: {
   new (init?: [string, string][]): {
     get: (name: string) => string | null;
+    set: (name: string, value: string) => void;
+    forEach: (callback: (value: string, key: string) => void) => void;
   };
 };
 /* eslint-enable no-unused-vars */

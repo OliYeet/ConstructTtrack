@@ -65,7 +65,6 @@ describe('Authentication middleware (`withAuth`)', () => {
       error: null,
     });
 
-    // @ts-expect-error - Jest mock type issue
     (supabase.from as jest.Mock).mockReturnValueOnce({
       select: jest.fn().mockReturnThis(),
       eq: jest.fn().mockReturnThis(),
