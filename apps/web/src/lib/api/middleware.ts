@@ -81,31 +81,6 @@ async function logDetailedRequest(
     });
 
     // Body parsing removed as it's not used in simplified logging
-    if (['POST', 'PUT', 'PATCH'].includes(request.method)) {
-      try {
-        // Clone the request to avoid consuming the original body
-        const clonedRequest = request.clone();
-        const contentType = request.headers.get('content-type') || '';
-
-        if (contentType.includes('application/json')) {
-          body = await clonedRequest.json();
-        } else if (contentType.includes('application/x-www-form-urlencoded')) {
-          const formData = await clonedRequest.formData();
-          const formDataObj: Record<string, string> = {};
-          // Use explicit type casting for TypeScript compatibility
-          (formData as any).forEach(
-            (value: FormDataEntryValue, key: string) => {
-              formDataObj[key] = value.toString();
-            }
-          );
-          body = formDataObj;
-        } else if (contentType.includes('text/')) {
-          body = await clonedRequest.text();
-        }
-      } catch {
-        body = '[Unable to parse body]';
-      }
-    }
 
     // Use enhancedLogRequest for detailed logging
     await enhancedLogRequest(request, {
