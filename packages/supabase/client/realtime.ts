@@ -35,7 +35,7 @@ export type RealtimeDispatch<
 ) => void;
 
 // ---------------------------------------------------------------------------
-// Internals – global channel registry
+// Internals - global channel registry
 // ---------------------------------------------------------------------------
 
 /**
@@ -87,7 +87,7 @@ export const subscribeToTable = <
   );
 
   // -------------------------------------------------------------------------
-  // Subscribe only once, and only for newly–created channels
+  // Subscribe only once, and only for newly-created channels
   // -------------------------------------------------------------------------
   if (isNewChannel) {
     channel.subscribe((status) => {
