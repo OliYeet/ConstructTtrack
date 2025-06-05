@@ -71,7 +71,13 @@ export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 // API Route Handler Type
 export type ApiHandler = (
   request: ApiRequest,
-  context: { params: Record<string, string> }
+  context: { params: Record<string, string> },
+  /**
+   * Rich contextual data extracted by upstream middleware or caller.
+   * Optional for backward-compatibility with handlers that still rely
+   * on `request.context`.
+   */
+  requestContext?: RequestContext
 ) => Promise<NextResponse>;
 
 // Validation Error
