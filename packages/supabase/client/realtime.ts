@@ -35,6 +35,23 @@ export type RealtimeDispatch<
 ) => void;
 
 // ---------------------------------------------------------------------------
+// Internals - per-channel handler registry to avoid duplicate listeners
+// ---------------------------------------------------------------------------
+
+type AnyRealtimeDispatch = RealtimeDispatch<any>;
+
+/**
+ * Stores, for each channel, a map of the external `handler` provided to
+ * `subscribeToTable` → the internally-created callback passed to
+ * `channel.on(...)`.  Using WeakMaps means entries disappear automatically
+ * when either the channel or handler becomes unreachable.
+ */
+const channelHandlerRegistry: WeakMap<
+  RealtimeChannel,
+  WeakMap<AnyRealtimeDispatch, (payload: unknown) => void>
+> = new WeakMap();
+
+// ---------------------------------------------------------------------------
 // Internals - global channel registry
 // ---------------------------------------------------------------------------
 
@@ -70,21 +87,33 @@ export const subscribeToTable = <
     isNewChannel = true;
   }
 
+  // and prevent duplicate handlers for the same channel
   // -------------------------------------------------------------------------
-  // Attach the event listener *before* subscribing to avoid missing messages
-  // -------------------------------------------------------------------------
-  channel.on(
-    'postgres_changes',
-    { schema: 'public', table: tableName, event: '*' },
-    (payload) => {
-      handler(
-        payload as RealtimePostgresChangesPayload<
-          Database['public']['Tables'][T]['Row']
-        >,
-        table,
-      );
-    },
-  );
+
+  let handlerMap = channelHandlerRegistry.get(channel);
+  if (!handlerMap) {
+    handlerMap = new WeakMap();
+    channelHandlerRegistry.set(channel, handlerMap);
+  }
+
+  // Only register the listener if this exact handler hasn’t been added yet.
+  if (!handlerMap.has(handler as AnyRealtimeDispatch)) {
+    const wrappedCallback = (
+      payload: RealtimePostgresChangesPayload<
+        Database['public']['Tables'][T]['Row']
+      >,
+    ) => {
+      handler(payload, table);
+    };
+
+    handlerMap.set(handler as AnyRealtimeDispatch, wrappedCallback);
+
+    channel.on(
+      'postgres_changes',
+      { schema: 'public', table: tableName, event: '*' },
+      wrappedCallback,
+    );
+  }
 
   // -------------------------------------------------------------------------
   // Subscribe only once, and only for newly-created channels
@@ -100,6 +129,8 @@ export const subscribeToTable = <
       }
       if (status === 'CLOSED') {
         activeChannels.delete(tableName);
+        // Remove any handler registry for this channel to free memory
+        channelHandlerRegistry.delete(channel);
       }
     });
   }
@@ -130,6 +161,9 @@ export const initRealtimeSubscriptions = (
  * via any of this module’s helpers.
  */
 export const removeRealtimeSubscriptions = () => {
-  activeChannels.forEach((channel) => supabase.removeChannel(channel));
+  activeChannels.forEach((channel) => {
+    supabase.removeChannel(channel);
+    channelHandlerRegistry.delete(channel);
+  });
   activeChannels.clear();
 };
