@@ -25,7 +25,7 @@ export const SUPPORTED_API_VERSIONS: ReadonlyArray<string> = [
  *
  * Priority order:
  *   1. Explicit `X-API-Version` header.
- *   2. Path segment `/api/v{n}` (e.g. `/api/v2/users` → `2.0.0`).
+ *   2. Path segment `/api/v{n}` (e.g. `/api/v2/users` -> `2.0.0`).
  *   3. Fallback to DEFAULT_API_VERSION when parsing fails or an
  *      unsupported version is requested.
  */
@@ -63,13 +63,13 @@ function isSupportedVersion(version: string): boolean {
  * three-segment semver representation.
  *
  * Rules:
- *   • Leading "v" / "V" is ignored                → "v2.1"  → "2.1.0"
- *   • Accepts 1-, 2- or 3-segment numeric inputs  → "1"     → "1.0.0"
- *                                                 → "1.2"   → "1.2.0"
- *                                                 → "1.2.3" → "1.2.3"
- *   • Extra segments beyond the third are ignored → "3.4.5.6" → "3.4.5"
- *   • Missing minor/patch parts are padded with 0 → "7"     → "7.0.0"
- *   • Non-numeric or empty inputs return `undefined`.
+ *   - Leading "v" / "V" is ignored                -> "v2.1"  -> "2.1.0"
+ *   - Accepts 1-, 2- or 3-segment numeric inputs  -> "1"     -> "1.0.0"
+ *                                                 -> "1.2"   -> "1.2.0"
+ *                                                 -> "1.2.3" -> "1.2.3"
+ *   - Extra segments beyond the third are ignored -> "3.4.5.6" -> "3.4.5"
+ *   - Missing minor/patch parts are padded with 0 -> "7"     -> "7.0.0"
+ *   - Non-numeric or empty inputs return `undefined`.
  */
 function normaliseVersion(input: string | null): string | undefined {
   if (!input) return undefined;
