@@ -231,25 +231,20 @@ export const createMockRequest = (
     body,
   } = options;
 
+  // Create a proper Headers object
+  const headersObj = new Headers();
+  Object.entries({
+    'content-type': 'application/json',
+    ...headers,
+  }).forEach(([key, value]) => {
+    headersObj.set(key.toLowerCase(), value);
+  });
+
   const request = {
     method,
     url,
-    headers: new Headers(
-      Object.entries({
-        'content-type': 'application/json',
-        ...headers,
-      }).map(([k, v]) => [k.toLowerCase(), v] as [string, string])
-    ),
+    headers: headersObj,
     json: jest.fn().mockResolvedValue(body),
-  };
-
-  // Add headers.get method
-  (
-    request.headers as Map<string, string> & {
-      get: (_key: string) => string | undefined;
-    }
-  ).get = (key: string) => {
-    return (request.headers as Map<string, string>).get(key.toLowerCase());
   };
 
   return request as unknown as NextRequest;

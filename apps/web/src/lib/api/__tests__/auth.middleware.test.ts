@@ -4,41 +4,27 @@
  */
 
 import { jest } from '@jest/globals';
-import { createSuccessResponse } from '@/lib/api/response';
-import { withAuth } from '@/lib/api/middleware';
+import { createSuccessResponse } from '../response';
+import { withAuth } from '../middleware';
 import type { NextRequest } from 'next/server';
+import { createMockRequest } from '../../../tests/setup';
 
+// Import the mocked supabase client
 import { supabase } from '@constructtrack/supabase/client';
 
-interface MockRequestOptions {
-  method?: string;
-  url?: string;
-  headers?: Record<string, string>;
-  body?: unknown;
-}
-
-// Build a minimal NextRequest-like object for middleware testing
-const buildRequest = (options: MockRequestOptions): NextRequest => {
-  const {
-    method = 'GET',
-    url = 'http://localhost/api/test',
-    headers = {},
-    body,
-  } = options;
-
-  const hdrs = new Headers({
-    'content-type': 'application/json',
-    ...headers,
-  });
-
-  return {
-    method,
-    url,
-    headers: hdrs,
-    // @ts-expect-error - Jest mock type issue
-    json: jest.fn().mockResolvedValue(body),
-  } as unknown as NextRequest;
-};
+// Mock the Supabase client methods before tests
+jest.mock('@constructtrack/supabase/client', () => ({
+  supabase: {
+    auth: {
+      getUser: jest.fn(),
+    },
+    from: jest.fn(() => ({
+      select: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      single: jest.fn(),
+    })),
+  },
+}));
 
 // Simple handler used to confirm successful auth
 const okHandler = async () =>
@@ -59,16 +45,18 @@ describe('Authentication middleware (`withAuth`)', () => {
 
   it('allows request with a valid token', async () => {
     // Mock Supabase auth & profile queries
-    // @ts-expect-error - Jest mock type issue
-    (supabase.auth.getUser as jest.Mock).mockResolvedValueOnce({
+    const mockGetUser = supabase.auth.getUser as jest.MockedFunction<
+      typeof supabase.auth.getUser
+    >;
+    mockGetUser.mockResolvedValueOnce({
       data: { user: { id: 'user-123', email: 'test@example.com' } },
       error: null,
-    });
+    } as any);
 
-    (supabase.from as jest.Mock).mockReturnValueOnce({
+    const mockFrom = supabase.from as jest.MockedFunction<typeof supabase.from>;
+    const mockChain = {
       select: jest.fn().mockReturnThis(),
       eq: jest.fn().mockReturnThis(),
-      // @ts-expect-error - Jest mock type issue
       single: jest.fn().mockResolvedValueOnce({
         data: {
           role: 'field_worker',
@@ -77,9 +65,10 @@ describe('Authentication middleware (`withAuth`)', () => {
         },
         error: null,
       }),
-    });
+    };
+    mockFrom.mockReturnValueOnce(mockChain as any);
 
-    const request = buildRequest({
+    const request = createMockRequest({
       method: 'GET',
       url: 'http://localhost/api/v1/protected',
       headers: { Authorization: 'Bearer valid-token' },
@@ -93,7 +82,7 @@ describe('Authentication middleware (`withAuth`)', () => {
   });
 
   it('rejects request when token is missing', async () => {
-    const request = buildRequest({
+    const request = createMockRequest({
       method: 'GET',
       url: 'http://localhost/api/v1/protected',
     });
@@ -106,13 +95,15 @@ describe('Authentication middleware (`withAuth`)', () => {
   });
 
   it('rejects request when token is invalid', async () => {
-    // @ts-expect-error - Jest mock type issue
-    (supabase.auth.getUser as jest.Mock).mockResolvedValueOnce({
+    const mockGetUser = supabase.auth.getUser as jest.MockedFunction<
+      typeof supabase.auth.getUser
+    >;
+    mockGetUser.mockResolvedValueOnce({
       data: { user: null },
       error: { message: 'Invalid token' },
-    });
+    } as any);
 
-    const request = buildRequest({
+    const request = createMockRequest({
       method: 'GET',
       url: 'http://localhost/api/v1/protected',
       headers: { Authorization: 'Bearer invalid-token' },
