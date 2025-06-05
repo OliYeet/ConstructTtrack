@@ -13,12 +13,14 @@ type RequestWithContext = NextRequest & { context?: RequestContext };
 // Mock the middleware to return the GET handler directly
 jest.mock('@/lib/api/middleware', () => ({
   withApiMiddleware: jest.fn(handlers => {
-    return async (request: Request, context: RequestContext) => {
+    return async (request: Request, ctx: { params: Record<string, string> }) => {
       const handler = handlers.GET;
-      if (handler) {
-        return await handler(request, context);
+      if (!handler) {
+        throw new Error('Method not allowed');
       }
-      throw new Error('Method not allowed');
+      // Pass RequestContext (3rd param) as an empty object for tests
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+      return await handler(request, ctx, {} as RequestContext);
     };
   }),
 }));
