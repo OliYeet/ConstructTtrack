@@ -1,10 +1,9 @@
+import type { Database } from '../types/database';
 import {
   type RealtimeChannel,
   type RealtimePostgresChangesPayload,
 } from '@supabase/supabase-js';
-
 import { supabase } from './core';
-import type { Database } from '../types/database';
 
 // ---------------------------------------------------------------------------
 // Table meta

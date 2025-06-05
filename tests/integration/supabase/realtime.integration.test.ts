@@ -12,7 +12,7 @@ describe('realtime integration – complete lifecycle', () => {
       channel: jest.fn((name: string) => ({
         name,
         on: jest.fn().mockReturnThis(),
-        subscribe: jest.fn((callback?: (status: string) => void) => {
+        subscribe: jest.fn((callback?: (_status: string) => void) => {
           // simulate the asynchronous subscription acknowledgement
           if (callback) callback('SUBSCRIBED');
         }),

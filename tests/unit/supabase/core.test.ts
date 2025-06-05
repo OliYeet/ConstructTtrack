@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
-import { join } from 'path';
 
 describe('supabase client core utilities', () => {
   const SUPABASE_URL = 'https://example.supabase.co';
@@ -40,7 +39,7 @@ describe('supabase client core utilities', () => {
     expect(client1).toBe(client2);
 
     // createClient from @supabase/supabase-js should be invoked **once**
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    // eslint-disable-next-line @typescript-eslint/no-var-requires, import/no-commonjs
     const { createClient } = require('@supabase/supabase-js');
     expect(createClient).toHaveBeenCalledTimes(1);
     expect(createClient).toHaveBeenCalledWith(

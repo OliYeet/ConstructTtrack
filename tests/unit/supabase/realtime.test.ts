@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
-import type { ManagedTableName } from '../../../packages/supabase/client/realtime';
 
 describe('realtime helper – subscribeToTable & helpers', () => {
   let mockClient: any;

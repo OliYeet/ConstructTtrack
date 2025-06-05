@@ -53,7 +53,7 @@ class MockNextResponse {
 /* A minimal placeholder – extend when tests require more surface area */
 class MockNextRequest {
   /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-  constructor(public info: any = {}) {}
+  constructor(public _info: any = {}) {}
 }
 
 /* Make mocks globally visible for convenience (optional) */
