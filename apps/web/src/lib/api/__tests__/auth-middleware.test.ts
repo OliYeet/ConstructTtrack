@@ -9,12 +9,9 @@ const AUTH_SECRET = process.env.AUTH_SECRET!;
 // Simple handler that echoes authenticated user data
 const api = withApiMiddleware(
   {
-    GET: request => {
-      const { context } = request as unknown as {
-        context: { user?: any };
-      };
-      return NextResponse.json({ user: context.user });
-    },
+    // New style – user comes from the third-argument `requestContext`
+    GET: (_request, _ctx, requestContext: { user?: unknown }) =>
+      NextResponse.json({ user: requestContext.user }),
   },
   { requireAuth: true }
 );
