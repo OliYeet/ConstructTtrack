@@ -10,7 +10,8 @@ real-time events into the UI.
 
 | File                                   | Role                                                                                                                                                                               |
 | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `packages/supabase/client/core.ts`     | _Single source of truth_ for the Supabase singleton. No other file constructs a client.                                                                                            |
+| `packages/supabase/client/core.ts`     | _Single source of truth_ for the Supabase singleton. The instance is **lazily initialised** – the first call to `getSupabaseClient()` spins it up. No other file constructs a client. |
+| `packages/supabase/client/get.ts`      | Exposes `getSupabaseClient()` – a tiny helper that returns the singleton from `core.ts`, triggering creation on first-use.                                                         |
 | `packages/supabase/client/index.ts`    | Auth helpers (`signIn`, `signOut`, `getUser`, …) **plus** re-exports of the real-time utilities so consumers can do `import { subscribeToTable } from '@constructtrack/supabase'`. |
 | `packages/supabase/client/realtime.ts` | All subscription logic, channel bookkeeping, and strongly-typed helpers live here.                                                                                                 |
 
@@ -50,6 +51,9 @@ still letting consumers down-cast to `any` if they really want.
 ### 3. Public API surface
 
 ```ts
+// 3.0  — obtain (or lazily create) the singleton Supabase client
+getSupabaseClient(): SupabaseClient<Database>;
+
 // 3.1  — subscribe to ONE table
 subscribeToTable<
   T extends keyof Database['public']['Tables']
@@ -67,8 +71,11 @@ initRealtimeSubscriptions(
 removeRealtimeSubscriptions(): void;
 ```
 
-- Every helper **returns `void`** except `subscribeToTable`, which gives you the raw
-  `RealtimeChannel` in case you want to pause/resume or attach additional listeners.
+- Every helper **returns `void`** except:
+  - `subscribeToTable`, which gives you the raw
+    `RealtimeChannel` in case you want to pause/resume or attach additional listeners.
+  - `getSupabaseClient`, which returns the lazily-initialised singleton Supabase client so
+    callers can issue normal queries outside the real-time helpers.
 
 ---
 
@@ -99,10 +106,10 @@ const activeChannels = new Map<string, RealtimeChannel>();
 ```
 
 - **One channel per table**: duplicate calls to `subscribeToTable('projects', …)` reuse the existing
-  channel.
+channel.
 - **Hot-module reload & SSR safe**: Because `activeChannels` lives _inside_ `realtime.ts`, each
-  module instance (client-side bundle or Node SSR pass) maintains its own registry. No global leaks
-  into `window` or `globalThis`.
+module instance (client-side bundle or Node SSR pass) maintains its own registry. No global leaks
+into `window` or `globalThis`.
 
 ---
 
