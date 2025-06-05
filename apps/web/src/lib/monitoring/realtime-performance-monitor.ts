@@ -12,6 +12,8 @@
  * - Integration with existing performance monitoring
  */
 
+import { z } from 'zod';
+
 import { getLogger } from '../logging';
 
 import { performanceMonitor } from './performance-monitor';
@@ -27,10 +29,90 @@ import {
   defaultRealtimeMonitoringConfig,
 } from './realtime-metrics';
 
+// Input validation schemas
+const LatencyMetricSchema = z.object({
+  eventId: z.string().optional(),
+  eventType: z
+    .enum([
+      'WorkOrderUpdated',
+      'FiberSectionStarted',
+      'CablePulled',
+      'SpliceCompleted',
+      'InspectionPassed',
+      'SectionClosed',
+    ])
+    .optional(),
+  timestamps: z
+    .object({
+      dbCommit: z.number().positive().optional(),
+      eventSourced: z.number().positive().optional(),
+      websocketSent: z.number().positive().optional(),
+      clientReceived: z.number().positive().optional(),
+    })
+    .optional(),
+  metadata: z
+    .object({
+      channel: z.string().optional(),
+      messageSize: z.number().nonnegative().optional(),
+    })
+    .optional(),
+});
+
+const ConnectionMetricSchema = z.object({
+  connectionId: z.string().optional(),
+  status: z
+    .enum(['connecting', 'connected', 'disconnected', 'error'])
+    .optional(),
+  userId: z.string().optional(),
+  organizationId: z.string().optional(),
+  timestamps: z
+    .object({
+      connectionStart: z.number().positive().optional(),
+      connectionEstablished: z.number().positive().optional(),
+      lastActivity: z.number().positive().optional(),
+      disconnected: z.number().positive().optional(),
+    })
+    .optional(),
+  metrics: z
+    .object({
+      messagesSent: z.number().nonnegative().optional(),
+      messagesReceived: z.number().nonnegative().optional(),
+      bytesTransferred: z.number().nonnegative().optional(),
+      reconnectionAttempts: z.number().nonnegative().optional(),
+      connectionTime: z.number().nonnegative().optional(),
+      totalDuration: z.number().nonnegative().optional(),
+    })
+    .optional(),
+});
+
+const ErrorMetricSchema = z.object({
+  errorId: z.string().optional(),
+  type: z
+    .enum(['connection', 'subscription', 'message', 'processing'])
+    .optional(),
+  severity: z.enum(['info', 'warning', 'error', 'critical']).optional(),
+  code: z.string().optional(),
+  message: z.string().optional(),
+  context: z.record(z.unknown()).optional(),
+  metadata: z.record(z.unknown()).optional(),
+});
+
 export class RealtimePerformanceMonitor {
   private config: RealtimeMonitoringConfig;
   private isMonitoring = false;
   private statsTimer?: NodeJS.Timeout;
+
+  // Sensitive fields that should be redacted in alerts
+  private readonly sensitiveFields = [
+    'userId',
+    'email',
+    'phone',
+    'address',
+    'password',
+    'token',
+    'key',
+    'secret',
+  ];
 
   // Metric storage
   private latencyMetrics: RealtimeLatencyMetric[] = [];
@@ -103,6 +185,19 @@ export class RealtimePerformanceMonitor {
       return '';
     }
 
+    // Validate input data
+    const validated = LatencyMetricSchema.safeParse(metric);
+    if (!validated.success) {
+      const logger = getLogger();
+      logger.error('Invalid latency metric data', {
+        error: validated.error.message,
+        metric,
+      });
+      throw new Error(
+        `Invalid latency metric data: ${validated.error.message}`
+      );
+    }
+
     // Apply sampling rate
     if (Math.random() > this.config.samplingRate) {
       return '';
@@ -173,6 +268,19 @@ export class RealtimePerformanceMonitor {
   recordConnectionMetric(metric: Partial<WebSocketConnectionMetric>): string {
     if (!this.config.enabled || !this.config.enableConnectionTracking) {
       return '';
+    }
+
+    // Validate input data
+    const validated = ConnectionMetricSchema.safeParse(metric);
+    if (!validated.success) {
+      const logger = getLogger();
+      logger.error('Invalid connection metric data', {
+        error: validated.error.message,
+        metric,
+      });
+      throw new Error(
+        `Invalid connection metric data: ${validated.error.message}`
+      );
     }
 
     const connectionId =
@@ -280,6 +388,17 @@ export class RealtimePerformanceMonitor {
       return '';
     }
 
+    // Validate input data
+    const validated = ErrorMetricSchema.safeParse(metric);
+    if (!validated.success) {
+      const logger = getLogger();
+      logger.error('Invalid error metric data', {
+        error: validated.error.message,
+        metric,
+      });
+      throw new Error(`Invalid error metric data: ${validated.error.message}`);
+    }
+
     const errorId =
       metric.errorId ||
       `err_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
@@ -343,6 +462,30 @@ export class RealtimePerformanceMonitor {
         listeners.splice(index, 1);
       }
     }
+  }
+
+  // Sanitize alert details to prevent sensitive data exposure
+  private sanitizeAlertDetails(
+    details: Record<string, unknown>
+  ): Record<string, unknown> {
+    const sanitized = { ...details };
+
+    this.sensitiveFields.forEach(field => {
+      if (sanitized[field]) {
+        sanitized[field] = '[REDACTED]';
+      }
+    });
+
+    // Recursively sanitize nested objects
+    Object.keys(sanitized).forEach(key => {
+      if (typeof sanitized[key] === 'object' && sanitized[key] !== null) {
+        sanitized[key] = this.sanitizeAlertDetails(
+          sanitized[key] as Record<string, unknown>
+        );
+      }
+    });
+
+    return sanitized;
   }
 
   // Emit event to listeners
@@ -793,6 +936,8 @@ export class RealtimePerformanceMonitor {
       id: `alert_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
       timestamp: now,
       ...alertData,
+      // Sanitize alert details to prevent sensitive data exposure
+      details: this.sanitizeAlertDetails(alertData.details || {}),
     };
 
     this.activeAlerts.set(alert.id, alert);
@@ -801,7 +946,7 @@ export class RealtimePerformanceMonitor {
     // Emit alert event
     this.emit('alert', alert as unknown as Record<string, unknown>);
 
-    // Log alert
+    // Log alert (with sanitized details)
     const logger = getLogger();
     logger.warn('Real-time performance alert triggered', {
       metadata: {
