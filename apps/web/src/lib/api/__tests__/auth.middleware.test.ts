@@ -35,6 +35,7 @@ const buildRequest = (options: MockRequestOptions): NextRequest => {
     method,
     url,
     headers: hdrs,
+    // @ts-expect-error - Jest mock type issue
     json: jest.fn().mockResolvedValue(body),
   } as unknown as NextRequest;
 };
@@ -58,14 +59,17 @@ describe('Authentication middleware (`withAuth`)', () => {
 
   it('allows request with a valid token', async () => {
     // Mock Supabase auth & profile queries
+    // @ts-expect-error - Jest mock type issue
     (supabase.auth.getUser as jest.Mock).mockResolvedValueOnce({
       data: { user: { id: 'user-123', email: 'test@example.com' } },
       error: null,
     });
 
+    // @ts-expect-error - Jest mock type issue
     (supabase.from as jest.Mock).mockReturnValueOnce({
       select: jest.fn().mockReturnThis(),
       eq: jest.fn().mockReturnThis(),
+      // @ts-expect-error - Jest mock type issue
       single: jest.fn().mockResolvedValueOnce({
         data: {
           role: 'field_worker',
@@ -103,6 +107,7 @@ describe('Authentication middleware (`withAuth`)', () => {
   });
 
   it('rejects request when token is invalid', async () => {
+    // @ts-expect-error - Jest mock type issue
     (supabase.auth.getUser as jest.Mock).mockResolvedValueOnce({
       data: { user: null },
       error: { message: 'Invalid token' },

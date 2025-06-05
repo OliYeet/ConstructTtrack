@@ -12,11 +12,14 @@ if (
   typeof (Response as any).json !== 'function'
 ) {
   (Response as any).json = function json(data: unknown, init?: ResponseInit) {
+    // @ts-expect-error - Headers type compatibility issue in test environment
     const headers = new Headers(
-      init?.headers || { 'Content-Type': 'application/json' }
+      // @ts-expect-error - Headers constructor type issue
+      init?.headers || [['Content-Type', 'application/json']]
     );
     return new Response(JSON.stringify(data), {
       ...init,
+      // @ts-expect-error - Headers type compatibility issue
       headers,
     });
   };
