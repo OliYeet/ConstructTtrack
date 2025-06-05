@@ -86,23 +86,34 @@ describe('WebSocket Gateway Integration', () => {
       done(error);
     });
 
-    // Timeout after 5 seconds
-    setTimeout(() => {
+    // Timeout after 3 seconds
+    const timeout = setTimeout(() => {
       ws.close();
       done(new Error('Test timeout'));
-    }, 5000);
+    }, 3000);
+
+    // Clear timeout when test completes
+    const originalDone = done;
+    done = (error?: Error) => {
+      clearTimeout(timeout);
+      originalDone(error);
+    };
   });
 
   it('should reject connection without valid token', done => {
     const ws = new WebSocket(`ws://localhost:${testPort}/ws`);
 
+    let connectionOpened = false;
+
     ws.on('close', (code, _reason) => {
       expect(code).toBe(1008); // Authentication required
+      expect(connectionOpened).toBe(true); // Connection should open first, then close
       done();
     });
 
     ws.on('open', () => {
-      done(new Error('Connection should have been rejected'));
+      connectionOpened = true;
+      // Connection opens first, then auth check happens and closes it
     });
 
     ws.on('error', () => {

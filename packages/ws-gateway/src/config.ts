@@ -10,7 +10,17 @@ dotenvConfig();
 
 export const config = {
   // Server configuration
-  port: parseInt(process.env.WS_GATEWAY_PORT || '8080', 10),
+  server: {
+    port: (() => {
+      const port = parseInt(process.env.WS_GATEWAY_PORT || '8080', 10);
+      if (isNaN(port) || port <= 0 || port > 65535) {
+        throw new Error(
+          `Invalid WS_GATEWAY_PORT: ${process.env.WS_GATEWAY_PORT}. Must be a number between 1-65535`
+        );
+      }
+      return port;
+    })(),
+  },
 
   // Supabase configuration
   supabase: {
@@ -27,13 +37,29 @@ export const config = {
   // Redis configuration (optional)
   redis: {
     enabled: process.env.REDIS_ENABLED === 'true',
-    url: process.env.REDIS_URL || 'redis://localhost:6379',
+    url: (() => {
+      if (process.env.REDIS_ENABLED === 'true') {
+        if (!process.env.REDIS_URL) {
+          throw new Error('REDIS_URL is required when REDIS_ENABLED=true');
+        }
+        return process.env.REDIS_URL;
+      }
+      return process.env.REDIS_URL || 'redis://localhost:6379';
+    })(),
   },
 
   // WebSocket configuration
   websocket: {
     pingInterval: 25000, // 25 seconds as per Charlie's spec
-    maxConnections: parseInt(process.env.WS_MAX_CONNECTIONS || '1000', 10),
+    maxConnections: (() => {
+      const maxConn = parseInt(process.env.WS_MAX_CONNECTIONS || '1000', 10);
+      if (isNaN(maxConn) || maxConn <= 0) {
+        throw new Error(
+          `Invalid WS_MAX_CONNECTIONS: ${process.env.WS_MAX_CONNECTIONS}. Must be a positive number`
+        );
+      }
+      return maxConn;
+    })(),
   },
 
   // Logging

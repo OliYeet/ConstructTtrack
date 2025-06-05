@@ -16,7 +16,7 @@ async function main() {
   try {
     logger.info('Starting ConstructTrack WebSocket Gateway', {
       version: '0.1.0',
-      environment: config.environment,
+      environment: config.nodeEnv,
       port: config.server.port,
       redisEnabled: config.redis.enabled,
     });
@@ -62,8 +62,8 @@ async function shutdown() {
   }
 }
 
-process.on('SIGTERM', shutdown);
-process.on('SIGINT', shutdown);
+process.once('SIGTERM', shutdown);
+process.once('SIGINT', shutdown);
 
 // Handle uncaught exceptions
 process.on('uncaughtException', error => {
