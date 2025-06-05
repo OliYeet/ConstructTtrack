@@ -105,7 +105,7 @@ function transformProject(row: ProjectRow): ProjectResponse {
 async function handleGet(
   request: NextRequest,
   _context: { params: Record<string, string> },
-  requestContext: RequestContext
+  requestContext: RequestContext | undefined
 ) {
   const queryParams = validateQueryParams(request, listProjectsSchema);
 
@@ -115,8 +115,12 @@ async function handleGet(
   // Build query
   let query = supabase
     .from('projects')
-    .select('*', { count: 'exact' })
-    .eq('organization_id', requestContext.organizationId!);
+    .select('*', { count: 'exact' });
+
+  // Add organization filter only when context is available
+  if (requestContext?.organizationId) {
+    query = query.eq('organization_id', requestContext.organizationId);
+  }
 
   // Apply filters
   if (queryParams.status) {
@@ -157,7 +161,7 @@ async function handleGet(
     page,
     limit,
     'Projects retrieved successfully',
-    requestContext.requestId
+    requestContext?.requestId
   );
 }
 
@@ -165,7 +169,7 @@ async function handleGet(
 async function handlePost(
   request: NextRequest,
   _context: { params: Record<string, string> },
-  requestContext: RequestContext
+  requestContext: RequestContext | undefined
 ) {
   const projectData = await validateRequestBody(
     request,
@@ -177,7 +181,7 @@ async function handlePost(
 
   // Prepare data for insertion
   const insertData = {
-    organization_id: requestContext.organizationId!,
+    organization_id: requestContext?.organizationId ?? null,
     name: projectData.name,
     description: projectData.description || null,
     start_date: projectData.startDate || null,
@@ -210,7 +214,7 @@ async function handlePost(
   return createCreatedResponse(
     project,
     'Project created successfully',
-    requestContext.requestId
+    requestContext?.requestId
   );
 }
 
