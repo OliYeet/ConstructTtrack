@@ -5,6 +5,12 @@ tokens, API keys, and security best practices.
 
 ## Overview
 
+### Implementation note (LUM-602)
+
+> The authentication behaviour described in this guide is enforced by the shared  
+> `withAuth` middleware located at `apps/web/src/lib/api/middleware/withAuth.ts`.  
+> Review that file for the canonical token-validation workflow introduced in LUM-602.
+
 The ConstructTrack API supports multiple authentication methods:
 
 1. **JWT Token Authentication** - For user-based access (web/mobile apps)

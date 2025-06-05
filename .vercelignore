@@ -27,9 +27,6 @@ docs/api/validation/
 # Notion scripts (development only)
 notion_scripts/
 
-# Package lock files (Vercel handles this)
-package-lock.json
-
 # IDE files
 .vscode/
 .idea/

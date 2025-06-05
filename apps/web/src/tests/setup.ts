@@ -85,6 +85,40 @@ jest.mock('next/server', () => ({
 
 import { NextRequest } from 'next/server';
 
+// Polyfill static Response.json (not provided by JSDOM fetch polyfill)
+// Next.js' `NextResponse.json` helper relies on `Response.json` existing.
+if (
+  typeof Response !== 'undefined' &&
+  typeof (Response as any).json !== 'function'
+) {
+  (Response as any).json = function json(data: unknown, init?: ResponseInit) {
+    // Create headers with default content type
+    const defaultHeaders = [['Content-Type', 'application/json']] as [
+      string,
+      string,
+    ][];
+    const headers = new Headers(defaultHeaders);
+
+    // Add any additional headers from init
+    if (init?.headers) {
+      if (Array.isArray(init.headers)) {
+        init.headers.forEach(([key, value]) => headers.set(key, value));
+      } else if (init.headers instanceof Headers) {
+        init.headers.forEach((value, key) => headers.set(key, value));
+      } else {
+        Object.entries(init.headers).forEach(([key, value]) =>
+          headers.set(key, value)
+        );
+      }
+    }
+
+    return new Response(JSON.stringify(data), {
+      ...init,
+      headers: headers as HeadersInit,
+    });
+  };
+}
+
 // Global type declarations for Jest and browser APIs
 /* eslint-disable no-unused-vars */
 declare const jest: {
@@ -104,6 +138,8 @@ declare const global: any;
 declare const Headers: {
   new (init?: [string, string][]): {
     get: (name: string) => string | null;
+    set: (name: string, value: string) => void;
+    forEach: (callback: (value: string, key: string) => void) => void;
   };
 };
 /* eslint-enable no-unused-vars */
@@ -275,15 +311,19 @@ export const createMockRequest = (
     body,
   } = options;
 
+  // Create a proper Headers object
+  const headersObj = new Headers();
+  Object.entries({
+    'content-type': 'application/json',
+    ...headers,
+  }).forEach(([key, value]) => {
+    headersObj.set(key.toLowerCase(), value);
+  });
+
   const request = {
     method,
     url,
-    headers: new Headers(
-      Object.entries({
-        'content-type': 'application/json',
-        ...headers,
-      }).map(([k, v]) => [k.toLowerCase(), v] as [string, string])
-    ),
+    headers: headersObj,
     json: jest.fn().mockResolvedValue(body),
   };
 
@@ -297,7 +337,6 @@ export const createMockRequest = (
       // `Map#get` will exist when `request.headers` is a Map-backed mock
       (request.headers as Map<string, string>).get?.(key.toLowerCase());
   }
-
   return request as unknown as NextRequest;
 };
 

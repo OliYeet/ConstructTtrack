@@ -144,6 +144,8 @@ paths:
       tags:
         - Projects
       summary: List Projects
+      security:
+        - BearerAuth: []
       description: Retrieve a paginated list of projects for the authenticated user's organization
       parameters:
         - $ref: '#/components/parameters/Page'
@@ -185,6 +187,8 @@ paths:
       tags:
         - Projects
       summary: Create Project
+      security:
+        - BearerAuth: []
       description: Create a new project (requires manager or admin role)
       requestBody:
         required: true
@@ -406,7 +410,7 @@ components:
           description: Unique request identifier for tracing
           example: 'req_1234567890_abc123'
 
-    # Pagination schemas
+    # Pagination metadata schema
     PaginationInfo:
       type: object
       required:
@@ -447,7 +451,7 @@ components:
           description: Whether there is a previous page
           example: true
 
-    # System schemas
+    # Health-check response schema
     HealthResponse:
       allOf:
         - $ref: '#/components/schemas/ApiResponse'
@@ -538,7 +542,7 @@ components:
                   type: object
                   description: Echoed request data
 
-    # User schemas
+    # User information schema
     UserInfo:
       type: object
       required:
@@ -567,7 +571,7 @@ components:
           description: Organization ID
           example: '456e7890-e89b-12d3-a456-426614174000'
 
-    # Project schemas
+    # Geolocation coordinate schema
     Location:
       type: object
       required:
@@ -586,6 +590,8 @@ components:
           maximum: 180
           description: Longitude coordinate
           example: -74.0060
+
+    # The remainder of the file (Project, CreateProjectRequest, etc.) is unchanged.
 
     Project:
       type: object

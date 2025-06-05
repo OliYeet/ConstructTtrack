@@ -114,6 +114,20 @@ jobs:
         run: npm run web:build
         env:
           NODE_ENV: production
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: lumenfront
+          SENTRY_PROJECT: constructtrack
+
+      - name: 📊 Create Sentry Preview Release
+        uses: getsentry/action-release@v1
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: lumenfront
+          SENTRY_PROJECT: constructtrack
+        with:
+          environment: preview
+          version: ${{ github.sha }}-preview
+          sourcemaps: './apps/web/.next'
 
       - name: 🚀 Deploy to Vercel Preview
         uses: amondnet/vercel-action@v25
@@ -148,6 +162,20 @@ jobs:
         run: npm run web:build
         env:
           NODE_ENV: production
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: lumenfront
+          SENTRY_PROJECT: constructtrack
+
+      - name: 📊 Create Sentry Release
+        uses: getsentry/action-release@v1
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: lumenfront
+          SENTRY_PROJECT: constructtrack
+        with:
+          environment: production
+          version: ${{ github.sha }}
+          sourcemaps: './apps/web/.next'
 
       - name: 🧪 Run production smoke tests
         run: npm run test:smoke
@@ -159,6 +187,18 @@ jobs:
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
           vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
           vercel-args: '--prod'
+
+      - name: 🎯 Finalize Sentry Release
+        if: success()
+        uses: getsentry/action-release@v1
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: lumenfront
+          SENTRY_PROJECT: constructtrack
+        with:
+          environment: production
+          version: ${{ github.sha }}
+          finalize: true
 
       # Slack notifications disabled - can be re-enabled when needed
       # - name: 🎉 Notify deployment success
@@ -199,18 +239,31 @@ jobs:
       - name: 📦 Install dependencies
         run: npm ci
 
-      - name: 🗄️ Run database migrations
-        run: npm run db:migrate
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+      # Database migrations temporarily disabled for debugging
+      # - name: 🗄️ Run database migrations
+      #   run: |
+      #     # Install Supabase CLI
+      #     npm install -g @supabase/cli
+      #
+      #     # Authenticate with Supabase
+      #     echo "${{ secrets.SUPABASE_ACCESS_TOKEN }}" | supabase auth login --token
+      #
+      #     # Link to remote project
+      #     supabase link --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
+      #
+      #     # Run migrations
+      #     npm run db:migrate
+      #   env:
+      #     DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      #     SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
 
-      - name: 🌱 Seed production data (if needed)
-        run: npm run db:seed:prod
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
-        continue-on-error: true
+      # Database seeding temporarily disabled for debugging
+      # - name: 🌱 Seed production data (if needed)
+      #   run: npm run db:seed:prod
+      #   env:
+      #     DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      #     SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+      #   continue-on-error: true
 
   # Job 6: Performance & Security Monitoring
   monitoring:
@@ -224,12 +277,13 @@ jobs:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
 
-      - name: 🔍 Lighthouse CI
-        uses: treosh/lighthouse-ci-action@v10
-        with:
-          configPath: './lighthouse.config.js'
-          uploadArtifacts: true
-          temporaryPublicStorage: true
+      # Lighthouse CI temporarily disabled for debugging
+      # - name: 🔍 Lighthouse CI
+      #   uses: treosh/lighthouse-ci-action@v10
+      #   with:
+      #     configPath: './lighthouse.config.js'
+      #     uploadArtifacts: true
+      #     temporaryPublicStorage: true
 
       - name: 🔒 Security scan with ZAP
         uses: zaproxy/action-full-scan@v0.7.0

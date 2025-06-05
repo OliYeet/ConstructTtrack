@@ -5,6 +5,13 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 
+import {
+  CacheConfig,
+  CacheStrategy,
+  cacheConfigs,
+  cacheManager,
+} from './caching';
+
 import { createRequestContext } from '@/lib/api/auth';
 import { logRequest, logResponse, logError } from '@/lib/api/logger';
 import {
@@ -20,72 +27,192 @@ import {
 } from '@/lib/logging';
 import { apiMetricsTracker } from '@/lib/monitoring/api-metrics';
 // import { performanceMonitor } from '@/lib/monitoring/performance-monitor';
+import {
+  applySecurityHeaders,
+  defaultSecurityConfig,
+} from '@/lib/security/headers';
+import {
+  createRateLimitMiddleware,
+  rateLimitConfigs,
+  type RateLimitConfig as AdvancedRateLimitConfig,
+} from '@/lib/security/rate-limiting';
 import { ApiHandler, RequestContext, HttpMethod } from '@/types/api';
 
-// Rate limiting store
-// TODO: Replace with Redis or other persistent storage for production
-// WARNING: In-memory storage only works for single-instance deployments
-const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
-
-// Rate limiting configuration
+// Legacy rate limiting configuration (kept for backward compatibility)
 interface RateLimitConfig {
   windowMs: number; // Time window in milliseconds
   maxRequests: number; // Maximum requests per window
   keyGenerator?: (request: NextRequest) => string; // Custom key generator
 }
 
-// Default rate limit configuration
-const defaultRateLimit: RateLimitConfig = {
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  maxRequests: 100, // 100 requests per 15 minutes
-};
+// Helper function to apply all headers (CORS + Security)
+function applyApiHeaders(
+  response: NextResponse,
+  enableCors: boolean = true
+): NextResponse {
+  // Apply security headers
+  applySecurityHeaders(response, defaultSecurityConfig);
 
-// Generate rate limit key
-function generateRateLimitKey(
-  request: NextRequest,
-  config: RateLimitConfig
-): string {
-  if (config.keyGenerator) {
-    return config.keyGenerator(request);
+  // Apply CORS headers if enabled
+  if (enableCors) {
+    addCorsHeaders(response);
   }
 
-  // Use IP address as default key
-  const ipHeader =
-    request.headers.get('x-forwarded-for') ||
-    request.headers.get('x-real-ip') ||
-    '';
-  const clientIp = ipHeader.split(',')[0].trim() || 'unknown';
-  return `rate_limit:${clientIp}`;
+  return response;
 }
 
-// Check rate limit
-function checkRateLimit(
+// Detailed request logging function
+async function logDetailedRequest(
   request: NextRequest,
-  config: RateLimitConfig = defaultRateLimit
-): boolean {
-  const key = generateRateLimitKey(request, config);
-  const now = Date.now();
+  context?: RequestContext
+): Promise<void> {
+  try {
+    // URL parsing removed as it's not used in simplified logging
+    const headers: Record<string, string> = {};
 
-  // Get current rate limit data
-  const current = rateLimitStore.get(key);
-
-  if (!current || current.resetTime <= now) {
-    // Reset or initialize rate limit
-    rateLimitStore.set(key, {
-      count: 1,
-      resetTime: now + config.windowMs,
+    // Collect headers (excluding sensitive ones)
+    const sensitiveHeaders = ['authorization', 'cookie', 'x-api-key'];
+    request.headers.forEach((value, key) => {
+      if (!sensitiveHeaders.includes(key.toLowerCase())) {
+        headers[key] = value;
+      } else {
+        headers[key] = '[REDACTED]';
+      }
     });
-    return true;
-  }
 
-  if (current.count >= config.maxRequests) {
-    return false; // Rate limit exceeded
-  }
+    // Body parsing removed as it's not used in simplified logging
 
-  // Increment count
-  current.count++;
-  rateLimitStore.set(key, current);
-  return true;
+    // Use enhancedLogRequest for detailed logging
+    await enhancedLogRequest(request, {
+      requestId: context?.requestId || 'unknown',
+      organizationId: context?.organizationId,
+      user: context?.user,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    await enhancedLogError(
+      'Failed to log detailed request',
+      error,
+      request,
+      context
+    );
+  }
+}
+
+// Detailed response logging function
+async function logDetailedResponse(
+  request: NextRequest,
+  response: NextResponse,
+  duration: number,
+  context?: RequestContext
+): Promise<void> {
+  try {
+    const responseHeaders: Record<string, string> = {};
+
+    // Collect response headers
+    response.headers.forEach((value, key) => {
+      responseHeaders[key] = value;
+    });
+
+    // Response body parsing removed as it's not used in simplified logging
+
+    // Use enhancedLogResponse for detailed response logging
+    await enhancedLogResponse(request, response.status, duration, {
+      requestId: context?.requestId || 'unknown',
+      organizationId: context?.organizationId,
+      user: context?.user,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    await enhancedLogError(
+      'Failed to log detailed response',
+      error,
+      request,
+      context
+    );
+  }
+}
+
+// Detailed metrics collection function
+async function recordDetailedMetrics(
+  request: NextRequest,
+  response: NextResponse,
+  duration: number,
+  context?: RequestContext
+): Promise<void> {
+  try {
+    // URL parsing and endpoint/method extraction removed as they're not used in simplified metrics
+
+    // Tags removed as they're not used in simplified metrics logging
+
+    // Request size metrics
+    const contentLength = request.headers.get('content-length');
+    if (contentLength) {
+      await enhancedLogRequest(request, {
+        requestId: context?.requestId || 'unknown',
+        organizationId: context?.organizationId,
+        user: context?.user,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    // Response size metrics
+    const responseSize = response.headers.get('content-length');
+    if (responseSize) {
+      await enhancedLogRequest(request, {
+        requestId: context?.requestId || 'unknown',
+        organizationId: context?.organizationId,
+        user: context?.user,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    // User activity metrics
+    if (context?.user) {
+      await enhancedLogRequest(request, {
+        requestId: context?.requestId || 'unknown',
+        organizationId: context?.organizationId,
+        user: context?.user,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    // Error rate metrics
+    if (response.status >= 400) {
+      await enhancedLogRequest(request, {
+        requestId: context?.requestId || 'unknown',
+        organizationId: context?.organizationId,
+        user: context?.user,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    // Performance metrics by endpoint
+    await enhancedLogRequest(request, {
+      requestId: context?.requestId || 'unknown',
+      organizationId: context?.organizationId,
+      user: context?.user,
+      timestamp: new Date().toISOString(),
+    });
+
+    // Rate limiting metrics (if rate limited)
+    const rateLimitRemaining = response.headers.get('X-RateLimit-Remaining');
+    if (rateLimitRemaining) {
+      await enhancedLogRequest(request, {
+        requestId: context?.requestId || 'unknown',
+        organizationId: context?.organizationId,
+        user: context?.user,
+        timestamp: new Date().toISOString(),
+      });
+    }
+  } catch (error) {
+    await enhancedLogError(
+      'Failed to record detailed metrics',
+      error,
+      request,
+      context
+    );
+  }
 }
 
 // API route wrapper with middleware
@@ -94,8 +221,16 @@ export function withApiMiddleware(
   options: {
     requireAuth?: boolean;
     requireRoles?: string[];
-    rateLimit?: RateLimitConfig | false;
+    rateLimit?:
+      | RateLimitConfig
+      | AdvancedRateLimitConfig
+      | keyof typeof rateLimitConfigs
+      | false;
     cors?: boolean;
+    enableDetailedLogging?: boolean; // New option for detailed request/response logging
+    enableDetailedMetrics?: boolean; // New option for detailed metrics collection
+    cache?: CacheConfig | keyof typeof cacheConfigs | false; // New option for API caching
+    cacheStrategy?: CacheStrategy; // Cache strategy
   } = {}
 ) {
   return async function handler(
@@ -104,6 +239,7 @@ export function withApiMiddleware(
   ): Promise<NextResponse> {
     const startTime = Date.now();
     let requestContext: RequestContext | undefined;
+    let rateLimitHeaders: Record<string, string> = {};
 
     try {
       // Create request context with authentication
@@ -112,6 +248,11 @@ export function withApiMiddleware(
       // Log incoming request (both old and new systems)
       logRequest(request, requestContext);
       await enhancedLogRequest(request, requestContext);
+
+      // Detailed request logging if enabled
+      if (options.enableDetailedLogging) {
+        await logDetailedRequest(request, requestContext);
+      }
 
       // Start API metrics tracking
       const requestId = apiMetricsTracker.recordRequestStart(
@@ -122,7 +263,7 @@ export function withApiMiddleware(
       // Handle CORS preflight
       if (request.method === 'OPTIONS') {
         if (options.cors !== false) {
-          return addCorsHeaders(new NextResponse(null, { status: 200 }));
+          return applyApiHeaders(new NextResponse(null, { status: 200 }), true);
         }
       }
 
@@ -137,32 +278,46 @@ export function withApiMiddleware(
           requestContext.requestId
         );
 
-        if (options.cors !== false) {
-          addCorsHeaders(response);
-        }
+        applyApiHeaders(response, options.cors !== false);
 
         const duration = Date.now() - startTime;
         logResponse(request, 405, duration, requestContext);
         return response;
       }
 
-      // Rate limiting
+      // Advanced rate limiting
       if (options.rateLimit !== false) {
-        const rateLimitConfig = options.rateLimit || defaultRateLimit;
-        if (!checkRateLimit(request, rateLimitConfig)) {
-          const response = createErrorResponse(
-            new BaseApiError('Rate limit exceeded', 429, 'RATE_LIMIT_EXCEEDED'),
-            requestContext.requestId
-          );
+        let rateLimitMiddleware;
 
-          if (options.cors !== false) {
-            addCorsHeaders(response);
-          }
+        if (typeof options.rateLimit === 'string') {
+          // Use predefined configuration
+          rateLimitMiddleware = createRateLimitMiddleware(options.rateLimit);
+        } else if (options.rateLimit && typeof options.rateLimit === 'object') {
+          // Use custom configuration
+          rateLimitMiddleware = createRateLimitMiddleware(options.rateLimit);
+        } else {
+          // Use default API rate limiting
+          rateLimitMiddleware = createRateLimitMiddleware('api');
+        }
+
+        const rateLimitResult = await rateLimitMiddleware(request);
+
+        if (!rateLimitResult.allowed && rateLimitResult.response) {
+          // Apply security headers to rate limit response
+          const response = new NextResponse(rateLimitResult.response.body, {
+            status: rateLimitResult.response.status,
+            headers: rateLimitResult.response.headers,
+          });
+
+          applyApiHeaders(response, options.cors !== false);
 
           const duration = Date.now() - startTime;
           logResponse(request, 429, duration, requestContext);
           return response;
         }
+
+        // Store rate limit headers for later application to successful responses
+        rateLimitHeaders = rateLimitResult.headers || {};
       }
 
       // Authentication check
@@ -173,9 +328,7 @@ export function withApiMiddleware(
             requestContext.requestId
           );
 
-          if (options.cors !== false) {
-            addCorsHeaders(response);
-          }
+          applyApiHeaders(response, options.cors !== false);
 
           const duration = Date.now() - startTime;
           logResponse(request, 401, duration, requestContext);
@@ -191,9 +344,7 @@ export function withApiMiddleware(
             requestContext.requestId
           );
 
-          if (options.cors !== false) {
-            addCorsHeaders(response);
-          }
+          applyApiHeaders(response, options.cors !== false);
 
           const duration = Date.now() - startTime;
           logResponse(request, 401, duration, requestContext);
@@ -210,9 +361,7 @@ export function withApiMiddleware(
             requestContext.requestId
           );
 
-          if (options.cors !== false) {
-            addCorsHeaders(response);
-          }
+          applyApiHeaders(response, options.cors !== false);
 
           const duration = Date.now() - startTime;
           logResponse(request, 403, duration, requestContext);
@@ -231,17 +380,219 @@ export function withApiMiddleware(
         })
       );
 
+      // Check cache for GET requests
+      if (request.method === 'GET' && options.cache !== false) {
+        const cacheConfig =
+          typeof options.cache === 'string'
+            ? cacheConfigs[options.cache]
+            : options.cache || cacheConfigs.medium;
+
+        const cacheStrategy =
+          options.cacheStrategy || CacheStrategy.CACHE_FIRST;
+
+        // Generate cache key
+        const additionalKeys: string[] = [];
+
+        if (
+          'private' in cacheConfig &&
+          cacheConfig.private &&
+          requestContext.user
+        ) {
+          additionalKeys.push(`user:${requestContext.user.id}`);
+        }
+
+        if (
+          'tags' in cacheConfig &&
+          (cacheConfig as any).tags?.includes('organization') &&
+          requestContext.organizationId
+        ) {
+          additionalKeys.push(`org:${requestContext.organizationId}`);
+        }
+
+        const cacheKey = cacheManager.generateKey(request, additionalKeys);
+
+        // Check for conditional requests (ETag)
+        const ifNoneMatch = request.headers.get('if-none-match');
+
+        // Try to get from cache
+        const cachedEntry = await cacheManager.get(cacheKey);
+
+        if (cachedEntry) {
+          // Check ETag for conditional requests
+          if (ifNoneMatch && ifNoneMatch === cachedEntry.etag) {
+            const notModifiedResponse = new NextResponse(null, { status: 304 });
+            applyApiHeaders(notModifiedResponse, options.cors !== false);
+            return notModifiedResponse;
+          }
+
+          const isStale = cacheManager.isStale(
+            cachedEntry,
+            'staleWhileRevalidate' in cacheConfig
+              ? cacheConfig.staleWhileRevalidate
+              : undefined
+          );
+
+          // Handle cache strategies
+          if (cacheStrategy === CacheStrategy.CACHE_FIRST && !isStale) {
+            const cachedResponse =
+              cacheManager.createCachedResponse(cachedEntry);
+            applyApiHeaders(cachedResponse, options.cors !== false);
+
+            // Log cached response
+            const duration = Date.now() - startTime;
+            logResponse(
+              request,
+              cachedResponse.status,
+              duration,
+              requestContext
+            );
+
+            return cachedResponse;
+          }
+
+          if (cacheStrategy === CacheStrategy.STALE_WHILE_REVALIDATE) {
+            if (
+              isStale &&
+              'revalidateOnStale' in cacheConfig &&
+              cacheConfig.revalidateOnStale
+            ) {
+              // Return stale data immediately, revalidate in background
+              setImmediate(async () => {
+                try {
+                  const params = await context.params;
+                  const freshResponse = await handler(request, { params });
+
+                  if (freshResponse.ok && freshResponse.status === 200) {
+                    const responseClone = freshResponse.clone();
+                    const data = await responseClone.json();
+                    await cacheManager.set(cacheKey, data, cacheConfig);
+                  }
+                } catch (error) {
+                  await enhancedLogError(
+                    'Background cache revalidation failed',
+                    error,
+                    request,
+                    requestContext
+                  );
+                }
+              });
+            }
+
+            if (
+              !isStale ||
+              ('revalidateOnStale' in cacheConfig &&
+                cacheConfig.revalidateOnStale)
+            ) {
+              const cachedResponse = cacheManager.createCachedResponse(
+                cachedEntry,
+                isStale
+              );
+              applyApiHeaders(cachedResponse, options.cors !== false);
+
+              // Log cached response
+              const duration = Date.now() - startTime;
+              logResponse(
+                request,
+                cachedResponse.status,
+                duration,
+                requestContext
+              );
+
+              return cachedResponse;
+            }
+          }
+        }
+      }
+
       // Execute handler
       const params = await context.params;
-      const response = await handler(
-        request as NextRequest & { context: RequestContext },
-        { params }
-      );
+      let response = await handler(request, { params });
 
-      // Add CORS headers if enabled
-      if (options.cors !== false) {
-        addCorsHeaders(response);
+      // Prepare headers for modification
+      let needsNewResponse = false;
+      const newHeaders = new Headers(response.headers);
+
+      // Cache successful GET responses
+      if (
+        request.method === 'GET' &&
+        options.cache !== false &&
+        response.ok &&
+        response.status === 200
+      ) {
+        try {
+          const cacheConfig =
+            typeof options.cache === 'string'
+              ? cacheConfigs[options.cache]
+              : options.cache || cacheConfigs.medium;
+
+          const additionalKeys: string[] = [];
+
+          if (
+            'private' in cacheConfig &&
+            cacheConfig.private &&
+            requestContext.user
+          ) {
+            additionalKeys.push(`user:${requestContext.user.id}`);
+          }
+
+          if (
+            'tags' in cacheConfig &&
+            (cacheConfig as any).tags?.includes('organization') &&
+            requestContext.organizationId
+          ) {
+            additionalKeys.push(`org:${requestContext.organizationId}`);
+          }
+
+          const cacheKey = cacheManager.generateKey(request, additionalKeys);
+          const responseClone = response.clone();
+          const data = await responseClone.json();
+
+          await cacheManager.set(cacheKey, data, cacheConfig, {
+            'Content-Type':
+              response.headers.get('Content-Type') || 'application/json',
+          });
+
+          // Add cache headers
+          const entry = await cacheManager.get(cacheKey);
+          if (entry) {
+            newHeaders.set('ETag', entry.etag);
+            newHeaders.set('X-Cache', 'MISS');
+            newHeaders.set(
+              'Cache-Control',
+              cacheManager.getCacheControlHeader(entry, false)
+            );
+            needsNewResponse = true;
+          }
+        } catch (error) {
+          await enhancedLogError(
+            'Failed to cache response',
+            error,
+            request,
+            requestContext
+          );
+        }
       }
+
+      // Add rate limit headers if available
+      if (rateLimitHeaders && Object.keys(rateLimitHeaders).length > 0) {
+        Object.entries(rateLimitHeaders).forEach(([key, value]) => {
+          newHeaders.set(key, value);
+        });
+        needsNewResponse = true;
+      }
+
+      // Create new response with all headers if needed
+      if (needsNewResponse) {
+        const responseBody = await response.clone().text();
+        response = new NextResponse(responseBody, {
+          status: response.status,
+          statusText: response.statusText,
+          headers: newHeaders,
+        });
+      }
+
+      // Apply security and CORS headers
+      applyApiHeaders(response, options.cors !== false);
 
       // Log response (both old and new systems)
       const duration = Date.now() - startTime;
@@ -253,6 +604,11 @@ export function withApiMiddleware(
         requestContext
       );
 
+      // Detailed response logging if enabled
+      if (options.enableDetailedLogging) {
+        await logDetailedResponse(request, response, duration, requestContext);
+      }
+
       // Record API metrics
       apiMetricsTracker.recordRequestEnd(
         request,
@@ -260,6 +616,16 @@ export function withApiMiddleware(
         requestId,
         requestContext
       );
+
+      // Detailed metrics collection if enabled
+      if (options.enableDetailedMetrics) {
+        await recordDetailedMetrics(
+          request,
+          response,
+          duration,
+          requestContext
+        );
+      }
 
       return response;
     } catch (error) {
@@ -282,10 +648,8 @@ export function withApiMiddleware(
 
       const response = createErrorResponse(apiError, requestContext?.requestId);
 
-      // Add CORS headers if enabled
-      if (options.cors !== false) {
-        addCorsHeaders(response);
-      }
+      // Apply security and CORS headers
+      applyApiHeaders(response, options.cors !== false);
 
       // Log error response
       const duration = Date.now() - startTime;
