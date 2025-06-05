@@ -54,17 +54,19 @@ describe('Authentication middleware (`withAuth`)', () => {
     } as any);
 
     const mockFrom = supabase.from as jest.MockedFunction<typeof supabase.from>;
+    const mockSingle = (jest.fn() as any).mockResolvedValueOnce({
+      data: {
+        role: 'field_worker',
+        organization_id: 'org-123',
+        full_name: 'Test User',
+      },
+      error: null,
+    });
+
     const mockChain = {
       select: jest.fn().mockReturnThis(),
       eq: jest.fn().mockReturnThis(),
-      single: jest.fn().mockResolvedValueOnce({
-        data: {
-          role: 'field_worker',
-          organization_id: 'org-123',
-          full_name: 'Test User',
-        },
-        error: null,
-      }),
+      single: mockSingle,
     };
     mockFrom.mockReturnValueOnce(mockChain as any);
 
