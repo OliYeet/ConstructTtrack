@@ -94,10 +94,13 @@ describe('WebSocket Gateway Integration', () => {
 
     // Clear timeout when test completes
     const originalDone = done;
-    done = (error?: Error) => {
+    const wrappedDone = (error?: Error) => {
       clearTimeout(timeout);
       originalDone(error);
     };
+    // Copy the fail property to maintain DoneCallback interface
+    wrappedDone.fail = originalDone.fail;
+    done = wrappedDone;
   });
 
   it('should reject connection without valid token', done => {
