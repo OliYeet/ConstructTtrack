@@ -35,6 +35,61 @@ export interface UnsubscribeMessage {
 
 export interface PingMessage {
   action: 'ping';
+  timestamp?: number;
 }
 
 export type ClientMessage = SubscribeMessage | UnsubscribeMessage | PingMessage;
+
+// Enhanced types for security features - CodeRabbit recommendations
+
+export interface ConnectionMetadata {
+  lastActivity: number;
+  messageCount: number;
+  ipAddress: string;
+  userAgent?: string;
+}
+
+export interface RateLimitStatus {
+  count: number;
+  remaining: number;
+  resetTime: number;
+}
+
+export interface ValidationResult {
+  isValid: boolean;
+  errors: string[];
+  token?: string;
+}
+
+export interface ErrorResponse {
+  type: 'error';
+  code: string;
+  message: string;
+  timestamp: number;
+}
+
+export interface SuccessResponse {
+  type: 'connected' | 'subscribed' | 'unsubscribed' | 'pong';
+  data: Record<string, unknown>;
+  timestamp?: number;
+}
+
+export type ServerMessage = ErrorResponse | SuccessResponse;
+
+// Room types for better type safety
+export type RoomType = 'project' | 'user' | 'team' | 'global';
+
+export interface ParsedRoom {
+  type: RoomType;
+  id?: string;
+}
+
+// Gateway statistics for monitoring
+export interface GatewayStats {
+  connections: number;
+  rooms: number;
+  ipConnections: number;
+  uptime: number;
+  messagesProcessed: number;
+  errorsCount: number;
+}

@@ -9,19 +9,6 @@ import { config as dotenvConfig } from 'dotenv';
 dotenvConfig();
 
 export const config = {
-  // Server configuration
-  server: {
-    port: (() => {
-      const port = parseInt(process.env.WS_GATEWAY_PORT || '8080', 10);
-      if (isNaN(port) || port <= 0 || port > 65535) {
-        throw new Error(
-          `Invalid WS_GATEWAY_PORT: ${process.env.WS_GATEWAY_PORT}. Must be a number between 1-65535`
-        );
-      }
-      return port;
-    })(),
-  },
-
   // Supabase configuration
   supabase: {
     url: process.env.SUPABASE_URL || '',
@@ -59,6 +46,49 @@ export const config = {
         );
       }
       return maxConn;
+    })(),
+  },
+
+  // Server security configuration - CodeRabbit recommendations
+  server: {
+    port: (() => {
+      const port = parseInt(process.env.WS_GATEWAY_PORT || '8080', 10);
+      if (isNaN(port) || port <= 0 || port > 65535) {
+        throw new Error(
+          `Invalid WS_GATEWAY_PORT: ${process.env.WS_GATEWAY_PORT}. Must be a number between 1-65535`
+        );
+      }
+      return port;
+    })(),
+    maxConnectionsPerIP: (() => {
+      const maxConn = parseInt(
+        process.env.WS_MAX_CONNECTIONS_PER_IP || '10',
+        10
+      );
+      if (isNaN(maxConn) || maxConn <= 0) {
+        throw new Error(
+          `Invalid WS_MAX_CONNECTIONS_PER_IP: ${process.env.WS_MAX_CONNECTIONS_PER_IP}. Must be a positive number`
+        );
+      }
+      return maxConn;
+    })(),
+    rateLimitWindow: (() => {
+      const window = parseInt(process.env.WS_RATE_LIMIT_WINDOW || '60000', 10);
+      if (isNaN(window) || window <= 0) {
+        throw new Error(
+          `Invalid WS_RATE_LIMIT_WINDOW: ${process.env.WS_RATE_LIMIT_WINDOW}. Must be a positive number`
+        );
+      }
+      return window;
+    })(),
+    rateLimitMax: (() => {
+      const max = parseInt(process.env.WS_RATE_LIMIT_MAX || '100', 10);
+      if (isNaN(max) || max <= 0) {
+        throw new Error(
+          `Invalid WS_RATE_LIMIT_MAX: ${process.env.WS_RATE_LIMIT_MAX}. Must be a positive number`
+        );
+      }
+      return max;
     })(),
   },
 

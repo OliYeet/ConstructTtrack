@@ -15,6 +15,9 @@ jest.mock('../config', () => ({
     },
     server: {
       port: 8081, // Use different port for testing
+      maxConnectionsPerIP: 10,
+      rateLimitWindow: 60000,
+      rateLimitMax: 100,
     },
   },
 }));

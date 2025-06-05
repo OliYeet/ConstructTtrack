@@ -9,6 +9,7 @@ import { WebSocketServer, WebSocket } from 'ws';
 
 import { verifyToken, generateConnectionId } from './auth';
 import { config } from './config';
+import { ErrorFactory, ErrorHandler, type GatewayError } from './errors';
 import type {
   AuthenticatedWebSocket,
   ClientMessage,
@@ -17,12 +18,38 @@ import type {
   PingMessage,
 } from './types';
 import { logger } from './utils/logger';
+import {
+  validateClientMessage,
+  validateConnectionParams,
+  MessageRateLimiter,
+} from './validation';
 
 export class WebSocketGateway {
   private wss: WebSocketServer;
   private server: ReturnType<typeof createServer>;
   private connections = new Map<string, AuthenticatedWebSocket>();
   private rooms = new Map<string, Set<AuthenticatedWebSocket>>();
+
+  // Enhanced security and performance features - CodeRabbit recommendations
+  private rateLimiter = new MessageRateLimiter(
+    config.server.rateLimitMax,
+    config.server.rateLimitWindow
+  );
+  private connectionLimiter = new Map<string, number>(); // Track connections per IP
+  private heartbeatInterval: ReturnType<typeof globalThis.setInterval> | null =
+    null;
+  private cleanupInterval: ReturnType<typeof globalThis.setInterval> | null =
+    null;
+
+  // WeakMap for better memory management - CodeRabbit recommendation
+  private connectionMetadata = new WeakMap<
+    AuthenticatedWebSocket,
+    {
+      lastActivity: number;
+      messageCount: number;
+      ipAddress: string;
+    }
+  >();
 
   constructor() {
     // Create HTTP server for health checks
@@ -51,6 +78,8 @@ export class WebSocketGateway {
     });
 
     this.setupWebSocketHandlers();
+    this.startHeartbeat();
+    this.startCleanupTasks();
   }
 
   private setupWebSocketHandlers(): void {
@@ -65,34 +94,86 @@ export class WebSocketGateway {
 
   private handleConnection(
     ws: AuthenticatedWebSocket,
-    req: { url?: string }
+    req: { url?: string; socket?: { remoteAddress?: string } }
   ): void {
     const url = req.url || '';
-    const token = this.extractTokenFromUrl(url);
+    const ipAddress = req.socket?.remoteAddress || 'unknown';
 
-    if (!token) {
-      logger.warn('Connection rejected: No token provided');
-      ws.close(1008, 'Authentication required');
+    try {
+      // Enhanced connection validation - CodeRabbit security recommendations
+      const validation = validateConnectionParams(url);
+      if (!validation.isValid) {
+        const error = ErrorFactory.validation(
+          `Connection validation failed: ${validation.errors.join(', ')}`
+        );
+        logger.warn(error.message, { ipAddress, errors: validation.errors });
+        ws.close(1008, 'Invalid connection parameters');
+        return;
+      }
+
+      // Rate limiting per IP address
+      const currentConnections = this.connectionLimiter.get(ipAddress) || 0;
+      if (currentConnections >= config.server.maxConnectionsPerIP) {
+        const error = ErrorFactory.rateLimit(
+          `Too many connections from IP: ${ipAddress}`
+        );
+        logger.warn(error.message, { ipAddress, currentConnections });
+        ws.close(1008, 'Connection limit exceeded');
+        return;
+      }
+
+      const authContext = verifyToken(validation.token);
+      if (!authContext) {
+        const error = ErrorFactory.authentication('Invalid or expired token');
+        logger.warn(error.message, { ipAddress });
+        ws.close(1008, 'Authentication failed');
+        return;
+      }
+
+      // Rate limiting per IP address
+      const ipConnections = this.connectionLimiter.get(ipAddress) || 0;
+      if (ipConnections >= config.server.maxConnectionsPerIP) {
+        const error = ErrorFactory.rateLimit(
+          `Too many connections from IP: ${ipAddress}`
+        );
+        logger.warn(error.message, {
+          ipAddress,
+          currentConnections: ipConnections,
+        });
+        ws.close(1008, 'Connection limit exceeded');
+        return;
+      }
+
+      // Initialize authenticated WebSocket with enhanced metadata
+      ws.authContext = authContext;
+      ws.connectionId = generateConnectionId();
+      ws.rooms = new Set();
+
+      // Track connection metadata for memory management and monitoring
+      this.connectionMetadata.set(ws, {
+        lastActivity: Date.now(),
+        messageCount: 0,
+        ipAddress,
+      });
+
+      // Update connection counters
+      this.connectionLimiter.set(ipAddress, ipConnections + 1);
+    } catch (error) {
+      const gatewayError = ErrorHandler.normalize(
+        error,
+        'Connection handling failed'
+      );
+      logger.error(gatewayError.message, ErrorHandler.toLogEntry(gatewayError));
+      ws.close(1011, 'Internal server error');
       return;
     }
-
-    const authContext = verifyToken(token);
-    if (!authContext) {
-      logger.warn('Connection rejected: Invalid token');
-      ws.close(1008, 'Invalid token');
-      return;
-    }
-
-    // Initialize authenticated WebSocket
-    ws.authContext = authContext;
-    ws.connectionId = generateConnectionId();
-    ws.rooms = new Set();
-
     this.connections.set(ws.connectionId, ws);
 
     logger.info('Client connected', {
       connectionId: ws.connectionId,
-      userId: authContext.userId,
+      userId: ws.authContext.userId,
+      ipAddress,
+      totalConnections: this.connections.size,
     });
 
     // Setup message handlers
@@ -121,34 +202,76 @@ export class WebSocketGateway {
     data: Buffer | ArrayBuffer | Buffer[]
   ): void {
     try {
+      // Rate limiting check - CodeRabbit security recommendation
+      if (!this.rateLimiter.isAllowed(ws.connectionId)) {
+        const error = ErrorFactory.rateLimit('Message rate limit exceeded');
+        this.sendErrorMessage(ws, error);
+        return;
+      }
+
+      // Update activity tracking
+      const metadata = this.connectionMetadata.get(ws);
+      if (metadata) {
+        metadata.lastActivity = Date.now();
+        metadata.messageCount++;
+      }
+
+      // Parse and validate message
       const dataString =
         data instanceof ArrayBuffer
           ? new globalThis.TextDecoder().decode(data)
           : Array.isArray(data)
             ? Buffer.concat(data).toString()
             : data.toString();
-      const message: ClientMessage = JSON.parse(dataString);
+
+      // Prevent DoS attacks with overly large messages
+      if (dataString.length > 10000) {
+        const error = ErrorFactory.validation('Message too large');
+        this.sendErrorMessage(ws, error);
+        return;
+      }
+
+      const rawMessage = JSON.parse(dataString);
+
+      // Comprehensive message validation - CodeRabbit recommendation
+      if (!validateClientMessage(rawMessage)) {
+        const error = ErrorFactory.validation('Invalid message format');
+        this.sendErrorMessage(ws, error);
+        return;
+      }
+
+      const message = rawMessage as ClientMessage;
 
       switch (message.action) {
-        case 'subscribe':
+        case 'subscribe': {
           this.handleSubscribe(ws, message);
           break;
-        case 'unsubscribe':
+        }
+        case 'unsubscribe': {
           this.handleUnsubscribe(ws, message);
           break;
-        case 'ping':
+        }
+        case 'ping': {
           this.handlePing(ws, message);
           break;
-        default:
-          logger.warn('Unknown message action', {
-            action: (message as ClientMessage).action,
-          });
+        }
+        default: {
+          const error = ErrorFactory.validation(
+            `Unknown action: ${message.action}`
+          );
+          this.sendErrorMessage(ws, error);
+        }
       }
     } catch (error) {
-      logger.error('Failed to parse message', {
+      const gatewayError = ErrorHandler.normalize(
         error,
-        connectionId: ws.connectionId,
-      });
+        'Message handling failed'
+      );
+      logger.error(
+        gatewayError.message,
+        ErrorHandler.toLogEntry(gatewayError, ws.connectionId)
+      );
+      this.sendErrorMessage(ws, gatewayError);
     }
   }
 
@@ -208,13 +331,29 @@ export class WebSocketGateway {
   }
 
   private handleDisconnection(ws: AuthenticatedWebSocket): void {
-    logger.info('Client disconnected', { connectionId: ws.connectionId });
+    const metadata = this.connectionMetadata.get(ws);
+    const ipAddress = metadata?.ipAddress || 'unknown';
 
-    // Remove from all rooms
+    logger.info('Client disconnected', {
+      connectionId: ws.connectionId,
+      ipAddress,
+      messageCount: metadata?.messageCount || 0,
+      connectionDuration: metadata ? Date.now() - metadata.lastActivity : 0,
+    });
+
+    // Enhanced cleanup - prevent memory leaks
     ws.rooms.forEach(room => this.removeFromRoom(ws, room));
-
-    // Remove from connections
     this.connections.delete(ws.connectionId);
+
+    // Update IP connection counter
+    const currentConnections = this.connectionLimiter.get(ipAddress) || 0;
+    if (currentConnections > 1) {
+      this.connectionLimiter.set(ipAddress, currentConnections - 1);
+    } else {
+      this.connectionLimiter.delete(ipAddress);
+    }
+
+    // WeakMap automatically cleans up metadata when ws is garbage collected
   }
 
   private handleError(ws: AuthenticatedWebSocket, error: Error): void {
@@ -286,6 +425,14 @@ export class WebSocketGateway {
 
   public stop(): Promise<void> {
     return new Promise(resolve => {
+      // Clean up intervals
+      if (this.heartbeatInterval) {
+        globalThis.clearInterval(this.heartbeatInterval);
+      }
+      if (this.cleanupInterval) {
+        globalThis.clearInterval(this.cleanupInterval);
+      }
+
       this.wss.close(() => {
         this.server.close(() => {
           logger.info('WebSocket Gateway stopped');
@@ -293,5 +440,74 @@ export class WebSocketGateway {
         });
       });
     });
+  }
+
+  /**
+   * Enhanced error message sending - CodeRabbit recommendation
+   */
+  private sendErrorMessage(
+    ws: AuthenticatedWebSocket,
+    error: GatewayError
+  ): void {
+    const errorResponse = ErrorHandler.toClientResponse(error);
+    this.sendMessage(ws, errorResponse);
+
+    // Log detailed error for debugging
+    logger.warn(
+      'Sent error to client',
+      ErrorHandler.toLogEntry(error, ws.connectionId)
+    );
+  }
+
+  /**
+   * Heartbeat mechanism to detect dead connections - CodeRabbit recommendation
+   */
+  private startHeartbeat(): void {
+    this.heartbeatInterval = globalThis.setInterval(() => {
+      const now = Date.now();
+      const staleConnections: AuthenticatedWebSocket[] = [];
+
+      this.connections.forEach(ws => {
+        const metadata = this.connectionMetadata.get(ws);
+        if (metadata && now - metadata.lastActivity > 60000) {
+          // 60 seconds timeout
+          staleConnections.push(ws);
+        }
+      });
+
+      // Close stale connections
+      staleConnections.forEach(ws => {
+        logger.info('Closing stale connection', {
+          connectionId: ws.connectionId,
+        });
+        ws.close(1000, 'Connection timeout');
+      });
+    }, 30000); // Check every 30 seconds
+  }
+
+  /**
+   * Periodic cleanup tasks - CodeRabbit recommendation
+   */
+  private startCleanupTasks(): void {
+    this.cleanupInterval = globalThis.setInterval(() => {
+      // Clean up rate limiter
+      this.rateLimiter.cleanup();
+
+      // Clean up empty rooms
+      const emptyRooms: string[] = [];
+      this.rooms.forEach((connections, room) => {
+        if (connections.size === 0) {
+          emptyRooms.push(room);
+        }
+      });
+      emptyRooms.forEach(room => this.rooms.delete(room));
+
+      // Log statistics
+      logger.debug('Gateway statistics', {
+        connections: this.connections.size,
+        rooms: this.rooms.size,
+        ipConnections: this.connectionLimiter.size,
+      });
+    }, 300000); // Every 5 minutes
   }
 }

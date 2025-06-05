@@ -24,6 +24,8 @@ describe('Authentication', () => {
         projects: ['project456'],
         email: 'test@example.com',
         exp: Math.floor(Date.now() / 1000) + 3600, // 1 hour from now
+        iss: 'constructtrack',
+        aud: 'ws-gateway',
       };
 
       const token = jwt.sign(payload, 'test-secret-key-for-testing-only');

@@ -15,7 +15,14 @@ import { logger } from './utils/logger';
  */
 export function verifyToken(token: string): AuthContext | null {
   try {
-    const decoded = jwt.verify(token, config.jwt.secret) as jwt.JwtPayload;
+    // Prevent JWT algorithm confusion attacks - CodeRabbit security recommendation
+    const decoded = jwt.verify(token, config.jwt.secret, {
+      algorithms: ['HS256'], // Explicitly specify allowed algorithms
+      issuer: 'constructtrack',
+      audience: 'ws-gateway',
+      // Add clock tolerance for network delays
+      clockTolerance: 30, // 30 seconds
+    }) as jwt.JwtPayload;
 
     // Validate required claims
     if (!decoded.sub || !decoded.exp) {
@@ -23,7 +30,7 @@ export function verifyToken(token: string): AuthContext | null {
       return null;
     }
 
-    // Check expiration
+    // Check expiration (redundant with jwt.verify but explicit)
     if (Date.now() >= decoded.exp * 1000) {
       logger.warn('JWT token expired');
       return null;
@@ -37,7 +44,15 @@ export function verifyToken(token: string): AuthContext | null {
       exp: decoded.exp,
     };
   } catch (error) {
-    logger.warn('JWT verification failed:', error);
+    if (error instanceof jwt.JsonWebTokenError) {
+      logger.warn(`JWT verification failed: ${error.message}`);
+    } else if (error instanceof jwt.TokenExpiredError) {
+      logger.warn('JWT token expired');
+    } else if (error instanceof jwt.NotBeforeError) {
+      logger.warn('JWT token not active yet');
+    } else {
+      logger.warn('JWT verification failed:', error);
+    }
     return null;
   }
 }
