@@ -1,8 +1,10 @@
-import type { Database } from '../types/database';
 import {
   type RealtimeChannel,
   type RealtimePostgresChangesPayload,
 } from '@supabase/supabase-js';
+
+import type { Database } from '../types/database';
+
 import { supabase } from './core';
 
 // ---------------------------------------------------------------------------

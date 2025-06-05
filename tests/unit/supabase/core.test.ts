@@ -19,7 +19,7 @@ describe('supabase client core utilities', () => {
     delete process.env.NEXT_PUBLIC_SUPABASE_URL;
     delete process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
     jest.mock('@supabase/supabase-js', () => {
       const createClient = jest.fn(() => mockClient);
       return { createClient };
@@ -39,7 +39,7 @@ describe('supabase client core utilities', () => {
     expect(client1).toBe(client2);
 
     // createClient from @supabase/supabase-js should be invoked **once**
-    // eslint-disable-next-line @typescript-eslint/no-var-requires, import/no-commonjs
+    // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports, import/no-commonjs
     const { createClient } = require('@supabase/supabase-js');
     expect(createClient).toHaveBeenCalledTimes(1);
     expect(createClient).toHaveBeenCalledWith(
