@@ -23,6 +23,10 @@ export const EVENT_TYPES = [
   'SectionClosed',
   'WorkOrderUpdated',
   'FiberSectionProgress',
+  // Error events for Phase 2
+  'FiberSectionFailed',
+  'SpliceFailed',
+  'InspectionFailed',
 ] as const;
 
 /** Union of every event `type` literal. */
@@ -151,6 +155,48 @@ export interface FiberSectionProgressEvent extends BaseEvent {
   };
 }
 
+// Error Events for Phase 2
+export interface FiberSectionFailedEvent extends BaseEvent {
+  type: 'FiberSectionFailed';
+  payload: {
+    sectionId: string;
+    failureReason: string;
+    failureLocation?: {
+      latitude: number;
+      longitude: number;
+    };
+    errorCode: string;
+    recoveryActions?: string[];
+  };
+}
+
+export interface SpliceFailedEvent extends BaseEvent {
+  type: 'SpliceFailed';
+  payload: {
+    sectionId: string;
+    spliceId: string;
+    failureReason: string;
+    testResults?: {
+      loss: number; // dB
+      reflectance: number; // dB
+      passed: false;
+    };
+    retryAttempts: number;
+  };
+}
+
+export interface InspectionFailedEvent extends BaseEvent {
+  type: 'InspectionFailed';
+  payload: {
+    sectionId: string;
+    inspectionType: 'visual' | 'optical' | 'electrical';
+    inspector: string;
+    failureReasons: string[];
+    requiredActions: string[];
+    photos?: string[]; // URLs
+  };
+}
+
 // Union type for all events
 export type RealtimeEvent =
   | FiberSectionStartedEvent
@@ -159,15 +205,37 @@ export type RealtimeEvent =
   | InspectionPassedEvent
   | SectionClosedEvent
   | WorkOrderUpdatedEvent
-  | FiberSectionProgressEvent;
+  | FiberSectionProgressEvent
+  | FiberSectionFailedEvent
+  | SpliceFailedEvent
+  | InspectionFailedEvent;
 
-// WebSocket Message Envelope
-export interface WebSocketMessage {
-  messageId: string;
-  timestamp: string; // ISO 8601
-  type: 'event' | 'command' | 'query' | 'error';
-  payload: RealtimeEvent | WebSocketCommand | WebSocketQuery | WebSocketError;
-}
+// WebSocket Message Envelope - Discriminated Union for Type Safety
+export type WebSocketMessage =
+  | {
+      messageId: string;
+      timestamp: string; // ISO 8601
+      type: 'event';
+      payload: RealtimeEvent;
+    }
+  | {
+      messageId: string;
+      timestamp: string; // ISO 8601
+      type: 'command';
+      payload: WebSocketCommand;
+    }
+  | {
+      messageId: string;
+      timestamp: string; // ISO 8601
+      type: 'query';
+      payload: WebSocketQuery;
+    }
+  | {
+      messageId: string;
+      timestamp: string; // ISO 8601
+      type: 'error';
+      payload: WebSocketError;
+    };
 
 // WebSocket Commands (client -> server)
 export interface WebSocketCommand {
@@ -205,6 +273,38 @@ export const CHANNEL_PATTERNS = {
   GLOBAL: 'global',
 } as const;
 
+// Enhanced Validation Utilities
+export const isValidISO8601 = (timestamp: string): boolean => {
+  return !isNaN(Date.parse(timestamp));
+};
+
+export const validateEventPayload = (event: RealtimeEvent): boolean => {
+  switch (event.type) {
+    case 'CablePulled':
+      return (
+        event.payload.progressPercentage >= 0 &&
+        event.payload.progressPercentage <= 100
+      );
+    case 'SpliceCompleted':
+      return (
+        event.payload.testResults.loss >= 0 &&
+        event.payload.testResults.reflectance >= 0
+      );
+    case 'SectionClosed':
+      return (
+        event.payload.qualityScore >= 0 && event.payload.qualityScore <= 100
+      );
+    case 'FiberSectionProgress':
+      return (
+        event.payload.overallProgress >= 0 &&
+        event.payload.overallProgress <= 100 &&
+        event.payload.estimatedTimeRemaining >= 0
+      );
+    default:
+      return true; // Other events don't have specific validation rules yet
+  }
+};
+
 // Event Type Guards
 export const isRealtimeEvent = (obj: unknown): obj is RealtimeEvent => {
   if (typeof obj !== 'object' || obj === null) return false;
@@ -222,6 +322,9 @@ export const isRealtimeEvent = (obj: unknown): obj is RealtimeEvent => {
   ) {
     return false;
   }
+
+  // Enhanced timestamp validation
+  if (!isValidISO8601(candidate.timestamp)) return false;
 
   // Ensure protocol version and event type are recognised
   if (candidate.version !== PROTOCOL_VERSION) return false;
@@ -242,4 +345,51 @@ export const isCablePulledEvent = (
   return event.type === 'CablePulled';
 };
 
-// Add more type guards as needed...
+export const isSpliceCompletedEvent = (
+  event: RealtimeEvent
+): event is SpliceCompletedEvent => {
+  return event.type === 'SpliceCompleted';
+};
+
+export const isInspectionPassedEvent = (
+  event: RealtimeEvent
+): event is InspectionPassedEvent => {
+  return event.type === 'InspectionPassed';
+};
+
+export const isSectionClosedEvent = (
+  event: RealtimeEvent
+): event is SectionClosedEvent => {
+  return event.type === 'SectionClosed';
+};
+
+export const isWorkOrderUpdatedEvent = (
+  event: RealtimeEvent
+): event is WorkOrderUpdatedEvent => {
+  return event.type === 'WorkOrderUpdated';
+};
+
+export const isFiberSectionProgressEvent = (
+  event: RealtimeEvent
+): event is FiberSectionProgressEvent => {
+  return event.type === 'FiberSectionProgress';
+};
+
+// Error Event Type Guards
+export const isFiberSectionFailedEvent = (
+  event: RealtimeEvent
+): event is FiberSectionFailedEvent => {
+  return event.type === 'FiberSectionFailed';
+};
+
+export const isSpliceFailedEvent = (
+  event: RealtimeEvent
+): event is SpliceFailedEvent => {
+  return event.type === 'SpliceFailed';
+};
+
+export const isInspectionFailedEvent = (
+  event: RealtimeEvent
+): event is InspectionFailedEvent => {
+  return event.type === 'InspectionFailed';
+};
