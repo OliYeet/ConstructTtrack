@@ -2,9 +2,9 @@ name: 🔄 CI/CD Pipeline
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main, develop, feature/lum-582-realtime]
   pull_request:
-    branches: [main, develop]
+    branches: [main, develop, feature/lum-582-realtime]
   workflow_dispatch:
 
 env:

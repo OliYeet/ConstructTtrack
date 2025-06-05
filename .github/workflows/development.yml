@@ -4,7 +4,7 @@ on:
   push:
     branches: [develop, 'feature/*', 'hotfix/*']
   pull_request:
-    branches: [develop]
+    branches: [develop, feature/lum-582-realtime]
 
 env:
   NODE_VERSION: '18'
