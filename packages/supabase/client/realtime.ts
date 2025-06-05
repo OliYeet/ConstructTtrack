@@ -98,12 +98,19 @@ export const subscribeToTable = <
 
   // Only register the listener if this exact handler hasn’t been added yet.
   if (!handlerMap.has(handler as AnyRealtimeDispatch)) {
-    const wrappedCallback = (
-      payload: RealtimePostgresChangesPayload<
-        Database['public']['Tables'][T]['Row']
-      >,
-    ) => {
-      handler(payload, table);
+    /* 
+     * Store a callback whose parameter type is `unknown` so it is compatible
+     * with the `channelHandlerRegistry` value type.  The concrete
+     * `RealtimePostgresChangesPayload` type is restored when forwarding the
+     * payload to the user-supplied `handler`.
+     */
+    const wrappedCallback = (payload: unknown) => {
+      handler(
+        payload as RealtimePostgresChangesPayload<
+          Database['public']['Tables'][T]['Row']
+        >,
+        table,
+      );
     };
 
     handlerMap.set(handler as AnyRealtimeDispatch, wrappedCallback);
