@@ -100,6 +100,18 @@ export class WebSocketGateway {
     const ipAddress = req.socket?.remoteAddress || 'unknown';
 
     try {
+      // Check global connection limit - Charlie's requirement
+      if (this.connections.size >= config.websocket.maxConnections) {
+        const error = ErrorFactory.rateLimit('Maximum connections exceeded');
+        logger.warn(error.message, {
+          ipAddress,
+          currentConnections: this.connections.size,
+          maxConnections: config.websocket.maxConnections,
+        });
+        ws.close(1013, 'Try again later');
+        return;
+      }
+
       // Enhanced connection validation - CodeRabbit security recommendations
       const validation = validateConnectionParams(url);
       if (!validation.isValid) {

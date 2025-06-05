@@ -265,6 +265,9 @@ export class RealtimePerformanceMonitor {
 
     this.subscriptionMetrics.set(subscriptionId, fullMetric);
 
+    // Clean up old metrics to prevent memory leaks
+    this.cleanup();
+
     // Emit event
     this.emit('metric', { type: 'subscription', metric: fullMetric });
 
