@@ -24,6 +24,48 @@ import { realtimePerformanceMonitor } from './realtime-performance-monitor';
 export class RealtimeMonitoringIntegration {
   private alertManager: RealtimeAlertManager;
   private isInitialized = false;
+  private statsInterval?: NodeJS.Timeout;
+
+  // Hold references so we can detach them later
+  private alertHandler = async (data: Record<string, unknown>) => {
+    const alert = data as unknown as RealtimeAlert;
+    await this.alertManager.sendAlert(alert).catch(() => {});
+  };
+
+  private statsHandler = (data: Record<string, unknown>) => {
+    const stats = data as unknown as RealtimePerformanceStats;
+    const logger = getLogger();
+    logger.info('Real-time performance stats calculated', {
+      metadata: {
+        stats: {
+          totalEvents: stats.totalEvents,
+          errorRate: stats.errorStats.errorRate,
+          p99Latency: stats.latencyStats.endToEnd.p99,
+          activeConnections: stats.connectionStats.activeConnections,
+          eventsPerSecond: stats.throughputStats.eventsPerSecond,
+        },
+      },
+    });
+  };
+
+  private metricHandler = (event: Record<string, unknown>) => {
+    if (event.type === 'latency') {
+      const metric = event.metric as RealtimeLatencyMetric;
+
+      // Log high-latency events for debugging
+      if (metric.latencies.endToEnd && metric.latencies.endToEnd > 1000) {
+        const logger = getLogger();
+        logger.warn('High latency real-time event detected', {
+          metadata: {
+            eventId: metric.eventId,
+            eventType: metric.eventType,
+            endToEndLatency: metric.latencies.endToEnd,
+            channel: metric.metadata.channel,
+          },
+        });
+      }
+    }
+  };
 
   constructor() {
     this.alertManager = new RealtimeAlertManager(
@@ -58,6 +100,17 @@ export class RealtimeMonitoringIntegration {
       return;
     }
 
+    // Clean up interval timer
+    if (this.statsInterval) {
+      clearInterval(this.statsInterval);
+      this.statsInterval = undefined;
+    }
+
+    // Remove event listeners
+    realtimePerformanceMonitor.off('alert', this.alertHandler);
+    realtimePerformanceMonitor.off('stats', this.statsHandler);
+    realtimePerformanceMonitor.off('metric', this.metricHandler);
+
     realtimePerformanceMonitor.stop();
     this.isInitialized = false;
 
@@ -68,50 +121,13 @@ export class RealtimeMonitoringIntegration {
   // Setup event listeners for real-time monitoring
   private setupEventListeners(): void {
     // Listen for alerts and send them through alert manager
-    realtimePerformanceMonitor.on(
-      'alert',
-      async (data: Record<string, unknown>) => {
-        const alert = data as unknown as RealtimeAlert;
-        await this.alertManager.sendAlert(alert);
-      }
-    );
+    realtimePerformanceMonitor.on('alert', this.alertHandler);
 
     // Listen for performance stats and log them
-    realtimePerformanceMonitor.on('stats', data => {
-      const stats = data as unknown as RealtimePerformanceStats;
-      const logger = getLogger();
-      logger.info('Real-time performance stats calculated', {
-        metadata: {
-          stats: {
-            totalEvents: stats.totalEvents,
-            errorRate: stats.errorStats.errorRate,
-            p99Latency: stats.latencyStats.endToEnd.p99,
-            activeConnections: stats.connectionStats.activeConnections,
-            eventsPerSecond: stats.throughputStats.eventsPerSecond,
-          },
-        },
-      });
-    });
+    realtimePerformanceMonitor.on('stats', this.statsHandler);
 
     // Listen for metrics and optionally sample them for detailed logging
-    realtimePerformanceMonitor.on('metric', event => {
-      if (event.type === 'latency') {
-        const metric = event.metric as RealtimeLatencyMetric;
-
-        // Log high-latency events for debugging
-        if (metric.latencies.endToEnd && metric.latencies.endToEnd > 1000) {
-          const logger = getLogger();
-          logger.warn('High latency real-time event detected', {
-            metadata: {
-              eventId: metric.eventId,
-              eventType: metric.eventType,
-              endToEndLatency: metric.latencies.endToEnd,
-              channel: metric.metadata.channel,
-            },
-          });
-        }
-      }
-    });
+    realtimePerformanceMonitor.on('metric', this.metricHandler);
   }
 
   // Integrate with existing performance monitoring system
@@ -125,7 +141,7 @@ export class RealtimeMonitoringIntegration {
     );
 
     // Setup periodic reporting to main performance monitor
-    setInterval(() => {
+    this.statsInterval = setInterval(() => {
       const stats = realtimePerformanceMonitor.getCurrentStats();
       if (stats) {
         // Report key metrics to main performance monitor

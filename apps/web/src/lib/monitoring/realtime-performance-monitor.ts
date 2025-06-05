@@ -567,9 +567,11 @@ export class RealtimePerformanceMonitor {
           2
         : sorted[Math.floor(count / 2)];
 
-    const p90 = sorted[Math.floor(count * 0.9)];
-    const p95 = sorted[Math.floor(count * 0.95)];
-    const p99 = sorted[Math.floor(count * 0.99)];
+    const rank = (p: number) => Math.max(0, Math.ceil(count * p) - 1);
+
+    const p90 = sorted[rank(0.9)];
+    const p95 = sorted[rank(0.95)];
+    const p99 = sorted[rank(0.99)];
 
     const variance =
       sorted.reduce((acc, val) => acc + Math.pow(val - mean, 2), 0) / count;
@@ -730,7 +732,14 @@ export class RealtimePerformanceMonitor {
 
   // Check error rate thresholds (Charlie's requirement: >1% error rate)
   private checkErrorRateThresholds(): void {
-    if (!this.config.alertConfig.enabled || !this.currentStats) {
+    if (!this.config.alertConfig.enabled) {
+      return;
+    }
+
+    // Refresh stats to ensure up-to-date error-rate calculation
+    this.calculatePerformanceStats();
+
+    if (!this.currentStats) {
       return;
     }
 
@@ -851,9 +860,9 @@ export class RealtimePerformanceMonitor {
       }
     }
 
-    // Clean up resolved alerts older than retention period
+    // Clean up old alerts (alerts older than retention period)
     for (const [alertId, alert] of this.activeAlerts.entries()) {
-      if (alert.resolved && alert.resolvedAt && alert.resolvedAt < cutoff) {
+      if (alert.timestamp < cutoff) {
         this.activeAlerts.delete(alertId);
       }
     }
