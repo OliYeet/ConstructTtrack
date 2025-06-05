@@ -122,6 +122,15 @@ export class WebSocketGateway {
         return;
       }
 
+      if (!validation.token) {
+        const error = ErrorFactory.authentication(
+          'Missing authentication token'
+        );
+        logger.warn(error.message, { ipAddress });
+        ws.close(1008, 'Authentication failed');
+        return;
+      }
+
       const authContext = verifyToken(validation.token);
       if (!authContext) {
         const error = ErrorFactory.authentication('Invalid or expired token');
@@ -257,7 +266,7 @@ export class WebSocketGateway {
         }
         default: {
           const error = ErrorFactory.validation(
-            `Unknown action: ${message.action}`
+            `Unknown action: ${(message as { action: string }).action}`
           );
           this.sendErrorMessage(ws, error);
         }
@@ -450,7 +459,7 @@ export class WebSocketGateway {
     error: GatewayError
   ): void {
     const errorResponse = ErrorHandler.toClientResponse(error);
-    this.sendMessage(ws, errorResponse);
+    this.sendMessage(ws, errorResponse as unknown as Record<string, unknown>);
 
     // Log detailed error for debugging
     logger.warn(
