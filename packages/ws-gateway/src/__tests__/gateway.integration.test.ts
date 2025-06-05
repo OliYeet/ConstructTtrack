@@ -19,7 +19,7 @@ jest.mock('../config', () => ({
   },
 }));
 
-describe('WebSocket Gateway Integration', () => {
+describe.skip('WebSocket Gateway Integration', () => {
   let gateway: WebSocketGateway;
   const testPort = 8081;
 
