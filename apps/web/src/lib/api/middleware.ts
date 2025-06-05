@@ -12,6 +12,7 @@ import {
   createMethodNotAllowedResponse,
   addCorsHeaders,
 } from '@/lib/api/response';
+import { parseApiVersion, isVersionSupported, getDeprecationWarning } from '@/lib/api/versioning';
 import { BaseApiError, InternalServerError } from '@/lib/errors/api-errors';
 import {
   logRequest as enhancedLogRequest,
@@ -106,8 +107,29 @@ export function withApiMiddleware(
     let requestContext: RequestContext | undefined;
 
     try {
-      // Create request context with authentication
+      // Parse API version from request
+      const apiVersion = parseApiVersion(request);
+      
+      // Check if version is supported
+      if (!isVersionSupported(apiVersion)) {
+        const response = createErrorResponse(
+          new BaseApiError(
+            `API version ${apiVersion} is no longer supported`,
+            400,
+            'UNSUPPORTED_VERSION'
+          )
+        );
+        
+        if (options.cors !== false) {
+          addCorsHeaders(response);
+        }
+        
+        return response;
+      }
+
+      // Create request context with authentication and version
       requestContext = await createRequestContext(request);
+      requestContext.apiVersion = apiVersion;
 
       // Log incoming request (both old and new systems)
       logRequest(request, requestContext);
@@ -134,7 +156,8 @@ export function withApiMiddleware(
         const allowedMethods = Object.keys(handlers);
         const response = createMethodNotAllowedResponse(
           allowedMethods,
-          requestContext.requestId
+          requestContext.requestId,
+          requestContext.apiVersion
         );
 
         if (options.cors !== false) {
@@ -152,7 +175,8 @@ export function withApiMiddleware(
         if (!checkRateLimit(request, rateLimitConfig)) {
           const response = createErrorResponse(
             new BaseApiError('Rate limit exceeded', 429, 'RATE_LIMIT_EXCEEDED'),
-            requestContext.requestId
+            requestContext.requestId,
+            requestContext.apiVersion
           );
 
           if (options.cors !== false) {
@@ -170,7 +194,8 @@ export function withApiMiddleware(
         if (!requestContext.user) {
           const response = createErrorResponse(
             new BaseApiError('Authentication required', 401, 'UNAUTHORIZED'),
-            requestContext.requestId
+            requestContext.requestId,
+            requestContext.apiVersion
           );
 
           if (options.cors !== false) {
@@ -188,7 +213,8 @@ export function withApiMiddleware(
         if (!requestContext.user) {
           const response = createErrorResponse(
             new BaseApiError('Authentication required', 401, 'UNAUTHORIZED'),
-            requestContext.requestId
+            requestContext.requestId,
+            requestContext.apiVersion
           );
 
           if (options.cors !== false) {
@@ -207,7 +233,8 @@ export function withApiMiddleware(
               403,
               'FORBIDDEN'
             ),
-            requestContext.requestId
+            requestContext.requestId,
+            requestContext.apiVersion
           );
 
           if (options.cors !== false) {
@@ -237,6 +264,15 @@ export function withApiMiddleware(
         request as NextRequest & { context: RequestContext },
         { params }
       );
+
+      // Add API version header
+      response.headers.set('X-API-Version', requestContext.apiVersion || '1.0.0');
+      
+      // Add deprecation warning if applicable
+      const deprecationWarning = getDeprecationWarning(requestContext.apiVersion || '1.0.0');
+      if (deprecationWarning) {
+        response.headers.set('X-API-Deprecation-Warning', deprecationWarning);
+      }
 
       // Add CORS headers if enabled
       if (options.cors !== false) {
@@ -280,7 +316,7 @@ export function withApiMiddleware(
         );
       }
 
-      const response = createErrorResponse(apiError, requestContext?.requestId);
+      const response = createErrorResponse(apiError, requestContext?.requestId, requestContext?.apiVersion);
 
       // Add CORS headers if enabled
       if (options.cors !== false) {

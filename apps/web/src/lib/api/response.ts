@@ -24,7 +24,8 @@ export function createSuccessResponse<T>(
   data: T,
   message?: string,
   statusCode: number = 200,
-  requestId?: string
+  requestId?: string,
+  apiVersion?: string
 ): NextResponse<ApiResponse<T>> {
   const response: ApiResponse<T> = {
     success: true,
@@ -32,18 +33,22 @@ export function createSuccessResponse<T>(
     message,
     meta: {
       timestamp: new Date().toISOString(),
-      version: API_CONFIG.version,
+      version: apiVersion || API_CONFIG.version,
       requestId: requestId || generateRequestId(),
     },
   };
 
-  return NextResponse.json(response, { status: statusCode });
+  const nextResponse = NextResponse.json(response, { status: statusCode });
+  nextResponse.headers.set('X-API-Version', apiVersion || API_CONFIG.version);
+  
+  return nextResponse;
 }
 
 // Error Response Helper
 export function createErrorResponse(
   error: BaseApiError | ApiError | Error,
-  requestId?: string
+  requestId?: string,
+  apiVersion?: string
 ): NextResponse<ApiResponse> {
   let apiError: ApiError;
   let statusCode: number;
@@ -70,12 +75,15 @@ export function createErrorResponse(
     error: apiError,
     meta: {
       timestamp: new Date().toISOString(),
-      version: API_CONFIG.version,
+      version: apiVersion || API_CONFIG.version,
       requestId: requestId || generateRequestId(),
     },
   };
 
-  return NextResponse.json(response, { status: statusCode });
+  const nextResponse = NextResponse.json(response, { status: statusCode });
+  nextResponse.headers.set('X-API-Version', apiVersion || API_CONFIG.version);
+  
+  return nextResponse;
 }
 
 // Paginated Response Helper
@@ -85,7 +93,8 @@ export function createPaginatedResponse<T>(
   page: number,
   limit: number,
   message?: string,
-  requestId?: string
+  requestId?: string,
+  apiVersion?: string
 ): NextResponse<ApiResponse<PaginatedResponse<T>>> {
   const totalPages = Math.ceil(total / limit);
   const hasNext = page < totalPages;
@@ -103,16 +112,16 @@ export function createPaginatedResponse<T>(
     },
   };
 
-  return createSuccessResponse(paginatedData, message, 200, requestId);
+  return createSuccessResponse(paginatedData, message, 200, requestId, apiVersion);
 }
 
 // No Content Response (204)
-export function createNoContentResponse(requestId?: string): NextResponse {
+export function createNoContentResponse(requestId?: string, apiVersion?: string): NextResponse {
   return new NextResponse(null, {
     status: 204,
     headers: {
       'X-Request-ID': requestId || generateRequestId(),
-      'X-API-Version': API_CONFIG.version,
+      'X-API-Version': apiVersion || API_CONFIG.version,
     },
   });
 }
@@ -121,13 +130,15 @@ export function createNoContentResponse(requestId?: string): NextResponse {
 export function createCreatedResponse<T>(
   data: T,
   message?: string,
-  requestId?: string
+  requestId?: string,
+  apiVersion?: string
 ): NextResponse<ApiResponse<T>> {
   return createSuccessResponse(
     data,
     message || 'Resource created successfully',
     201,
-    requestId
+    requestId,
+    apiVersion
   );
 }
 
@@ -135,20 +146,23 @@ export function createCreatedResponse<T>(
 export function createAcceptedResponse<T>(
   data?: T,
   message?: string,
-  requestId?: string
+  requestId?: string,
+  apiVersion?: string
 ): NextResponse<ApiResponse<T | undefined>> {
   return createSuccessResponse(
     data,
     message || 'Request accepted for processing',
     202,
-    requestId
+    requestId,
+    apiVersion
   );
 }
 
 // Method Not Allowed Response (405)
 export function createMethodNotAllowedResponse(
   allowedMethods: string[],
-  requestId?: string
+  requestId?: string,
+  apiVersion?: string
 ): NextResponse<ApiResponse> {
   const response: ApiResponse = {
     success: false,
@@ -159,7 +173,7 @@ export function createMethodNotAllowedResponse(
     },
     meta: {
       timestamp: new Date().toISOString(),
-      version: API_CONFIG.version,
+      version: apiVersion || API_CONFIG.version,
       requestId: requestId || generateRequestId(),
     },
   };
@@ -168,6 +182,7 @@ export function createMethodNotAllowedResponse(
     status: 405,
     headers: {
       Allow: allowedMethods.join(', '),
+      'X-API-Version': apiVersion || API_CONFIG.version,
     },
   });
 }
