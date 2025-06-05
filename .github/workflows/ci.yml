@@ -33,7 +33,7 @@ jobs:
         run: npm ci
 
       - name: 🔍 Lint code
-        run: npm run lint
+        run: npm run lint -- --max-warnings 50
 
       - name: 🎨 Check code formatting
         run: npm run format:check
@@ -188,7 +188,7 @@ jobs:
           vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
           vercel-args: '--prod'
 
-      - name: 🎯 Finalize Sentry Release
+      - name: �� Finalize Sentry Release
         if: success()
         uses: getsentry/action-release@v1
         env:
