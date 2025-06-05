@@ -27,12 +27,14 @@ export type ManagedTableName = (typeof managedTableNames)[number];
 // ---------------------------------------------------------------------------
 
 export type RealtimeDispatch<
-  T extends ManagedTableName | keyof Database['public']['Tables'] = ManagedTableName,
+  T extends
+    | ManagedTableName
+    | keyof Database['public']['Tables'] = ManagedTableName,
 > = (
   payload: RealtimePostgresChangesPayload<
     Database['public']['Tables'][T & keyof Database['public']['Tables']]['Row']
   >,
-  table: T,
+  table: T
 ) => void;
 
 // ---------------------------------------------------------------------------
@@ -68,11 +70,9 @@ const activeChannels: Map<string, RealtimeChannel> = new Map();
  * If a channel for the given table already exists, that channel is re-used and
  * the new handler is simply attached to it.
  */
-export const subscribeToTable = <
-  T extends keyof Database['public']['Tables'],
->(
+export const subscribeToTable = <T extends keyof Database['public']['Tables']>(
   table: T,
-  handler: RealtimeDispatch<T>,
+  handler: RealtimeDispatch<T>
 ): RealtimeChannel => {
   const tableName = String(table);
 
@@ -108,7 +108,7 @@ export const subscribeToTable = <
         payload as RealtimePostgresChangesPayload<
           Database['public']['Tables'][T]['Row']
         >,
-        table,
+        table
       );
     };
 
@@ -117,7 +117,7 @@ export const subscribeToTable = <
     channel.on(
       'postgres_changes',
       { schema: 'public', table: tableName, event: '*' },
-      wrappedCallback,
+      wrappedCallback
     );
   }
 
@@ -125,12 +125,12 @@ export const subscribeToTable = <
   // Subscribe only once, and only for newly-created channels
   // -------------------------------------------------------------------------
   if (isNewChannel) {
-    channel.subscribe((status) => {
+    channel.subscribe(status => {
       if (status === 'SUBSCRIBED') return;
       if (status === 'TIMED_OUT' || status === 'CHANNEL_ERROR') {
         // eslint-disable-next-line no-console
         console.error(
-          `[supabase:realtime] Channel error (${status}) on table "${tableName}".`,
+          `[supabase:realtime] Channel error (${status}) on table "${tableName}".`
         );
       }
       if (status === 'CLOSED') {
@@ -153,12 +153,12 @@ export const subscribeToTable = <
  * Re-invoking this function will clear any existing listeners first.
  */
 export const initRealtimeSubscriptions = (
-  dispatch: RealtimeDispatch<ManagedTableName>,
+  dispatch: RealtimeDispatch<ManagedTableName>
 ) => {
   removeRealtimeSubscriptions();
 
-  managedTableNames.forEach((table) =>
-    subscribeToTable(table, dispatch as RealtimeDispatch<typeof table>),
+  managedTableNames.forEach(table =>
+    subscribeToTable(table, dispatch as RealtimeDispatch<typeof table>)
   );
 };
 
@@ -167,7 +167,7 @@ export const initRealtimeSubscriptions = (
  * via any of this module’s helpers.
  */
 export const removeRealtimeSubscriptions = () => {
-  activeChannels.forEach((channel) => {
+  activeChannels.forEach(channel => {
     supabase.removeChannel(channel);
     channelHandlerRegistry.delete(channel);
   });

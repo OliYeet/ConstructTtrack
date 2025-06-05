@@ -30,7 +30,7 @@ export const getSupabaseClient = (): SupabaseClient<Database> => {
 
   if (!supabaseUrl || !supabaseAnonKey) {
     throw new Error(
-      'Missing Supabase environment variables (SUPABASE_URL / SUPABASE_ANON_KEY)',
+      'Missing Supabase environment variables (SUPABASE_URL / SUPABASE_ANON_KEY)'
     );
   }
 
@@ -53,13 +53,13 @@ export const getSupabaseClient = (): SupabaseClient<Database> => {
 export const supabase = new Proxy({} as SupabaseClient<Database>, {
   get(_target, prop: keyof SupabaseClient<Database>) {
     const client = getSupabaseClient();
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+
     const value = (client as any)[prop];
     return typeof value === 'function' ? value.bind(client) : value;
   },
   set(_target, prop: keyof SupabaseClient<Database>, value) {
     const client = getSupabaseClient();
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (client as any)[prop] = value;
     return true;
   },

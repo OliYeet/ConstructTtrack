@@ -7,7 +7,7 @@ import { supabase } from './core';
 export const signUp = async (
   email: string,
   password: string,
-  metadata?: Record<string, unknown>,
+  metadata?: Record<string, unknown>
 ) => {
   return supabase.auth.signUp({
     email,

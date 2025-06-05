@@ -32,7 +32,11 @@ class MockNextResponse {
   readonly headers: MockHeaders;
   private _body: unknown;
 
-  private constructor(body: unknown, status = 200, headers: Record<string, string> = {}) {
+  private constructor(
+    body: unknown,
+    status = 200,
+    headers: Record<string, string> = {}
+  ) {
     this.ok = status >= 200 && status < 300;
     this.status = status;
     this._body = body;
@@ -45,7 +49,10 @@ class MockNextResponse {
   }
 
   /* Mimics NextResponse.json() static helper */
-  static json(body: unknown, init: { status?: number; headers?: Record<string, string> } = {}) {
+  static json(
+    body: unknown,
+    init: { status?: number; headers?: Record<string, string> } = {}
+  ) {
     return new MockNextResponse(body, init.status ?? 200, init.headers);
   }
 }

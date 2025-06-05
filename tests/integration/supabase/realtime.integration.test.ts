@@ -1,6 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 describe('realtime integration – complete lifecycle', () => {
   let mockClient: any;
   const channelEvents: any[] = [];
@@ -37,7 +34,7 @@ describe('realtime integration – complete lifecycle', () => {
     } = await import('../../../packages/supabase/client/realtime');
 
     const dispatch = jest.fn((payload, table) =>
-      channelEvents.push({ payload, table }),
+      channelEvents.push({ payload, table })
     );
 
     // Start global listeners
@@ -52,7 +49,7 @@ describe('realtime integration – complete lifecycle', () => {
     // Now clean-up
     removeRealtimeSubscriptions();
     expect(mockClient.removeChannel).toHaveBeenCalledTimes(
-      managedTableNames.length,
+      managedTableNames.length
     );
   });
 });

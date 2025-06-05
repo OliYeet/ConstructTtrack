@@ -1,7 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-
 describe('supabase client core utilities', () => {
   const SUPABASE_URL = 'https://example.supabase.co';
   const SUPABASE_ANON_KEY = 'anon-key';
@@ -19,7 +15,6 @@ describe('supabase client core utilities', () => {
     delete process.env.NEXT_PUBLIC_SUPABASE_URL;
     delete process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-    // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
     jest.mock('@supabase/supabase-js', () => {
       const createClient = jest.fn(() => mockClient);
       return { createClient };
@@ -39,13 +34,13 @@ describe('supabase client core utilities', () => {
     expect(client1).toBe(client2);
 
     // createClient from @supabase/supabase-js should be invoked **once**
-    // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports, import/no-commonjs
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { createClient } = require('@supabase/supabase-js');
     expect(createClient).toHaveBeenCalledTimes(1);
     expect(createClient).toHaveBeenCalledWith(
       SUPABASE_URL,
       SUPABASE_ANON_KEY,
-      expect.any(Object),
+      expect.any(Object)
     );
   });
 
@@ -58,7 +53,7 @@ describe('supabase client core utilities', () => {
         '../../../packages/supabase/client/core'
       );
       expect(() => getSupabaseClient()).toThrow(
-        /Missing Supabase environment variables/i,
+        /Missing Supabase environment variables/i
       );
     });
   });

@@ -1,7 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-
 describe('realtime helper – subscribeToTable & helpers', () => {
   let mockClient: any;
   const mockChannels = new Map<string, any>();
@@ -82,7 +78,7 @@ describe('realtime helper – subscribeToTable & helpers', () => {
     initRealtimeSubscriptions(dispatch as any);
 
     expect(mockClient.channel).toHaveBeenCalledTimes(managedTableNames.length);
-    managedTableNames.forEach((name) => {
+    managedTableNames.forEach(name => {
       expect(mockChannels.get(`public:${name as string}`)).toBeDefined();
     });
   });
@@ -97,7 +93,7 @@ describe('realtime helper – subscribeToTable & helpers', () => {
     removeRealtimeSubscriptions();
 
     expect(mockClient.removeChannel).toHaveBeenCalledTimes(
-      channelCountBeforeRemoval,
+      channelCountBeforeRemoval
     );
     expect(mockChannels.size).toBe(0);
   });
