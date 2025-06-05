@@ -1,3 +1,73 @@
+/* -------------------------------------------------------------------------- */
+/*  Local mocks for Next.js server APIs                                       */
+/* -------------------------------------------------------------------------- */
+
+class MockHeaders {
+  private map: Map<string, string>;
+
+  constructor(init: Record<string, string> | [string, string][] = []) {
+    this.map = new Map(
+      Array.isArray(init)
+        ? init.map(([k, v]) => [k.toLowerCase(), v])
+        : Object.entries(init).map(([k, v]) => [k.toLowerCase(), v])
+    );
+  }
+
+  get(name: string): string | null {
+    return this.map.get(name.toLowerCase()) ?? null;
+  }
+
+  set(name: string, value: string) {
+    this.map.set(name.toLowerCase(), value);
+  }
+
+  has(name: string): boolean {
+    return this.map.has(name.toLowerCase());
+  }
+}
+
+class MockNextResponse {
+  readonly ok: boolean;
+  readonly status: number;
+  readonly headers: MockHeaders;
+  private _body: unknown;
+
+  private constructor(body: unknown, status = 200, headers: Record<string, string> = {}) {
+    this.ok = status >= 200 && status < 300;
+    this.status = status;
+    this._body = body;
+    this.headers = new MockHeaders(headers);
+  }
+
+  /* Mirrors native Response.json() instance method */
+  async json() {
+    return this._body;
+  }
+
+  /* Mimics NextResponse.json() static helper */
+  static json(body: unknown, init: { status?: number; headers?: Record<string, string> } = {}) {
+    return new MockNextResponse(body, init.status ?? 200, init.headers);
+  }
+}
+
+/* A minimal placeholder – extend when tests require more surface area */
+class MockNextRequest {
+  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+  constructor(public info: any = {}) {}
+}
+
+/* Make mocks globally visible for convenience (optional) */
+(global as any).Headers = MockHeaders;
+(global as any).NextResponse = MockNextResponse;
+(global as any).NextRequest = MockNextRequest;
+
+/* Provide module mock so `import { NextResponse } from 'next/server'` resolves */
+jest.mock('next/server', () => ({
+  Headers: MockHeaders,
+  NextResponse: MockNextResponse,
+  NextRequest: MockNextRequest,
+}));
+
 /**
  * Jest Test Setup
  * Global test configuration and utilities
