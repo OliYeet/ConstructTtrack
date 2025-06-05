@@ -1,17 +1,13 @@
 /**
- * Enhanced API Metrics Endpoint
+ * Enhanced API Monitoring Endpoint
  * Comprehensive monitoring, metrics collection, and alerting for API endpoints
  */
 
 import { NextRequest } from 'next/server';
 
-import {
-  withApiMiddleware,
-  createSuccessResponse,
-  createErrorResponse,
-} from '@/lib/api';
+import { withApiMiddleware, createSuccessResponse } from '@/lib/api';
 
-// GET /api/v1/metrics - Get enhanced API metrics and monitoring data
+// GET /api/v1/monitoring - Get comprehensive monitoring data
 export const GET = withApiMiddleware(
   {
     GET: async (request: NextRequest) => {
@@ -21,17 +17,17 @@ export const GET = withApiMiddleware(
       switch (action) {
         case 'summary':
           return createSuccessResponse({
-            message: 'Metrics summary',
+            message: 'Monitoring summary',
             data: { placeholder: 'Implementation pending' },
           });
         case 'raw':
           return createSuccessResponse({
-            message: 'Raw metrics',
+            message: 'Raw monitoring data',
             data: { placeholder: 'Implementation pending' },
           });
         case 'alerts':
           return createSuccessResponse({
-            message: 'Alerts',
+            message: 'Monitoring alerts',
             data: { placeholder: 'Implementation pending' },
           });
         case 'health':
@@ -39,20 +35,20 @@ export const GET = withApiMiddleware(
             message: 'Health status',
             data: { placeholder: 'Implementation pending' },
           });
-        case 'legacy':
+        case 'dashboard':
           return createSuccessResponse({
-            message: 'Legacy metrics',
+            message: 'Dashboard data',
             data: { placeholder: 'Implementation pending' },
           });
         default:
           return createSuccessResponse({
-            message: 'Enhanced API Metrics Endpoint',
+            message: 'Enhanced API Monitoring Endpoint',
             availableActions: {
               summary: '?action=summary - Get comprehensive metrics summary',
               raw: '?action=raw - Get raw metrics data',
               alerts: '?action=alerts - Get active alerts and alert rules',
               health: '?action=health - Get enhanced API health status',
-              legacy: '?action=legacy - Get legacy metrics format',
+              dashboard: '?action=dashboard - Get dashboard data',
             },
             parameters: {
               startTime: 'Unix timestamp for start time filter',
@@ -68,49 +64,15 @@ export const GET = withApiMiddleware(
   { requireAuth: true, requireRoles: ['admin', 'manager'] }
 );
 
-// POST /api/v1/metrics - Record custom metric
-export async function POST(request: NextRequest) {
-  const body = await request.json();
-
-  const { name, value, unit, tags, metadata } = body;
-
-  // Validate required fields
-  if (!name || typeof value !== 'number' || !unit) {
-    return createErrorResponse(
-      new Error('Missing required fields: name, value, unit'),
-      'unknown'
-    );
-  }
-
-  // Validate metric name format (alphanumeric with dots/underscores)
-  if (!/^[a-zA-Z0-9._]+$/.test(name)) {
-    return createErrorResponse(
-      new Error(
-        'Invalid metric name format. Use only alphanumeric characters, dots, and underscores'
-      ),
-      'validation_error'
-    );
-  }
-
-  // Validate value is finite
-  if (!isFinite(value)) {
-    return createErrorResponse(
-      new Error('Metric value must be a finite number'),
-      'validation_error'
-    );
-  }
-
-  // Record the metric (placeholder implementation)
-  console.log('Recording metric:', { name, value, unit, tags, metadata });
-
-  return createSuccessResponse({
-    message: 'Metric recorded successfully',
-    metric: {
-      name,
-      value,
-      unit,
-      tags,
-      timestamp: new Date().toISOString(),
+// POST /api/v1/monitoring - Monitoring operations
+export const POST = withApiMiddleware(
+  {
+    POST: async (_request: NextRequest) => {
+      return createSuccessResponse({
+        message: 'Monitoring operations',
+        data: { placeholder: 'Implementation pending' },
+      });
     },
-  });
-}
+  },
+  { requireAuth: true, requireRoles: ['admin'] }
+);
