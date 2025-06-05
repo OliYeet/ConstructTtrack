@@ -14,13 +14,13 @@ export const config = {
 
   // Supabase configuration
   supabase: {
-    url: process.env.SUPABASE_URL!,
-    serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    url: process.env.SUPABASE_URL || '',
+    serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY || '',
   },
 
   // JWT configuration
   jwt: {
-    secret: process.env.JWT_SECRET!,
+    secret: process.env.JWT_SECRET || '',
     publicKey: process.env.JWT_SECRET_PUBLIC,
   },
 

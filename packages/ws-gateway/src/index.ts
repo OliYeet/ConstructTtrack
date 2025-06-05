@@ -1,84 +1,79 @@
 /**
- * ConstructTrack WebSocket Gateway
- *
- * Implements Charlie's specification for LUM-591:
- * - Thin WebSocket Gateway between clients and Supabase
- * - Server-side Supabase subscriptions with client fan-out
- * - JWT authentication and room-based authorization
- * - Protocol-compliant message mapping
+ * WebSocket Gateway Entry Point
+ * Real-time infrastructure for ConstructTrack
+ * Following Charlie's containerized deployment strategy
  */
-
-import { createServer } from 'http';
-
-import { WebSocketServer } from 'ws';
 
 import { config } from './config';
 import { WebSocketGateway } from './gateway';
+import { SupabaseBridge } from './supabase-bridge';
 import { logger } from './utils/logger';
 
-async function startServer() {
+let gateway: WebSocketGateway;
+let supabaseBridge: SupabaseBridge;
+
+async function main() {
   try {
-    // Create HTTP server for health checks
-    const server = createServer((req, res) => {
-      if (req.url === '/healthz') {
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(
-          JSON.stringify({
-            status: 'healthy',
-            timestamp: new Date().toISOString(),
-            version: process.env.npm_package_version || '0.1.0',
-          })
-        );
-        return;
-      }
-
-      res.writeHead(404);
-      res.end('Not Found');
-    });
-
-    // Create WebSocket server
-    const wss = new WebSocketServer({
-      server,
-      path: '/realtime',
+    logger.info('Starting ConstructTrack WebSocket Gateway', {
+      version: '0.1.0',
+      environment: config.environment,
+      port: config.server.port,
+      redisEnabled: config.redis.enabled,
     });
 
     // Initialize WebSocket Gateway
-    const gateway = new WebSocketGateway(wss);
-    await gateway.initialize();
+    gateway = new WebSocketGateway();
 
-    // Start server
-    const port = config.port;
-    server.listen(port, () => {
-      logger.info(`🚀 WebSocket Gateway started on port ${port}`);
-      logger.info(
-        `📡 Health check available at http://localhost:${port}/healthz`
-      );
-      logger.info(`🔌 WebSocket endpoint: ws://localhost:${port}/realtime`);
-    });
+    // Initialize Supabase Bridge for real-time events
+    supabaseBridge = new SupabaseBridge(gateway);
 
-    // Graceful shutdown
-    process.on('SIGTERM', async () => {
-      logger.info('🛑 Received SIGTERM, shutting down gracefully...');
-      await gateway.shutdown();
-      server.close(() => {
-        logger.info('✅ Server closed');
-        process.exit(0);
-      });
-    });
+    // Start services
+    await gateway.start(config.server.port);
+    await supabaseBridge.start();
 
-    process.on('SIGINT', async () => {
-      logger.info('🛑 Received SIGINT, shutting down gracefully...');
-      await gateway.shutdown();
-      server.close(() => {
-        logger.info('✅ Server closed');
-        process.exit(0);
-      });
+    logger.info('WebSocket Gateway started successfully', {
+      port: config.server.port,
+      healthCheck: `http://localhost:${config.server.port}/healthz`,
     });
   } catch (error) {
-    logger.error('❌ Failed to start WebSocket Gateway:', error);
+    logger.error('Failed to start WebSocket Gateway:', error);
     process.exit(1);
   }
 }
 
-// Start the server
-startServer();
+// Handle graceful shutdown
+async function shutdown() {
+  logger.info('Shutting down WebSocket Gateway gracefully');
+
+  try {
+    if (supabaseBridge) {
+      await supabaseBridge.stop();
+    }
+
+    if (gateway) {
+      await gateway.stop();
+    }
+
+    logger.info('WebSocket Gateway shutdown complete');
+    process.exit(0);
+  } catch (error) {
+    logger.error('Error during shutdown:', error);
+    process.exit(1);
+  }
+}
+
+process.on('SIGTERM', shutdown);
+process.on('SIGINT', shutdown);
+
+// Handle uncaught exceptions
+process.on('uncaughtException', error => {
+  logger.error('Uncaught exception:', error);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  logger.error('Unhandled rejection at:', { promise, reason });
+  process.exit(1);
+});
+
+main();
