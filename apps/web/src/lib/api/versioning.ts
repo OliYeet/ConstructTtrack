@@ -59,12 +59,31 @@ function isSupportedVersion(version: string): boolean {
 }
 
 /**
- * Convert various version representations (`v1`, `1`, `1.0`) into the
- * canonical semver string (`1.0.0`).
+ * Normalise a (potentially user-supplied) version string to a canonical
+ * three-segment semver representation.
+ *
+ * Rules:
+ *   • Leading "v" / "V" is ignored                → "v2.1"  → "2.1.0"
+ *   • Accepts 1-, 2- or 3-segment numeric inputs  → "1"     → "1.0.0"
+ *                                                 → "1.2"   → "1.2.0"
+ *                                                 → "1.2.3" → "1.2.3"
+ *   • Extra segments beyond the third are ignored → "3.4.5.6" → "3.4.5"
+ *   • Missing minor/patch parts are padded with 0 → "7"     → "7.0.0"
+ *   • Non-numeric or empty inputs return `undefined`.
  */
 function normaliseVersion(input: string | null): string | undefined {
   if (!input) return undefined;
+
+  // Strip whitespace and an optional leading "v"/"V".
   const cleaned = input.trim().replace(/^v/i, '');
-  const major = cleaned.split('.')[0] || '1';
-  return `${major}.0.0`;
+  if (!cleaned) return undefined;
+
+  // Split into at most three numeric segments.
+  const [major, minor = '0', patch = '0'] = cleaned.split('.', 3);
+
+  // Validate that all utilised segments are purely numeric.
+  const isNumeric = (...parts: string[]) => parts.every(p => /^\d+$/.test(p));
+  if (!isNumeric(major, minor, patch)) return undefined;
+
+  return `${Number(major)}.${Number(minor)}.${Number(patch)}`;
 }
