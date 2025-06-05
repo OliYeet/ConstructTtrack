@@ -8,7 +8,7 @@ import { z } from 'zod';
 import { withApiMiddleware } from '@/lib/api/middleware';
 import { createSuccessResponse } from '@/lib/api/response';
 import { validateRequestBody } from '@/lib/api/validation';
-import { RequestContext, ApiRequest } from '@/types/api';
+import type { RequestContext, ApiRequest } from '@/types/api';
 
 // Test request schema
 const testRequestSchema = z.object({
@@ -32,48 +32,45 @@ interface TestResponse {
 // GET /api/v1/test - Public test endpoint
 async function handleGet(
   request: ApiRequest,
-  _context: { params: Record<string, string> }
+  _context: { params: Record<string, string> },
+  requestContext: RequestContext
 ) {
-  const requestContext = (request as ApiRequest & { context?: RequestContext })
-    .context;
-
   const testData: TestResponse = {
     message: 'API is working correctly!',
     timestamp: new Date().toISOString(),
-    requestId: requestContext?.requestId || 'test-request',
-    user: requestContext?.user,
+    requestId: requestContext.requestId ?? 'test-request',
+    user: requestContext.user,
   };
 
   return createSuccessResponse(
     testData,
     'Test endpoint successful',
     200,
-    requestContext?.requestId
+    requestContext.requestId
   );
 }
 
 // POST /api/v1/test - Test with request body validation
 async function handlePost(
   request: ApiRequest,
-  _context: { params: Record<string, string> }
+  _context: { params: Record<string, string> },
+  requestContext: RequestContext
 ) {
-  const requestContext = (request as ApiRequest & { context?: RequestContext })
-    .context;
   const body = await validateRequestBody(request, testRequestSchema);
 
   const testData: TestResponse = {
     message: `Received: ${body.message}`,
     timestamp: new Date().toISOString(),
-    requestId: requestContext?.requestId || 'test-request',
+    requestId: requestContext.requestId ?? 'test-request',
     receivedData: body.data,
-    user: requestContext?.user,
+    user: requestContext.user,
   };
 
   return createSuccessResponse(
     testData,
     'Test POST successful',
     200,
-    requestContext?.requestId
+    requestContext.requestId
   );
 }
 
