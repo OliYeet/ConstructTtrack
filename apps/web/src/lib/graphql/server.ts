@@ -178,7 +178,6 @@ const server = new ApolloServer({
     //     };
     //   },
     // },
-
     // Query complexity analysis - TODO: Re-enable when GraphQL version conflicts are resolved
     // {
     //   async requestDidStart() {
@@ -192,7 +191,6 @@ const server = new ApolloServer({
     //           listFactor: 10,
     //           introspectionCost: 1000,
     //         });
-
     //         const errors = validate(baseSchema, document, [complexityRule]);
     //         if (errors.length > 0) {
     //           throw new GraphQLError(
@@ -203,7 +201,6 @@ const server = new ApolloServer({
     //     };
     //   },
     // },
-
     // Request timeout - TODO: Implement proper timeout handling
     // {
     //   async requestDidStart() {
@@ -212,7 +209,6 @@ const server = new ApolloServer({
     //         const timeout = setTimeout(() => {
     //           throw new Error('Query timeout exceeded');
     //         }, schemaConfig.limits.timeout);
-
     //         return () => clearTimeout(timeout);
     //       },
     //     };

@@ -387,7 +387,11 @@ export function withCaching(
         }
 
         // Add organization key if organization cache
-        if ('tags' in cacheConfig && Array.isArray(cacheConfig.tags) && cacheConfig.tags.includes('organization')) {
+        if (
+          'tags' in cacheConfig &&
+          Array.isArray(cacheConfig.tags) &&
+          cacheConfig.tags.includes('organization')
+        ) {
           const orgId = (request as any).context?.organizationId;
           if (orgId) additionalKeys.push(`org:${orgId}`);
         }
@@ -408,7 +412,9 @@ export function withCaching(
 
           const isStale = manager.isStale(
             cachedEntry,
-            'staleWhileRevalidate' in cacheConfig ? cacheConfig.staleWhileRevalidate : undefined
+            'staleWhileRevalidate' in cacheConfig
+              ? cacheConfig.staleWhileRevalidate
+              : undefined
           );
 
           // Handle different cache strategies
@@ -420,7 +426,11 @@ export function withCaching(
               break;
 
             case CacheStrategy.STALE_WHILE_REVALIDATE:
-              if (isStale && ('revalidateOnStale' in cacheConfig && cacheConfig.revalidateOnStale)) {
+              if (
+                isStale &&
+                'revalidateOnStale' in cacheConfig &&
+                cacheConfig.revalidateOnStale
+              ) {
                 // Return stale data immediately, revalidate in background
                 setImmediate(async () => {
                   try {

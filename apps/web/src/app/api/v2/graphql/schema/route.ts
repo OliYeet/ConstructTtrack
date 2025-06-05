@@ -297,9 +297,10 @@ export const GET = withApiMiddleware({
             playground: schemaInfo.endpoints.playground
               ? 'GraphQL Playground available in development'
               : 'GraphQL Playground disabled in production',
-            introspection: process.env.NODE_ENV !== 'production'
-              ? 'Schema introspection enabled'
-              : 'Schema introspection disabled',
+            introspection:
+              process.env.NODE_ENV !== 'production'
+                ? 'Schema introspection enabled'
+                : 'Schema introspection disabled',
           },
         });
     }

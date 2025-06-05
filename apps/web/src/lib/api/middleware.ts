@@ -521,7 +521,11 @@ export function withApiMiddleware(
         // Generate cache key
         const additionalKeys: string[] = [];
 
-        if ('private' in cacheConfig && cacheConfig.private && requestContext.user) {
+        if (
+          'private' in cacheConfig &&
+          cacheConfig.private &&
+          requestContext.user
+        ) {
           additionalKeys.push(`user:${requestContext.user.id}`);
         }
 
@@ -551,7 +555,9 @@ export function withApiMiddleware(
 
           const isStale = cacheManager.isStale(
             cachedEntry,
-            'staleWhileRevalidate' in cacheConfig ? cacheConfig.staleWhileRevalidate : undefined
+            'staleWhileRevalidate' in cacheConfig
+              ? cacheConfig.staleWhileRevalidate
+              : undefined
           );
 
           // Handle cache strategies
@@ -573,7 +579,11 @@ export function withApiMiddleware(
           }
 
           if (cacheStrategy === CacheStrategy.STALE_WHILE_REVALIDATE) {
-            if (isStale && 'revalidateOnStale' in cacheConfig && cacheConfig.revalidateOnStale) {
+            if (
+              isStale &&
+              'revalidateOnStale' in cacheConfig &&
+              cacheConfig.revalidateOnStale
+            ) {
               // Return stale data immediately, revalidate in background
               setImmediate(async () => {
                 try {
@@ -599,7 +609,11 @@ export function withApiMiddleware(
               });
             }
 
-            if (!isStale || ('revalidateOnStale' in cacheConfig && cacheConfig.revalidateOnStale)) {
+            if (
+              !isStale ||
+              ('revalidateOnStale' in cacheConfig &&
+                cacheConfig.revalidateOnStale)
+            ) {
               const cachedResponse = cacheManager.createCachedResponse(
                 cachedEntry,
                 isStale
@@ -643,7 +657,11 @@ export function withApiMiddleware(
 
           const additionalKeys: string[] = [];
 
-          if ('private' in cacheConfig && cacheConfig.private && requestContext.user) {
+          if (
+            'private' in cacheConfig &&
+            cacheConfig.private &&
+            requestContext.user
+          ) {
             additionalKeys.push(`user:${requestContext.user.id}`);
           }
 
