@@ -64,7 +64,10 @@ class MockNextRequest {
 }
 
 /* Make mocks globally visible for convenience (optional) */
-(global as any).Headers = MockHeaders;
+// Only polyfill Headers if the runtime does not already provide it
+if (typeof (global as any).Headers === 'undefined') {
+  (global as any).Headers = MockHeaders;
+}
 (global as any).NextResponse = MockNextResponse;
 (global as any).NextRequest = MockNextRequest;
 
@@ -284,14 +287,16 @@ export const createMockRequest = (
     json: jest.fn().mockResolvedValue(body),
   };
 
-  // Add headers.get method
-  (
-    request.headers as Map<string, string> & {
-      get: (_key: string) => string | undefined;
-    }
-  ).get = (key: string) => {
-    return (request.headers as Map<string, string>).get(key.toLowerCase());
-  };
+  // Add a case-insensitive `get` helper only when one is not already present
+  if (typeof (request.headers as { get?: unknown }).get !== 'function') {
+    (
+      request.headers as Map<string, string> & {
+        get: (_key: string) => string | undefined;
+      }
+    ).get = (key: string) =>
+      // `Map#get` will exist when `request.headers` is a Map-backed mock
+      (request.headers as Map<string, string>).get?.(key.toLowerCase());
+  }
 
   return request as unknown as NextRequest;
 };
