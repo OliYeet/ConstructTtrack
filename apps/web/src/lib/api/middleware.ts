@@ -24,6 +24,7 @@ import {
   logRequest as enhancedLogRequest,
   logResponse as enhancedLogResponse,
   logError as enhancedLogError,
+  getLogger,
 } from '@/lib/logging';
 import { apiMetricsTracker } from '@/lib/monitoring/api-metrics';
 // import { performanceMonitor } from '@/lib/monitoring/performance-monitor';
@@ -101,8 +102,12 @@ async function logDetailedRequest(
       }
     }
 
-    await enhancedLogRequest(request, {
-      ...context,
+    // Use the structured logger directly for detailed logging
+    const logger = getLogger();
+    await logger.info('Detailed API Request', {
+      requestId: context?.requestId,
+      userId: context?.user?.id,
+      organizationId: context?.organizationId,
       metadata: {
         detailedLogging: true,
         url: {
@@ -168,20 +173,27 @@ async function logDetailedResponse(
       responseBody = '[Unable to parse response body]';
     }
 
-    await enhancedLogResponse(request, response.status, duration, {
-      ...context,
+    // Use the structured logger directly for detailed response logging
+    const logger = getLogger();
+    await logger.info('Detailed API Response', {
+      requestId: context?.requestId,
+      userId: context?.user?.id,
+      organizationId: context?.organizationId,
+      response: {
+        statusCode: response.status,
+        contentLength,
+      },
+      performance: {
+        duration,
+        memoryUsage:
+          typeof process !== 'undefined' ? process.memoryUsage() : undefined,
+      },
       metadata: {
         detailedLogging: true,
-        response: {
+        responseDetails: {
           headers: responseHeaders,
           body: responseBody,
-          contentLength,
           contentType: response.headers.get('content-type'),
-        },
-        performance: {
-          duration,
-          memoryUsage:
-            typeof process !== 'undefined' ? process.memoryUsage() : undefined,
         },
       },
     });
@@ -220,8 +232,11 @@ async function recordDetailedMetrics(
     // Request size metrics
     const contentLength = request.headers.get('content-length');
     if (contentLength) {
-      await enhancedLogRequest(request, {
-        ...context,
+      const logger = getLogger();
+      await logger.info('API Metric: Request Size', {
+        requestId: context?.requestId,
+        userId: context?.user?.id,
+        organizationId: context?.organizationId,
         metadata: {
           metricType: 'request_size',
           value: parseInt(contentLength, 10),
@@ -234,8 +249,11 @@ async function recordDetailedMetrics(
     // Response size metrics
     const responseSize = response.headers.get('content-length');
     if (responseSize) {
-      await enhancedLogRequest(request, {
-        ...context,
+      const logger = getLogger();
+      await logger.info('API Metric: Response Size', {
+        requestId: context?.requestId,
+        userId: context?.user?.id,
+        organizationId: context?.organizationId,
         metadata: {
           metricType: 'response_size',
           value: parseInt(responseSize, 10),
@@ -247,8 +265,11 @@ async function recordDetailedMetrics(
 
     // User activity metrics
     if (context?.user) {
-      await enhancedLogRequest(request, {
-        ...context,
+      const logger = getLogger();
+      await logger.info('API Metric: User Activity', {
+        requestId: context?.requestId,
+        userId: context?.user?.id,
+        organizationId: context?.organizationId,
         metadata: {
           metricType: 'user_activity',
           value: 1,
@@ -264,8 +285,11 @@ async function recordDetailedMetrics(
 
     // Error rate metrics
     if (response.status >= 400) {
-      await enhancedLogRequest(request, {
-        ...context,
+      const logger = getLogger();
+      await logger.info('API Metric: Error Rate', {
+        requestId: context?.requestId,
+        userId: context?.user?.id,
+        organizationId: context?.organizationId,
         metadata: {
           metricType: 'api_error',
           value: 1,
@@ -279,26 +303,32 @@ async function recordDetailedMetrics(
     }
 
     // Performance metrics by endpoint
-    await enhancedLogRequest(request, {
-      ...context,
+    const logger = getLogger();
+    await logger.info('API Metric: Endpoint Performance', {
+      requestId: context?.requestId,
+      userId: context?.user?.id,
+      organizationId: context?.organizationId,
+      performance: {
+        duration,
+        memoryUsage:
+          typeof process !== 'undefined' ? process.memoryUsage() : undefined,
+      },
       metadata: {
         metricType: 'endpoint_performance',
         value: duration,
         unit: 'ms',
         tags,
-        performance: {
-          duration,
-          memoryUsage:
-            typeof process !== 'undefined' ? process.memoryUsage() : undefined,
-        },
       },
     });
 
     // Rate limiting metrics (if rate limited)
     const rateLimitRemaining = response.headers.get('X-RateLimit-Remaining');
     if (rateLimitRemaining) {
-      await enhancedLogRequest(request, {
-        ...context,
+      const logger = getLogger();
+      await logger.info('API Metric: Rate Limit Usage', {
+        requestId: context?.requestId,
+        userId: context?.user?.id,
+        organizationId: context?.organizationId,
         metadata: {
           metricType: 'rate_limit_usage',
           value: parseInt(rateLimitRemaining, 10),
@@ -491,12 +521,13 @@ export function withApiMiddleware(
         // Generate cache key
         const additionalKeys: string[] = [];
 
-        if (cacheConfig.private && requestContext.user) {
+        if ('private' in cacheConfig && cacheConfig.private && requestContext.user) {
           additionalKeys.push(`user:${requestContext.user.id}`);
         }
 
         if (
-          cacheConfig.tags?.includes('organization') &&
+          'tags' in cacheConfig &&
+          (cacheConfig as any).tags?.includes('organization') &&
           requestContext.organizationId
         ) {
           additionalKeys.push(`org:${requestContext.organizationId}`);
@@ -520,7 +551,7 @@ export function withApiMiddleware(
 
           const isStale = cacheManager.isStale(
             cachedEntry,
-            cacheConfig.staleWhileRevalidate
+            'staleWhileRevalidate' in cacheConfig ? cacheConfig.staleWhileRevalidate : undefined
           );
 
           // Handle cache strategies
@@ -542,7 +573,7 @@ export function withApiMiddleware(
           }
 
           if (cacheStrategy === CacheStrategy.STALE_WHILE_REVALIDATE) {
-            if (isStale && cacheConfig.revalidateOnStale) {
+            if (isStale && 'revalidateOnStale' in cacheConfig && cacheConfig.revalidateOnStale) {
               // Return stale data immediately, revalidate in background
               setImmediate(async () => {
                 try {
@@ -568,7 +599,7 @@ export function withApiMiddleware(
               });
             }
 
-            if (!isStale || cacheConfig.revalidateOnStale) {
+            if (!isStale || ('revalidateOnStale' in cacheConfig && cacheConfig.revalidateOnStale)) {
               const cachedResponse = cacheManager.createCachedResponse(
                 cachedEntry,
                 isStale
@@ -612,12 +643,13 @@ export function withApiMiddleware(
 
           const additionalKeys: string[] = [];
 
-          if (cacheConfig.private && requestContext.user) {
+          if ('private' in cacheConfig && cacheConfig.private && requestContext.user) {
             additionalKeys.push(`user:${requestContext.user.id}`);
           }
 
           if (
-            cacheConfig.tags?.includes('organization') &&
+            'tags' in cacheConfig &&
+            (cacheConfig as any).tags?.includes('organization') &&
             requestContext.organizationId
           ) {
             additionalKeys.push(`org:${requestContext.organizationId}`);

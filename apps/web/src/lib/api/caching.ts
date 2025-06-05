@@ -13,8 +13,8 @@ import { getLogger } from '@/lib/logging';
 export interface CacheConfig {
   ttl: number; // Time to live in seconds
   staleWhileRevalidate?: number; // Stale-while-revalidate time in seconds
-  tags?: string[]; // Cache tags for invalidation
-  vary?: string[]; // Headers to vary cache by
+  tags?: readonly string[]; // Cache tags for invalidation
+  vary?: readonly string[]; // Headers to vary cache by
   private?: boolean; // Whether cache is private (user-specific)
   revalidateOnStale?: boolean; // Whether to revalidate when stale
 }
@@ -233,7 +233,7 @@ export class CacheManager {
       data,
       timestamp: Date.now(),
       ttl: config.ttl,
-      tags: config.tags || [],
+      tags: config.tags ? [...config.tags] : [],
       etag: this.generateETag(data),
       headers,
     };
@@ -381,13 +381,13 @@ export function withCaching(
         const additionalKeys: string[] = [];
 
         // Add user-specific key if private cache
-        if (cacheConfig.private) {
+        if ('private' in cacheConfig && cacheConfig.private) {
           const userId = (request as any).context?.user?.id;
           if (userId) additionalKeys.push(`user:${userId}`);
         }
 
         // Add organization key if organization cache
-        if (cacheConfig.tags?.includes('organization')) {
+        if ('tags' in cacheConfig && Array.isArray(cacheConfig.tags) && cacheConfig.tags.includes('organization')) {
           const orgId = (request as any).context?.organizationId;
           if (orgId) additionalKeys.push(`org:${orgId}`);
         }
@@ -408,7 +408,7 @@ export function withCaching(
 
           const isStale = manager.isStale(
             cachedEntry,
-            cacheConfig.staleWhileRevalidate
+            'staleWhileRevalidate' in cacheConfig ? cacheConfig.staleWhileRevalidate : undefined
           );
 
           // Handle different cache strategies
@@ -420,7 +420,7 @@ export function withCaching(
               break;
 
             case CacheStrategy.STALE_WHILE_REVALIDATE:
-              if (isStale && cacheConfig.revalidateOnStale) {
+              if (isStale && ('revalidateOnStale' in cacheConfig && cacheConfig.revalidateOnStale)) {
                 // Return stale data immediately, revalidate in background
                 setImmediate(async () => {
                   try {

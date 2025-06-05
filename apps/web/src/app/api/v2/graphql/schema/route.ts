@@ -7,8 +7,28 @@ import { printSchema, buildSchema } from 'graphql';
 import { NextRequest } from 'next/server';
 
 import { withApiMiddleware, createSuccessResponse } from '@/lib/api';
-import { typeDefs } from '@/lib/graphql/schema';
-import { schemaInfo } from '@/lib/graphql/server';
+import { typeDefs, schemaConfig } from '@/lib/graphql/schema';
+
+// Schema info without importing server (to avoid Supabase dependency during build)
+const schemaInfo = {
+  version: schemaConfig.version,
+  features: schemaConfig.features,
+  limits: schemaConfig.limits,
+  endpoints: {
+    graphql: '/api/v2/graphql',
+    playground: schemaConfig.playground ? '/api/v2/graphql' : null,
+    subscriptions: schemaConfig.features.subscriptions
+      ? '/api/v2/subscriptions'
+      : null,
+  },
+  documentation: {
+    schema: 'Auto-generated from GraphQL introspection',
+    examples: '/docs/graphql/examples',
+    playground: schemaConfig.playground
+      ? 'Available in development mode'
+      : 'Disabled in production',
+  },
+};
 
 // GET /api/v2/graphql/schema - Get GraphQL schema information
 export const GET = withApiMiddleware({
@@ -277,7 +297,7 @@ export const GET = withApiMiddleware({
             playground: schemaInfo.endpoints.playground
               ? 'GraphQL Playground available in development'
               : 'GraphQL Playground disabled in production',
-            introspection: schemaInfo.features.introspection
+            introspection: process.env.NODE_ENV !== 'production'
               ? 'Schema introspection enabled'
               : 'Schema introspection disabled',
           },

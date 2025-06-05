@@ -217,7 +217,7 @@ export function withVersioning() {
     const response = await next();
 
     // Add version headers to response
-    addVersionHeaders(response, version, validation.metadata);
+    addVersionHeaders(response, version as ApiVersion, validation.metadata);
 
     // Add warnings if any
     if (validation.warnings.length > 0) {
@@ -235,17 +235,20 @@ export function getVersionInfo(version?: ApiVersion) {
     : (Object.keys(API_VERSIONS) as ApiVersion[]);
 
   return createSuccessResponse({
-    supportedVersions: versions.map(v => ({
-      version: v,
-      ...VERSION_REGISTRY[v],
-      current: v === 'v1', // Current stable version
-      endpoints: {
-        base: `/api/${v}`,
-        docs: `/docs/${v}`,
-        changelog: VERSION_REGISTRY[v].changelog,
-        migrationGuide: VERSION_REGISTRY[v].migrationGuide,
-      },
-    })),
+    supportedVersions: versions.map(v => {
+      const { version, ...metadata } = VERSION_REGISTRY[v];
+      return {
+        version: v,
+        ...metadata,
+        current: v === 'v1', // Current stable version
+        endpoints: {
+          base: `/api/${v}`,
+          docs: `/docs/${v}`,
+          changelog: VERSION_REGISTRY[v].changelog,
+          migrationGuide: VERSION_REGISTRY[v].migrationGuide,
+        },
+      };
+    }),
     versioningStrategy: {
       method:
         'URL path (preferred), Accept header, API-Version header, query parameter',
@@ -429,17 +432,14 @@ export function withEnhancedVersioning() {
     const { version, source } = extractApiVersion(request);
     const validation = validateVersion(version);
 
-    // Track version usage metrics
-    const versionMetrics = {
-      version,
-      source,
-      timestamp: Date.now(),
-      userAgent: request.headers.get('user-agent'),
-      endpoint: new URL(request.url).pathname,
-    };
-
-    // Log version usage for analytics
-    console.log('API Version Usage:', versionMetrics);
+    // Track version usage metrics (would typically be sent to analytics)
+    // const versionMetrics = {
+    //   version,
+    //   source,
+    //   timestamp: Date.now(),
+    //   userAgent: request.headers.get('user-agent'),
+    //   endpoint: new URL(request.url).pathname,
+    // };
 
     // If version is invalid, return error
     if (!validation.valid) {
@@ -463,7 +463,7 @@ export function withEnhancedVersioning() {
     const response = await next();
 
     // Add enhanced version headers
-    addVersionHeaders(response, version, validation.metadata);
+    addVersionHeaders(response, version as ApiVersion, validation.metadata);
 
     // Add warnings if any
     if (validation.warnings.length > 0) {

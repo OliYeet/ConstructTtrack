@@ -470,16 +470,8 @@ export class MetricsCollector {
       return parseInt(contentLength, 10);
     }
 
-    // Estimate size from response body if available
-    try {
-      const body = response.body;
-      if (body) {
-        return new Blob([body]).size;
-      }
-    } catch {
-      // Ignore errors
-    }
-
+    // If no content-length header, return 0 as we can't reliably measure
+    // without consuming the response body
     return 0;
   }
 }

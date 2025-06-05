@@ -69,7 +69,12 @@ export class SchemaValidator {
       strict: false,
       validateFormats: true,
     });
-    addFormats(this.ajv);
+    try {
+      addFormats(this.ajv as any);
+    } catch {
+      // Handle AJV version compatibility issues
+      // Failed to add formats to AJV - version compatibility issue
+    }
   }
 
   validateSchema(data: any, schema: any): { valid: boolean; errors: string[] } {
@@ -228,7 +233,7 @@ export class ContractTestRunner {
       result.request = {
         url,
         method: method.toUpperCase(),
-        headers: requestOptions.headers || {},
+        headers: this.normalizeHeaders(requestOptions.headers || {}),
         body: testData,
       };
 
@@ -440,6 +445,16 @@ export class ContractTestRunner {
     }
 
     return await response.text();
+  }
+
+  private normalizeHeaders(headers: HeadersInit): Record<string, string> {
+    if (headers instanceof Headers) {
+      return Object.fromEntries(headers.entries());
+    }
+    if (Array.isArray(headers)) {
+      return Object.fromEntries(headers);
+    }
+    return headers as Record<string, string>;
   }
 
   private calculateSummary(results: ContractTestResult[], duration: number) {

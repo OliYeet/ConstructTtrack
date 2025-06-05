@@ -26,7 +26,7 @@ export const GET = withApiMiddleware({
 // Demo endpoint with detailed logging enabled
 export const POST = withApiMiddleware(
   {
-    POST: async (_request: NextRequest) => {
+    POST: async (request: NextRequest) => {
       const body = await request.json();
 
       return createSuccessResponse({

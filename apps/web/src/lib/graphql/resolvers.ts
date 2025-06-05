@@ -305,8 +305,7 @@ export const queryResolvers = {
         *,
         project:projects(*),
         assignee:profiles(*),
-        photos(*),
-        time_entries(*)
+        photos(*)
       `
       )
       .eq('id', id)
@@ -353,59 +352,59 @@ export const queryResolvers = {
     };
   },
 
-  // Equipment queries
-  equipment: async (_: any, { id }: any, context: any) => {
-    requireAuth(context);
+  // Equipment queries - TODO: Uncomment when equipment tables are available
+  // equipment: async (_: any, { id }: any, context: any) => {
+  //   requireAuth(context);
 
-    const { data, error } = await supabase
-      .from('equipment')
-      .select(
-        `
-        *,
-        organization:organizations(*),
-        assignee:profiles(*),
-        assignments:equipment_assignments(*)
-      `
-      )
-      .eq('id', id)
-      .single();
+  //   const { data, error } = await supabase
+  //     .from('equipment')
+  //     .select(
+  //       `
+  //       *,
+  //       organization:organizations(*),
+  //       assignee:profiles(*),
+  //       assignments:equipment_assignments(*)
+  //     `
+  //     )
+  //     .eq('id', id)
+  //     .single();
 
-    if (error) throw new GraphQLError(error.message);
-    return data;
-  },
+  //   if (error) throw new GraphQLError(error.message);
+  //   return data;
+  // },
 
-  availableEquipment: async (_: any, { pagination }: any, context: any) => {
-    requireAuth(context);
+  // availableEquipment: async (_: any, { pagination }: any, context: any) => {
+  //   requireAuth(context);
 
-    const { offset, limit } = buildPagination(pagination);
+  //   const { offset, limit } = buildPagination(pagination);
 
-    const { data, error, count } = await supabase
-      .from('equipment')
-      .select('*', { count: 'exact' })
-      .eq('status', 'available')
-      .range(offset, offset + limit - 1);
+  //   const { data, error, count } = await supabase
+  //     .from('equipment')
+  //     .select('*', { count: 'exact' })
+  //     .eq('status', 'available')
+  //     .range(offset, offset + limit - 1);
 
-    if (error) throw new GraphQLError(error.message);
+  //   if (error) throw new GraphQLError(error.message);
 
-    return {
-      edges:
-        data?.map((node, index) => ({
-          node,
-          cursor: Buffer.from(`${offset + index}`).toString('base64'),
-        })) || [],
-      pageInfo: {
-        hasNextPage: offset + limit < (count || 0),
-        hasPreviousPage: offset > 0,
-        startCursor: data?.length
-          ? Buffer.from(`${offset}`).toString('base64')
-          : null,
-        endCursor: data?.length
-          ? Buffer.from(`${offset + data.length - 1}`).toString('base64')
-          : null,
-        totalCount: count || 0,
-      },
-    };
-  },
+  //   return {
+  //     edges:
+  //       data?.map((node, index) => ({
+  //         node,
+  //         cursor: Buffer.from(`${offset + index}`).toString('base64'),
+  //       })) || [],
+  //     pageInfo: {
+  //       hasNextPage: offset + limit < (count || 0),
+  //       hasPreviousPage: offset > 0,
+  //       startCursor: data?.length
+  //         ? Buffer.from(`${offset}`).toString('base64')
+  //         : null,
+  //       endCursor: data?.length
+  //         ? Buffer.from(`${offset + data.length - 1}`).toString('base64')
+  //         : null,
+  //       totalCount: count || 0,
+  //     },
+  //   };
+  // },
 };
 
 // Mutation resolvers
@@ -510,172 +509,172 @@ export const mutationResolvers = {
     return data;
   },
 
-  // Equipment mutations
-  assignEquipment: async (
-    _: any,
-    { equipmentId, assigneeId, notes }: any,
-    context: any
-  ) => {
-    const user = requireAuth(context);
+  // Equipment mutations - TODO: Uncomment when equipment tables are available
+  // assignEquipment: async (
+  //   _: any,
+  //   { equipmentId, assigneeId, notes }: any,
+  //   context: any
+  // ) => {
+  //   const user = requireAuth(context);
 
-    // Create assignment record
-    const { data: assignment, error: assignmentError } = await supabase
-      .from('equipment_assignments')
-      .insert({
-        equipment_id: equipmentId,
-        assigned_to: assigneeId,
-        assigned_by: user.id,
-        assigned_at: new Date().toISOString(),
-        notes,
-      })
-      .select(
-        `
-        *,
-        equipment:equipment(*),
-        assignee:profiles(*),
-        assigner:profiles(*)
-      `
-      )
-      .single();
+  //   // Create assignment record
+  //   const { data: assignment, error: assignmentError } = await supabase
+  //     .from('equipment_assignments')
+  //     .insert({
+  //       equipment_id: equipmentId,
+  //       assigned_to: assigneeId,
+  //       assigned_by: user.id,
+  //       assigned_at: new Date().toISOString(),
+  //       notes,
+  //     })
+  //     .select(
+  //       `
+  //       *,
+  //       equipment:equipment(*),
+  //       assignee:profiles(*),
+  //       assigner:profiles(*)
+  //     `
+  //     )
+  //     .single();
 
-    if (assignmentError) throw new GraphQLError(assignmentError.message);
+  //   if (assignmentError) throw new GraphQLError(assignmentError.message);
 
-    // Update equipment status
-    const { error: updateError } = await supabase
-      .from('equipment')
-      .update({
-        status: 'in_use',
-        assigned_to: assigneeId,
-      })
-      .eq('id', equipmentId);
+  //   // Update equipment status
+  //   const { error: updateError } = await supabase
+  //     .from('equipment')
+  //     .update({
+  //       status: 'in_use',
+  //       assigned_to: assigneeId,
+  //     })
+  //     .eq('id', equipmentId);
 
-    if (updateError) throw new GraphQLError(updateError.message);
+  //   if (updateError) throw new GraphQLError(updateError.message);
 
-    return assignment;
-  },
+  //   return assignment;
+  // },
 
-  returnEquipment: async (
-    _: any,
-    { assignmentId, notes }: any,
-    context: any
-  ) => {
-    requireAuth(context);
+  // returnEquipment: async (
+  //   _: any,
+  //   { assignmentId, notes }: any,
+  //   context: any
+  // ) => {
+  //   requireAuth(context);
 
-    // Get assignment details
-    const { data: assignment, error: getError } = await supabase
-      .from('equipment_assignments')
-      .select('*, equipment:equipment(*)')
-      .eq('id', assignmentId)
-      .single();
+  //   // Get assignment details
+  //   const { data: assignment, error: getError } = await supabase
+  //     .from('equipment_assignments')
+  //     .select('*, equipment:equipment(*)')
+  //     .eq('id', assignmentId)
+  //     .single();
 
-    if (getError) throw new GraphQLError(getError.message);
+  //   if (getError) throw new GraphQLError(getError.message);
 
-    // Update assignment record
-    const { data: updatedAssignment, error: updateAssignmentError } =
-      await supabase
-        .from('equipment_assignments')
-        .update({
-          returned_at: new Date().toISOString(),
-          notes: notes || assignment.notes,
-        })
-        .eq('id', assignmentId)
-        .select(
-          `
-        *,
-        equipment:equipment(*),
-        assignee:profiles(*),
-        assigner:profiles(*)
-      `
-        )
-        .single();
+  //   // Update assignment record
+  //   const { data: updatedAssignment, error: updateAssignmentError } =
+  //     await supabase
+  //       .from('equipment_assignments')
+  //       .update({
+  //         returned_at: new Date().toISOString(),
+  //         notes: notes || assignment.notes,
+  //       })
+  //       .eq('id', assignmentId)
+  //       .select(
+  //         `
+  //       *,
+  //       equipment:equipment(*),
+  //       assignee:profiles(*),
+  //       assigner:profiles(*)
+  //     `
+  //       )
+  //       .single();
 
-    if (updateAssignmentError)
-      throw new GraphQLError(updateAssignmentError.message);
+  //   if (updateAssignmentError)
+  //     throw new GraphQLError(updateAssignmentError.message);
 
-    // Update equipment status
-    const { error: updateEquipmentError } = await supabase
-      .from('equipment')
-      .update({
-        status: 'available',
-        assigned_to: null,
-      })
-      .eq('id', assignment.equipment_id);
+  //   // Update equipment status
+  //   const { error: updateEquipmentError } = await supabase
+  //     .from('equipment')
+  //     .update({
+  //       status: 'available',
+  //       assigned_to: null,
+  //     })
+  //     .eq('id', assignment.equipment_id);
 
-    if (updateEquipmentError)
-      throw new GraphQLError(updateEquipmentError.message);
+  //   if (updateEquipmentError)
+  //     throw new GraphQLError(updateEquipmentError.message);
 
-    return updatedAssignment;
-  },
+  //   return updatedAssignment;
+  // },
 
-  // Time tracking mutations
-  startTimeEntry: async (
-    _: any,
-    { taskId, projectId, description }: any,
-    context: any
-  ) => {
-    const user = requireAuth(context);
+  // Time tracking mutations - TODO: Uncomment when time_entries table is available
+  // startTimeEntry: async (
+  //   _: any,
+  //   { taskId, projectId, description }: any,
+  //   context: any
+  // ) => {
+  //   const user = requireAuth(context);
 
-    const { data, error } = await supabase
-      .from('time_entries')
-      .insert({
-        profile_id: user.id,
-        task_id: taskId,
-        project_id: projectId,
-        start_time: new Date().toISOString(),
-        description,
-      })
-      .select(
-        `
-        *,
-        profile:profiles(*),
-        task:tasks(*),
-        project:projects(*)
-      `
-      )
-      .single();
+  //   const { data, error } = await supabase
+  //     .from('time_entries')
+  //     .insert({
+  //       profile_id: user.id,
+  //       task_id: taskId,
+  //       project_id: projectId,
+  //       start_time: new Date().toISOString(),
+  //       description,
+  //     })
+  //     .select(
+  //       `
+  //       *,
+  //       profile:profiles(*),
+  //       task:tasks(*),
+  //       project:projects(*)
+  //     `
+  //     )
+  //     .single();
 
-    if (error) throw new GraphQLError(error.message);
-    return data;
-  },
+  //   if (error) throw new GraphQLError(error.message);
+  //   return data;
+  // },
 
-  stopTimeEntry: async (_: any, { id }: any, context: any) => {
-    requireAuth(context);
+  // stopTimeEntry: async (_: any, { id }: any, context: any) => {
+  //   requireAuth(context);
 
-    const endTime = new Date();
+  //   const endTime = new Date();
 
-    // Get the time entry to calculate duration
-    const { data: timeEntry, error: getError } = await supabase
-      .from('time_entries')
-      .select('start_time')
-      .eq('id', id)
-      .single();
+  //   // Get the time entry to calculate duration
+  //   const { data: timeEntry, error: getError } = await supabase
+  //     .from('time_entries')
+  //     .select('start_time')
+  //     .eq('id', id)
+  //     .single();
 
-    if (getError) throw new GraphQLError(getError.message);
+  //   if (getError) throw new GraphQLError(getError.message);
 
-    const startTime = new Date(timeEntry.start_time);
-    const duration =
-      (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60); // hours
+  //   const startTime = new Date(timeEntry.start_time);
+  //   const duration =
+  //     (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60); // hours
 
-    const { data, error } = await supabase
-      .from('time_entries')
-      .update({
-        end_time: endTime.toISOString(),
-        duration,
-      })
-      .eq('id', id)
-      .select(
-        `
-        *,
-        profile:profiles(*),
-        task:tasks(*),
-        project:projects(*)
-      `
-      )
-      .single();
+  //   const { data, error } = await supabase
+  //     .from('time_entries')
+  //     .update({
+  //       end_time: endTime.toISOString(),
+  //       duration,
+  //     })
+  //     .eq('id', id)
+  //     .select(
+  //       `
+  //       *,
+  //       profile:profiles(*),
+  //       task:tasks(*),
+  //       project:projects(*)
+  //     `
+  //     )
+  //     .single();
 
-    if (error) throw new GraphQLError(error.message);
-    return data;
-  },
+  //   if (error) throw new GraphQLError(error.message);
+  //   return data;
+  // },
 };
 
 // Field resolvers for computed fields

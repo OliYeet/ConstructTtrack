@@ -98,7 +98,7 @@ async function getPerformanceSummary(_request: NextRequest) {
   });
 }
 
-async function getPerformanceAnalysis(_request: NextRequest) {
+async function getPerformanceAnalysis(request: NextRequest) {
   const url = new URL(request.url);
   const endpoint = url.searchParams.get('endpoint');
   const method = url.searchParams.get('method') || undefined;
@@ -312,11 +312,11 @@ function getTopSlowEndpoints(metrics: any[], limit: number) {
     .map(([endpoint, endpointMetrics]) => ({
       endpoint,
       averageResponseTime:
-        endpointMetrics.reduce(
+        (endpointMetrics as any[]).reduce(
           (sum: number, m: any) => sum + m.responseTime,
           0
-        ) / endpointMetrics.length,
-      requestCount: endpointMetrics.length,
+        ) / (endpointMetrics as any[]).length,
+      requestCount: (endpointMetrics as any[]).length,
     }))
     .sort((a, b) => b.averageResponseTime - a.averageResponseTime)
     .slice(0, limit);
@@ -327,13 +327,13 @@ function getHighErrorRateEndpoints(metrics: any[], limit: number) {
 
   return Object.entries(endpointStats)
     .map(([endpoint, endpointMetrics]) => {
-      const errorCount = endpointMetrics.filter(
+      const errorCount = (endpointMetrics as any[]).filter(
         (m: any) => m.statusCode >= 400
       ).length;
       return {
         endpoint,
-        errorRate: (errorCount / endpointMetrics.length) * 100,
-        requestCount: endpointMetrics.length,
+        errorRate: (errorCount / (endpointMetrics as any[]).length) * 100,
+        requestCount: (endpointMetrics as any[]).length,
         errorCount,
       };
     })
@@ -349,16 +349,16 @@ function getResourceIntensiveEndpoints(metrics: any[], limit: number) {
     .map(([endpoint, endpointMetrics]) => ({
       endpoint,
       averageMemoryUsage:
-        endpointMetrics
+        (endpointMetrics as any[])
           .filter((m: any) => m.memoryUsage !== undefined)
           .reduce((sum: number, m: any) => sum + (m.memoryUsage || 0), 0) /
-        endpointMetrics.length,
+        (endpointMetrics as any[]).length,
       averageResponseSize:
-        endpointMetrics.reduce(
+        (endpointMetrics as any[]).reduce(
           (sum: number, m: any) => sum + m.responseSize,
           0
-        ) / endpointMetrics.length,
-      requestCount: endpointMetrics.length,
+        ) / (endpointMetrics as any[]).length,
+      requestCount: (endpointMetrics as any[]).length,
     }))
     .sort((a, b) => b.averageMemoryUsage - a.averageMemoryUsage)
     .slice(0, limit);
