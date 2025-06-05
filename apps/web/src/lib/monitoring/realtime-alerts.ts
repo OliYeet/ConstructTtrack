@@ -1,20 +1,16 @@
 /**
  * Real-time Alert Manager
- * 
+ *
  * Handles alerting for real-time performance monitoring based on Charlie's
  * strategic requirements:
- * - Alert if error ratio >1% 
+ * - Alert if error ratio >1%
  * - Alert if average latency >500ms for 5 min
  * - P90/P99 latency monitoring with <250ms goal
  */
 
 import { getLogger } from '../logging';
-import {
-  RealtimeAlert,
-  RealtimeAlertConfig,
-  RealtimePerformanceStats,
-  ThresholdExceeded,
-} from './realtime-metrics';
+
+import { RealtimeAlert, RealtimeAlertConfig } from './realtime-metrics';
 
 export interface AlertChannel {
   type: 'email' | 'webhook' | 'slack' | 'console';
@@ -92,7 +88,7 @@ export class RealtimeAlertManager {
 
     const logger = getLogger();
     logger.info('Sending real-time alert', {
-      metadata: { alert }
+      metadata: { alert },
     });
 
     // Send to all enabled channels
@@ -104,7 +100,10 @@ export class RealtimeAlertManager {
   }
 
   // Send alert to a specific channel
-  private async sendToChannel(alert: RealtimeAlert, channel: AlertChannel): Promise<void> {
+  private async sendToChannel(
+    alert: RealtimeAlert,
+    channel: AlertChannel
+  ): Promise<void> {
     const notification: AlertNotification = {
       alert,
       channel,
@@ -133,8 +132,9 @@ export class RealtimeAlertManager {
       notification.status = 'sent';
     } catch (error) {
       notification.status = 'failed';
-      notification.error = error instanceof Error ? error.message : 'Unknown error';
-      
+      notification.error =
+        error instanceof Error ? error.message : 'Unknown error';
+
       const logger = getLogger();
       logger.error('Failed to send alert to channel', {
         metadata: {
@@ -152,7 +152,7 @@ export class RealtimeAlertManager {
   // Send alert to console (for development and logging)
   private async sendToConsole(alert: RealtimeAlert): Promise<void> {
     const logger = getLogger();
-    
+
     const logLevel = alert.severity === 'critical' ? 'error' : 'warn';
     logger[logLevel](`🚨 REAL-TIME ALERT [${alert.severity.toUpperCase()}]`, {
       metadata: {
@@ -166,9 +166,12 @@ export class RealtimeAlertManager {
   }
 
   // Send alert via email (placeholder - implement with your email service)
-  private async sendToEmail(alert: RealtimeAlert, config: Record<string, unknown>): Promise<void> {
+  private async sendToEmail(
+    alert: RealtimeAlert,
+    config: Record<string, unknown>
+  ): Promise<void> {
     const recipient = config.recipient as string;
-    
+
     // TODO: Implement email sending with your preferred service (SendGrid, AWS SES, etc.)
     const logger = getLogger();
     logger.info('Email alert would be sent', {
@@ -188,9 +191,12 @@ export class RealtimeAlertManager {
   }
 
   // Send alert via webhook
-  private async sendToWebhook(alert: RealtimeAlert, config: Record<string, unknown>): Promise<void> {
+  private async sendToWebhook(
+    alert: RealtimeAlert,
+    config: Record<string, unknown>
+  ): Promise<void> {
     const webhookUrl = config.url as string;
-    
+
     const payload = {
       alert: {
         id: alert.id,
@@ -214,17 +220,22 @@ export class RealtimeAlertManager {
     });
 
     if (!response.ok) {
-      throw new Error(`Webhook request failed: ${response.status} ${response.statusText}`);
+      throw new Error(
+        `Webhook request failed: ${response.status} ${response.statusText}`
+      );
     }
   }
 
   // Send alert to Slack
-  private async sendToSlack(alert: RealtimeAlert, config: Record<string, unknown>): Promise<void> {
+  private async sendToSlack(
+    alert: RealtimeAlert,
+    config: Record<string, unknown>
+  ): Promise<void> {
     const webhookUrl = config.webhook as string;
-    
+
     const color = alert.severity === 'critical' ? 'danger' : 'warning';
     const emoji = alert.severity === 'critical' ? '🚨' : '⚠️';
-    
+
     const payload = {
       text: `${emoji} Real-time Performance Alert`,
       attachments: [
@@ -264,7 +275,9 @@ export class RealtimeAlertManager {
     });
 
     if (!response.ok) {
-      throw new Error(`Slack webhook request failed: ${response.status} ${response.statusText}`);
+      throw new Error(
+        `Slack webhook request failed: ${response.status} ${response.statusText}`
+      );
     }
   }
 
@@ -303,7 +316,9 @@ export class RealtimeAlertManager {
     const total = this.notifications.length;
     const sent = this.notifications.filter(n => n.status === 'sent').length;
     const failed = this.notifications.filter(n => n.status === 'failed').length;
-    const pending = this.notifications.filter(n => n.status === 'pending').length;
+    const pending = this.notifications.filter(
+      n => n.status === 'pending'
+    ).length;
     const successRate = total > 0 ? sent / total : 1;
 
     return {
@@ -342,7 +357,9 @@ export class RealtimeAlertManager {
   // Cleanup old notifications
   private cleanupNotifications(): void {
     if (this.notifications.length > this.maxNotificationHistory) {
-      this.notifications = this.notifications.slice(-this.maxNotificationHistory);
+      this.notifications = this.notifications.slice(
+        -this.maxNotificationHistory
+      );
     }
   }
 }
@@ -350,34 +367,47 @@ export class RealtimeAlertManager {
 // Create alert message formatters for different alert types
 export const AlertFormatters = {
   latency: (alert: RealtimeAlert): string => {
-    const details = alert.details as any;
-    if (details.p99Latency) {
+    const details = alert.details as Record<string, unknown>;
+    if (details.p99Latency && typeof details.p99Latency === 'number') {
       return `P99 latency is ${details.p99Latency.toFixed(2)}ms (threshold: ${details.threshold}ms) over ${details.sampleSize} events`;
     }
     return `End-to-end latency is ${details.latency}ms (threshold: ${details.threshold}ms) for event ${details.eventId}`;
   },
 
   error_rate: (alert: RealtimeAlert): string => {
-    const details = alert.details as any;
-    return `Error rate is ${(details.errorRate * 100).toFixed(2)}% (threshold: ${(details.threshold * 100).toFixed(2)}%) with ${details.totalErrors} errors out of ${details.totalEvents} events`;
+    const details = alert.details as Record<string, unknown>;
+    const errorRate =
+      typeof details.errorRate === 'number' ? details.errorRate : 0;
+    const threshold =
+      typeof details.threshold === 'number' ? details.threshold : 0;
+    return `Error rate is ${(errorRate * 100).toFixed(2)}% (threshold: ${(threshold * 100).toFixed(2)}%) with ${details.totalErrors} errors out of ${details.totalEvents} events`;
   },
 
   connection: (alert: RealtimeAlert): string => {
-    const details = alert.details as any;
-    if (details.connectionTime) {
+    const details = alert.details as Record<string, unknown>;
+    if (details.connectionTime && typeof details.connectionTime === 'number') {
       return `Connection time is ${details.connectionTime}ms (threshold: ${details.threshold}ms) for connection ${details.connectionId}`;
     }
-    if (details.reconnectionAttempts) {
+    if (
+      details.reconnectionAttempts &&
+      typeof details.reconnectionAttempts === 'number'
+    ) {
       return `${details.reconnectionAttempts} reconnection attempts (threshold: ${details.threshold}) for connection ${details.connectionId}`;
     }
-    if (details.successRate !== undefined) {
-      return `Connection success rate is ${(details.successRate * 100).toFixed(1)}% (threshold: ${(details.threshold * 100).toFixed(1)}%)`;
+    if (
+      details.successRate !== undefined &&
+      typeof details.successRate === 'number'
+    ) {
+      const successRate = details.successRate;
+      const threshold =
+        typeof details.threshold === 'number' ? details.threshold : 0;
+      return `Connection success rate is ${(successRate * 100).toFixed(1)}% (threshold: ${(threshold * 100).toFixed(1)}%)`;
     }
     return alert.message;
   },
 
   throughput: (alert: RealtimeAlert): string => {
-    const details = alert.details as any;
+    const details = alert.details as Record<string, unknown>;
     return `Throughput issue: ${JSON.stringify(details)}`;
   },
 };

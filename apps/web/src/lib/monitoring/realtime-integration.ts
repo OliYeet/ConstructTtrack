@@ -1,6 +1,6 @@
 /**
  * Real-time Monitoring Integration
- * 
+ *
  * Integrates real-time performance monitoring with:
  * - Existing performance monitoring system
  * - Supabase real-time subscriptions
@@ -9,14 +9,16 @@
  */
 
 import { getLogger } from '../logging';
+
 import { performanceMonitor } from './performance-monitor';
-import { realtimePerformanceMonitor } from './realtime-performance-monitor';
 import { RealtimeAlertManager } from './realtime-alerts';
 import {
   RealtimeLatencyMetric,
   RealtimeAlert,
+  RealtimePerformanceStats,
   defaultRealtimeMonitoringConfig,
 } from './realtime-metrics';
+import { realtimePerformanceMonitor } from './realtime-performance-monitor';
 
 // Integration manager for real-time monitoring
 export class RealtimeMonitoringIntegration {
@@ -24,7 +26,9 @@ export class RealtimeMonitoringIntegration {
   private isInitialized = false;
 
   constructor() {
-    this.alertManager = new RealtimeAlertManager(defaultRealtimeMonitoringConfig.alertConfig);
+    this.alertManager = new RealtimeAlertManager(
+      defaultRealtimeMonitoringConfig.alertConfig
+    );
   }
 
   // Initialize the integration
@@ -64,12 +68,17 @@ export class RealtimeMonitoringIntegration {
   // Setup event listeners for real-time monitoring
   private setupEventListeners(): void {
     // Listen for alerts and send them through alert manager
-    realtimePerformanceMonitor.on('alert', async (alert: RealtimeAlert) => {
-      await this.alertManager.sendAlert(alert);
-    });
+    realtimePerformanceMonitor.on(
+      'alert',
+      async (data: Record<string, unknown>) => {
+        const alert = data as unknown as RealtimeAlert;
+        await this.alertManager.sendAlert(alert);
+      }
+    );
 
     // Listen for performance stats and log them
-    realtimePerformanceMonitor.on('stats', (stats) => {
+    realtimePerformanceMonitor.on('stats', data => {
+      const stats = data as unknown as RealtimePerformanceStats;
       const logger = getLogger();
       logger.info('Real-time performance stats calculated', {
         metadata: {
@@ -85,10 +94,10 @@ export class RealtimeMonitoringIntegration {
     });
 
     // Listen for metrics and optionally sample them for detailed logging
-    realtimePerformanceMonitor.on('metric', (event) => {
+    realtimePerformanceMonitor.on('metric', event => {
       if (event.type === 'latency') {
         const metric = event.metric as RealtimeLatencyMetric;
-        
+
         // Log high-latency events for debugging
         if (metric.latencies.endToEnd && metric.latencies.endToEnd > 1000) {
           const logger = getLogger();
@@ -162,7 +171,7 @@ export class RealtimeMonitoringIntegration {
   getStatus(): {
     initialized: boolean;
     monitoring: boolean;
-    stats?: any;
+    stats?: Record<string, unknown>;
     alerts: number;
   } {
     const stats = realtimePerformanceMonitor.getCurrentStats();
@@ -171,13 +180,15 @@ export class RealtimeMonitoringIntegration {
     return {
       initialized: this.isInitialized,
       monitoring: this.isInitialized,
-      stats: stats ? {
-        totalEvents: stats.totalEvents,
-        errorRate: stats.errorStats.errorRate,
-        p99Latency: stats.latencyStats.endToEnd.p99,
-        activeConnections: stats.connectionStats.activeConnections,
-        eventsPerSecond: stats.throughputStats.eventsPerSecond,
-      } : undefined,
+      stats: stats
+        ? {
+            totalEvents: stats.totalEvents,
+            errorRate: stats.errorStats.errorRate,
+            p99Latency: stats.latencyStats.endToEnd.p99,
+            activeConnections: stats.connectionStats.activeConnections,
+            eventsPerSecond: stats.throughputStats.eventsPerSecond,
+          }
+        : undefined,
       alerts: alerts.length,
     };
   }
@@ -192,7 +203,13 @@ export class SupabaseRealtimeIntegration {
     startTime: number
   ): string {
     const eventId = realtimePerformanceMonitor.recordLatencyMetric({
-      eventType: eventType as any,
+      eventType: eventType as
+        | 'WorkOrderUpdated'
+        | 'FiberSectionStarted'
+        | 'CablePulled'
+        | 'SpliceCompleted'
+        | 'InspectionPassed'
+        | 'SectionClosed',
       timestamps: {
         dbCommit: startTime,
       },
@@ -229,16 +246,12 @@ export class SupabaseRealtimeIntegration {
   ): void {
     const now = Date.now();
 
-    const timestamps: any = {
+    const timestamps = {
       connectionStart: now,
       lastActivity: now,
+      ...(status === 'connected' && { connectionEstablished: now }),
+      ...(status === 'disconnected' && { disconnected: now }),
     };
-
-    if (status === 'connected') {
-      timestamps.connectionEstablished = now;
-    } else if (status === 'disconnected') {
-      timestamps.disconnected = now;
-    }
 
     realtimePerformanceMonitor.recordConnectionMetric({
       connectionId,
@@ -322,16 +335,12 @@ export class WebSocketGatewayIntegration {
   ): void {
     const now = Date.now();
 
-    const timestamps: any = {
+    const timestamps = {
       connectionStart: now,
       lastActivity: now,
+      ...(status === 'connected' && { connectionEstablished: now }),
+      ...(status === 'disconnected' && { disconnected: now }),
     };
-
-    if (status === 'connected') {
-      timestamps.connectionEstablished = now;
-    } else if (status === 'disconnected') {
-      timestamps.disconnected = now;
-    }
 
     realtimePerformanceMonitor.recordConnectionMetric({
       connectionId,
@@ -368,10 +377,7 @@ export class WebSocketGatewayIntegration {
 // Event sourcing integration helpers (for future use with LUM-588)
 export class EventSourcingIntegration {
   // Track event sourcing latency
-  static trackEventSourced(
-    eventId: string,
-    sourcedAt?: number
-  ): void {
+  static trackEventSourced(eventId: string, sourcedAt?: number): void {
     realtimePerformanceMonitor.updateLatencyMetric(eventId, {
       timestamps: {
         eventSourced: sourcedAt || Date.now(),
@@ -399,7 +405,8 @@ export class EventSourcingIntegration {
 }
 
 // Global integration instance
-export const realtimeMonitoringIntegration = new RealtimeMonitoringIntegration();
+export const realtimeMonitoringIntegration =
+  new RealtimeMonitoringIntegration();
 
 // Auto-initialize in production environments
 if (typeof window !== 'undefined' && process.env.NODE_ENV === 'production') {

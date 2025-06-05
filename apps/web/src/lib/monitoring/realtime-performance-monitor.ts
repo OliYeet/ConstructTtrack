@@ -1,9 +1,9 @@
 /**
  * Real-time Performance Monitor
- * 
+ *
  * Monitors WebSocket connections, real-time event latency, and performance
  * metrics for ConstructTrack's fiber installation workflows.
- * 
+ *
  * Key Features:
  * - End-to-end latency tracking (DB commit → client receive)
  * - P90/P99 percentile calculations
@@ -13,6 +13,7 @@
  */
 
 import { getLogger } from '../logging';
+
 import { performanceMonitor } from './performance-monitor';
 import {
   RealtimeLatencyMetric,
@@ -24,28 +25,30 @@ import {
   RealtimeSubscriptionMetric,
   PercentileStats,
   defaultRealtimeMonitoringConfig,
-  RealtimeMetricEvent,
-  ThresholdExceeded,
 } from './realtime-metrics';
 
 export class RealtimePerformanceMonitor {
   private config: RealtimeMonitoringConfig;
   private isMonitoring = false;
   private statsTimer?: NodeJS.Timeout;
-  
+
   // Metric storage
   private latencyMetrics: RealtimeLatencyMetric[] = [];
   private connectionMetrics: Map<string, WebSocketConnectionMetric> = new Map();
-  private subscriptionMetrics: Map<string, RealtimeSubscriptionMetric> = new Map();
+  private subscriptionMetrics: Map<string, RealtimeSubscriptionMetric> =
+    new Map();
   private errorMetrics: RealtimeErrorMetric[] = [];
-  
+
   // Performance tracking
   private currentStats?: RealtimePerformanceStats;
   private activeAlerts: Map<string, RealtimeAlert> = new Map();
   private lastAlertTimes: Map<string, number> = new Map();
-  
+
   // Event listeners
-  private eventListeners: Map<string, ((event: any) => void)[]> = new Map();
+  private eventListeners: Map<
+    string,
+    ((event: Record<string, unknown>) => void)[]
+  > = new Map();
 
   constructor(config: Partial<RealtimeMonitoringConfig> = {}) {
     this.config = { ...defaultRealtimeMonitoringConfig, ...config };
@@ -67,12 +70,9 @@ export class RealtimePerformanceMonitor {
     }
 
     // Integrate with existing performance monitor
-    performanceMonitor.recordMetric(
-      'realtime_monitor_started',
-      1,
-      'count',
-      { component: 'realtime' }
-    );
+    performanceMonitor.recordMetric('realtime_monitor_started', 1, 'count', {
+      component: 'realtime',
+    });
 
     const logger = getLogger();
     logger.info('Real-time performance monitoring started', {
@@ -108,8 +108,10 @@ export class RealtimePerformanceMonitor {
       return '';
     }
 
-    const eventId = metric.eventId || `evt_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
-    
+    const eventId =
+      metric.eventId ||
+      `evt_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+
     const fullMetric: RealtimeLatencyMetric = {
       eventId,
       eventType: metric.eventType || 'WorkOrderUpdated',
@@ -141,7 +143,10 @@ export class RealtimePerformanceMonitor {
   }
 
   // Update latency metric with additional timestamps
-  updateLatencyMetric(eventId: string, updates: Partial<RealtimeLatencyMetric>): void {
+  updateLatencyMetric(
+    eventId: string,
+    updates: Partial<RealtimeLatencyMetric>
+  ): void {
     const metric = this.latencyMetrics.find(m => m.eventId === eventId);
     if (!metric) {
       return;
@@ -170,8 +175,10 @@ export class RealtimePerformanceMonitor {
       return '';
     }
 
-    const connectionId = metric.connectionId || `conn_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
-    
+    const connectionId =
+      metric.connectionId ||
+      `conn_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+
     const existingMetric = this.connectionMetrics.get(connectionId);
     const fullMetric: WebSocketConnectionMetric = {
       connectionId,
@@ -196,15 +203,23 @@ export class RealtimePerformanceMonitor {
     };
 
     // Calculate connection time if established
-    if (fullMetric.timestamps.connectionEstablished && fullMetric.timestamps.connectionStart) {
-      fullMetric.metrics.connectionTime = 
-        fullMetric.timestamps.connectionEstablished - fullMetric.timestamps.connectionStart;
+    if (
+      fullMetric.timestamps.connectionEstablished &&
+      fullMetric.timestamps.connectionStart
+    ) {
+      fullMetric.metrics.connectionTime =
+        fullMetric.timestamps.connectionEstablished -
+        fullMetric.timestamps.connectionStart;
     }
 
     // Calculate total duration if disconnected
-    if (fullMetric.timestamps.disconnected && fullMetric.timestamps.connectionStart) {
-      fullMetric.metrics.totalDuration = 
-        fullMetric.timestamps.disconnected - fullMetric.timestamps.connectionStart;
+    if (
+      fullMetric.timestamps.disconnected &&
+      fullMetric.timestamps.connectionStart
+    ) {
+      fullMetric.metrics.totalDuration =
+        fullMetric.timestamps.disconnected -
+        fullMetric.timestamps.connectionStart;
     }
 
     this.connectionMetrics.set(connectionId, fullMetric);
@@ -219,13 +234,17 @@ export class RealtimePerformanceMonitor {
   }
 
   // Record subscription metric
-  recordSubscriptionMetric(metric: Partial<RealtimeSubscriptionMetric>): string {
+  recordSubscriptionMetric(
+    metric: Partial<RealtimeSubscriptionMetric>
+  ): string {
     if (!this.config.enabled || !this.config.enableSubscriptionTracking) {
       return '';
     }
 
-    const subscriptionId = metric.subscriptionId || `sub_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
-    
+    const subscriptionId =
+      metric.subscriptionId ||
+      `sub_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+
     const existingMetric = this.subscriptionMetrics.get(subscriptionId);
     const fullMetric: RealtimeSubscriptionMetric = {
       subscriptionId,
@@ -261,8 +280,10 @@ export class RealtimePerformanceMonitor {
       return '';
     }
 
-    const errorId = metric.errorId || `err_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
-    
+    const errorId =
+      metric.errorId ||
+      `err_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+
     const fullMetric: RealtimeErrorMetric = {
       errorId,
       timestamp: Date.now(),
@@ -303,15 +324,18 @@ export class RealtimePerformanceMonitor {
   }
 
   // Add event listener
-  on(event: string, listener: (data: any) => void): void {
+  on(event: string, listener: (data: Record<string, unknown>) => void): void {
     if (!this.eventListeners.has(event)) {
       this.eventListeners.set(event, []);
     }
-    this.eventListeners.get(event)!.push(listener);
+    const listeners = this.eventListeners.get(event);
+    if (listeners) {
+      listeners.push(listener);
+    }
   }
 
   // Remove event listener
-  off(event: string, listener: (data: any) => void): void {
+  off(event: string, listener: (data: Record<string, unknown>) => void): void {
     const listeners = this.eventListeners.get(event);
     if (listeners) {
       const index = listeners.indexOf(listener);
@@ -322,7 +346,7 @@ export class RealtimePerformanceMonitor {
   }
 
   // Emit event to listeners
-  private emit(event: string, data: any): void {
+  private emit(event: string, data: Record<string, unknown>): void {
     const listeners = this.eventListeners.get(event);
     if (listeners) {
       listeners.forEach(listener => {
@@ -341,19 +365,23 @@ export class RealtimePerformanceMonitor {
     const { timestamps } = metric;
 
     if (timestamps.eventSourced && timestamps.dbCommit) {
-      metric.latencies.dbToEventSource = timestamps.eventSourced - timestamps.dbCommit;
+      metric.latencies.dbToEventSource =
+        timestamps.eventSourced - timestamps.dbCommit;
     }
 
     if (timestamps.websocketSent && timestamps.eventSourced) {
-      metric.latencies.eventSourceToWs = timestamps.websocketSent - timestamps.eventSourced;
+      metric.latencies.eventSourceToWs =
+        timestamps.websocketSent - timestamps.eventSourced;
     }
 
     if (timestamps.clientReceived && timestamps.websocketSent) {
-      metric.latencies.wsToClient = timestamps.clientReceived - timestamps.websocketSent;
+      metric.latencies.wsToClient =
+        timestamps.clientReceived - timestamps.websocketSent;
     }
 
     if (timestamps.clientReceived && timestamps.dbCommit) {
-      metric.latencies.endToEnd = timestamps.clientReceived - timestamps.dbCommit;
+      metric.latencies.endToEnd =
+        timestamps.clientReceived - timestamps.dbCommit;
     }
   }
 
@@ -393,8 +421,9 @@ export class RealtimePerformanceMonitor {
       .filter((l): l is number => l !== undefined);
 
     // Calculate connection statistics
-    const activeConnections = Array.from(this.connectionMetrics.values())
-      .filter(c => c.status === 'connected').length;
+    const activeConnections = Array.from(
+      this.connectionMetrics.values()
+    ).filter(c => c.status === 'connected').length;
 
     const totalConnections = this.connectionMetrics.size;
 
@@ -402,30 +431,41 @@ export class RealtimePerformanceMonitor {
       .map(c => c.metrics.connectionTime)
       .filter((t): t is number => t !== undefined);
 
-    const successfulConnections = Array.from(this.connectionMetrics.values())
-      .filter(c => c.status === 'connected' || c.status === 'disconnected').length;
+    const successfulConnections = Array.from(
+      this.connectionMetrics.values()
+    ).filter(
+      c => c.status === 'connected' || c.status === 'disconnected'
+    ).length;
 
     // Calculate error statistics
     const totalErrors = recentErrorMetrics.length;
     const totalEvents = recentLatencyMetrics.length;
     const errorRate = totalEvents > 0 ? totalErrors / totalEvents : 0;
 
-    const errorsByType = recentErrorMetrics.reduce((acc, error) => {
-      acc[error.type] = (acc[error.type] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+    const errorsByType = recentErrorMetrics.reduce(
+      (acc, error) => {
+        acc[error.type] = (acc[error.type] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>
+    );
 
-    const errorsBySeverity = recentErrorMetrics.reduce((acc, error) => {
-      acc[error.severity] = (acc[error.severity] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+    const errorsBySeverity = recentErrorMetrics.reduce(
+      (acc, error) => {
+        acc[error.severity] = (acc[error.severity] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>
+    );
 
     // Calculate throughput statistics
-    const windowDurationSeconds = this.config.alertConfig.evaluationWindow / 1000;
+    const windowDurationSeconds =
+      this.config.alertConfig.evaluationWindow / 1000;
     const eventsPerSecond = totalEvents / windowDurationSeconds;
 
     const totalBytes = recentLatencyMetrics.reduce(
-      (sum, m) => sum + (m.metadata.messageSize || 0), 0
+      (sum, m) => sum + (m.metadata.messageSize || 0),
+      0
     );
     const bytesPerSecond = totalBytes / windowDurationSeconds;
 
@@ -439,19 +479,24 @@ export class RealtimePerformanceMonitor {
       },
       latencyStats: {
         endToEnd: this.calculatePercentileStats(endToEndLatencies),
-        dbToEventSource: this.calculatePercentileStats(dbToEventSourceLatencies),
-        eventSourceToWs: this.calculatePercentileStats(eventSourceToWsLatencies),
+        dbToEventSource: this.calculatePercentileStats(
+          dbToEventSourceLatencies
+        ),
+        eventSourceToWs: this.calculatePercentileStats(
+          eventSourceToWsLatencies
+        ),
         wsToClient: this.calculatePercentileStats(wsToClientLatencies),
       },
       connectionStats: {
         totalConnections,
         activeConnections,
-        averageConnectionTime: connectionTimes.length > 0
-          ? connectionTimes.reduce((a, b) => a + b, 0) / connectionTimes.length
-          : 0,
-        connectionSuccessRate: totalConnections > 0
-          ? successfulConnections / totalConnections
-          : 1,
+        averageConnectionTime:
+          connectionTimes.length > 0
+            ? connectionTimes.reduce((a, b) => a + b, 0) /
+              connectionTimes.length
+            : 0,
+        connectionSuccessRate:
+          totalConnections > 0 ? successfulConnections / totalConnections : 1,
       },
       errorStats: {
         totalErrors,
@@ -467,7 +512,7 @@ export class RealtimePerformanceMonitor {
     };
 
     // Emit stats event
-    this.emit('stats', this.currentStats);
+    this.emit('stats', this.currentStats as unknown as Record<string, unknown>);
 
     // Record stats in main performance monitor
     performanceMonitor.recordMetric(
@@ -486,12 +531,10 @@ export class RealtimePerformanceMonitor {
 
     if (endToEndLatencies.length > 0) {
       const stats = this.currentStats.latencyStats.endToEnd;
-      performanceMonitor.recordMetric(
-        'realtime_latency_p99',
-        stats.p99,
-        'ms',
-        { component: 'realtime', metric: 'end_to_end' }
-      );
+      performanceMonitor.recordMetric('realtime_latency_p99', stats.p99, 'ms', {
+        component: 'realtime',
+        metric: 'end_to_end',
+      });
     }
   }
 
@@ -518,15 +561,18 @@ export class RealtimePerformanceMonitor {
     const max = sorted[count - 1];
     const mean = sorted.reduce((a, b) => a + b, 0) / count;
 
-    const median = count % 2 === 0
-      ? (sorted[Math.floor(count / 2) - 1] + sorted[Math.floor(count / 2)]) / 2
-      : sorted[Math.floor(count / 2)];
+    const median =
+      count % 2 === 0
+        ? (sorted[Math.floor(count / 2) - 1] + sorted[Math.floor(count / 2)]) /
+          2
+        : sorted[Math.floor(count / 2)];
 
     const p90 = sorted[Math.floor(count * 0.9)];
     const p95 = sorted[Math.floor(count * 0.95)];
     const p99 = sorted[Math.floor(count * 0.99)];
 
-    const variance = sorted.reduce((acc, val) => acc + Math.pow(val - mean, 2), 0) / count;
+    const variance =
+      sorted.reduce((acc, val) => acc + Math.pow(val - mean, 2), 0) / count;
     const standardDeviation = Math.sqrt(variance);
 
     return {
@@ -624,7 +670,10 @@ export class RealtimePerformanceMonitor {
     const { thresholds } = this.config.alertConfig;
 
     // Check connection time
-    if (metric.metrics.connectionTime && metric.metrics.connectionTime > thresholds.connections.maxConnectionTime) {
+    if (
+      metric.metrics.connectionTime &&
+      metric.metrics.connectionTime > thresholds.connections.maxConnectionTime
+    ) {
       this.triggerAlert({
         type: 'connection',
         severity: 'warning',
@@ -639,7 +688,10 @@ export class RealtimePerformanceMonitor {
     }
 
     // Check reconnection attempts
-    if (metric.metrics.reconnectionAttempts > thresholds.connections.maxReconnectionAttempts) {
+    if (
+      metric.metrics.reconnectionAttempts >
+      thresholds.connections.maxReconnectionAttempts
+    ) {
       this.triggerAlert({
         type: 'connection',
         severity: 'critical',
@@ -656,7 +708,8 @@ export class RealtimePerformanceMonitor {
 
     // Check connection success rate if we have current stats
     if (this.currentStats) {
-      const successRate = this.currentStats.connectionStats.connectionSuccessRate;
+      const successRate =
+        this.currentStats.connectionStats.connectionSuccessRate;
       if (successRate < thresholds.connections.minSuccessRate) {
         this.triggerAlert({
           type: 'connection',
@@ -665,8 +718,10 @@ export class RealtimePerformanceMonitor {
           details: {
             successRate,
             threshold: thresholds.connections.minSuccessRate,
-            totalConnections: this.currentStats.connectionStats.totalConnections,
-            activeConnections: this.currentStats.connectionStats.activeConnections,
+            totalConnections:
+              this.currentStats.connectionStats.totalConnections,
+            activeConnections:
+              this.currentStats.connectionStats.activeConnections,
           },
         });
       }
@@ -713,7 +768,9 @@ export class RealtimePerformanceMonitor {
   }
 
   // Trigger an alert with cooldown logic
-  private triggerAlert(alertData: Omit<RealtimeAlert, 'id' | 'timestamp'>): void {
+  private triggerAlert(
+    alertData: Omit<RealtimeAlert, 'id' | 'timestamp'>
+  ): void {
     const alertKey = `${alertData.type}_${alertData.severity}`;
     const now = Date.now();
     const lastAlertTime = this.lastAlertTimes.get(alertKey) || 0;
@@ -733,7 +790,7 @@ export class RealtimePerformanceMonitor {
     this.lastAlertTimes.set(alertKey, now);
 
     // Emit alert event
-    this.emit('alert', alert);
+    this.emit('alert', alert as unknown as Record<string, unknown>);
 
     // Log alert
     const logger = getLogger();
@@ -744,16 +801,11 @@ export class RealtimePerformanceMonitor {
     });
 
     // Record alert metric in main performance monitor
-    performanceMonitor.recordMetric(
-      'realtime_alert_triggered',
-      1,
-      'count',
-      {
-        component: 'realtime',
-        type: alert.type,
-        severity: alert.severity,
-      }
-    );
+    performanceMonitor.recordMetric('realtime_alert_triggered', 1, 'count', {
+      component: 'realtime',
+      type: alert.type,
+      severity: alert.severity,
+    });
   }
 
   // Cleanup old metrics to prevent memory leaks
@@ -767,17 +819,19 @@ export class RealtimePerformanceMonitor {
     );
 
     // Clean up error metrics
-    this.errorMetrics = this.errorMetrics.filter(
-      m => m.timestamp >= cutoff
-    );
+    this.errorMetrics = this.errorMetrics.filter(m => m.timestamp >= cutoff);
 
     // Enforce max metrics limit
     if (this.latencyMetrics.length > this.config.maxMetricsInMemory) {
-      this.latencyMetrics = this.latencyMetrics.slice(-this.config.maxMetricsInMemory);
+      this.latencyMetrics = this.latencyMetrics.slice(
+        -this.config.maxMetricsInMemory
+      );
     }
 
     if (this.errorMetrics.length > this.config.maxMetricsInMemory) {
-      this.errorMetrics = this.errorMetrics.slice(-this.config.maxMetricsInMemory);
+      this.errorMetrics = this.errorMetrics.slice(
+        -this.config.maxMetricsInMemory
+      );
     }
 
     // Clean up old connections (keep only recent ones)
@@ -789,7 +843,10 @@ export class RealtimePerformanceMonitor {
 
     // Clean up old subscriptions
     for (const [subscriptionId, metric] of this.subscriptionMetrics.entries()) {
-      if (metric.timestamps.subscribed < cutoff && metric.status === 'inactive') {
+      if (
+        metric.timestamps.subscribed < cutoff &&
+        metric.status === 'inactive'
+      ) {
         this.subscriptionMetrics.delete(subscriptionId);
       }
     }

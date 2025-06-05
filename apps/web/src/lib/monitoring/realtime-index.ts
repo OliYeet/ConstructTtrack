@@ -13,7 +13,10 @@
  */
 
 // Core monitoring components
-export { RealtimePerformanceMonitor, realtimePerformanceMonitor } from './realtime-performance-monitor';
+export {
+  RealtimePerformanceMonitor,
+  realtimePerformanceMonitor,
+} from './realtime-performance-monitor';
 export { RealtimeAlertManager, AlertFormatters } from './realtime-alerts';
 export {
   RealtimeMonitoringIntegration,
@@ -40,17 +43,19 @@ export type {
   RealtimeMonitoringEvent,
 } from './realtime-metrics';
 
-export type {
-  AlertChannel,
-  AlertNotification,
-} from './realtime-alerts';
+export type { AlertChannel, AlertNotification } from './realtime-alerts';
 
 // Default configuration
 export { defaultRealtimeMonitoringConfig } from './realtime-metrics';
 
 // Utility functions for easy integration
+import {
+  realtimeMonitoringIntegration,
+  SupabaseRealtimeIntegration,
+  WebSocketGatewayIntegration,
+  EventSourcingIntegration,
+} from './realtime-integration';
 import { realtimePerformanceMonitor } from './realtime-performance-monitor';
-import { realtimeMonitoringIntegration } from './realtime-integration';
 
 export const RealtimeMonitoring = {
   // Initialize monitoring
@@ -74,8 +79,22 @@ export const RealtimeMonitoring = {
     channel: string,
     metadata: Record<string, unknown> = {}
   ) => {
+    // Map API requests to a valid event type
+    const mappedEventType =
+      eventType === 'ApiRequest' ? 'WorkOrderUpdated' : eventType;
+
     return realtimePerformanceMonitor.recordLatencyMetric({
-      eventType: eventType as any,
+      eventType: mappedEventType as
+        | 'WorkOrderUpdated'
+        | 'FiberSectionStarted'
+        | 'CablePulled'
+        | 'SpliceCompleted'
+        | 'InspectionPassed'
+        | 'SectionClosed'
+        | 'FiberSectionProgress'
+        | 'FiberSectionFailed'
+        | 'SpliceFailed'
+        | 'InspectionFailed',
       metadata: {
         channel,
         messageSize: 0,
@@ -132,25 +151,34 @@ export const RealtimeMonitoring = {
 };
 
 // Performance monitoring middleware for API routes
-export const withRealtimeMonitoring = (handler: any) => {
-  return async (req: any, res: any) => {
+export const withRealtimeMonitoring = (
+  handler: (
+    req: Record<string, unknown>,
+    res: Record<string, unknown>
+  ) => Promise<unknown>
+) => {
+  return async (req: Record<string, unknown>, res: Record<string, unknown>) => {
     const startTime = Date.now();
     const eventId = RealtimeMonitoring.trackEvent(
       'ApiRequest',
-      `api:${req.url}`,
+      `api:${req.url || 'unknown'}`,
       {
-        method: req.method,
-        url: req.url,
-        userAgent: req.headers['user-agent'],
+        method: req.method || 'unknown',
+        url: req.url || 'unknown',
+        userAgent:
+          (req.headers as Record<string, unknown>)?.['user-agent'] || 'unknown',
       }
     );
 
     try {
       const result = await handler(req, res);
-      
+
       // Track successful completion
-      RealtimeMonitoring.eventReceived(eventId, JSON.stringify(result || {}).length);
-      
+      RealtimeMonitoring.eventReceived(
+        eventId,
+        JSON.stringify(result || {}).length
+      );
+
       return result;
     } catch (error) {
       // Track error
@@ -160,20 +188,18 @@ export const withRealtimeMonitoring = (handler: any) => {
         error instanceof Error ? error.message : 'Unknown API error',
         {
           eventId,
-          method: req.method,
-          url: req.url,
+          method: req.method || 'unknown',
+          url: req.url || 'unknown',
           duration: Date.now() - startTime,
         }
       );
-      
+
       throw error;
     }
   };
 };
 
 // Supabase real-time monitoring helpers
-import { SupabaseRealtimeIntegration } from './realtime-integration';
-
 export const SupabaseMonitoring = {
   // Track Supabase subscription
   trackSubscription: SupabaseRealtimeIntegration.trackSubscription,
@@ -192,8 +218,6 @@ export const SupabaseMonitoring = {
 };
 
 // WebSocket monitoring helpers (for future use)
-import { WebSocketGatewayIntegration } from './realtime-integration';
-
 export const WebSocketMonitoring = {
   // Track message sent
   messageSent: WebSocketGatewayIntegration.trackMessageSent,
@@ -209,8 +233,6 @@ export const WebSocketMonitoring = {
 };
 
 // Event sourcing monitoring helpers (for future use)
-import { EventSourcingIntegration } from './realtime-integration';
-
 export const EventSourcingMonitoring = {
   // Track event sourced
   eventSourced: EventSourcingIntegration.trackEventSourced,
