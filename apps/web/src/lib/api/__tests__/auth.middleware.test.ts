@@ -4,20 +4,29 @@
  */
 
 import { jest } from '@jest/globals';
-import { createSuccessResponse } from '@/lib/api/response';
-import { withAuth } from '@/lib/api/middleware';
-import type { NextRequest } from 'next/server';
 
+/* ----------------------------------------------------------------------------
+ * Mock Supabase client
+ * -------------------------------------------------------------------------- */
 jest.mock('@constructtrack/supabase/client', () => {
+  /* Minimal stub exposing the pieces exercised by the middleware */
   const auth = { getUser: jest.fn() };
+  const from = jest.fn().mockImplementation(() => ({
+    /* Query-builder chain (select → eq → single) */
+    select: jest.fn().mockReturnThis(),
+    eq: jest.fn().mockReturnThis(),
+    single: jest.fn(),
+  }));
+
   return {
-    supabase: {
-      auth,
-      from: jest.fn(),
-    },
+    __esModule: true,
+    supabase: { auth, from },
   };
 });
 
+import { createSuccessResponse } from '@/lib/api/response';
+import { withAuth } from '@/lib/api/middleware';
+import type { NextRequest } from 'next/server';
 import { supabase } from '@constructtrack/supabase/client';
 
 interface MockRequestOptions {
@@ -27,7 +36,7 @@ interface MockRequestOptions {
   body?: unknown;
 }
 
-// Build a minimal NextRequest-like object for middleware testing
+/* Build a minimal NextRequest-like object for middleware testing */
 const buildRequest = (options: MockRequestOptions): NextRequest => {
   const {
     method = 'GET',
@@ -49,17 +58,19 @@ const buildRequest = (options: MockRequestOptions): NextRequest => {
   } as unknown as NextRequest;
 };
 
-// Simple handler used to confirm successful auth
+/* -------------------------------------------------------------------------- */
+/* Test set-up                                                                */
+/* -------------------------------------------------------------------------- */
+
 const okHandler = async () =>
   createSuccessResponse({ message: 'Authenticated' }, 'OK', 200);
 
 const wrappedHandler = withAuth({ GET: okHandler });
-const exec = (request: NextRequest) =>
-  wrappedHandler(request, { params: {} });
+const exec = (request: NextRequest) => wrappedHandler(request, { params: {} });
 
-// -------------------------------------------------------------------------------------------------
-// Tests
-// -------------------------------------------------------------------------------------------------
+/* -------------------------------------------------------------------------- */
+/* Tests                                                                      */
+/* -------------------------------------------------------------------------- */
 
 describe('Authentication middleware (`withAuth`)', () => {
   beforeEach(() => {
@@ -67,13 +78,13 @@ describe('Authentication middleware (`withAuth`)', () => {
   });
 
   it('allows request with a valid token', async () => {
-    // Mock Supabase auth & profile queries
-    (supabase.auth.getUser as jest.Mock).mockResolvedValueOnce({
+    /* Mock Supabase auth & profile queries */
+    jest.mocked(supabase.auth.getUser).mockResolvedValueOnce({
       data: { user: { id: 'user-123', email: 'test@example.com' } },
       error: null,
     });
 
-    (supabase.from as jest.Mock).mockReturnValueOnce({
+    jest.mocked(supabase.from).mockReturnValueOnce({
       select: jest.fn().mockReturnThis(),
       eq: jest.fn().mockReturnThis(),
       single: jest.fn().mockResolvedValueOnce({
@@ -84,7 +95,7 @@ describe('Authentication middleware (`withAuth`)', () => {
         },
         error: null,
       }),
-    });
+    } as unknown as ReturnType<typeof supabase.from>);
 
     const request = buildRequest({
       method: 'GET',
@@ -113,7 +124,7 @@ describe('Authentication middleware (`withAuth`)', () => {
   });
 
   it('rejects request when token is invalid', async () => {
-    (supabase.auth.getUser as jest.Mock).mockResolvedValueOnce({
+    jest.mocked(supabase.auth.getUser).mockResolvedValueOnce({
       data: { user: null },
       error: { message: 'Invalid token' },
     });
