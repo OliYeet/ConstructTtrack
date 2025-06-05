@@ -13,7 +13,10 @@
  */
 
 // Core monitoring components
-export { RealtimePerformanceMonitor, realtimePerformanceMonitor } from './realtime-performance-monitor';
+export {
+  RealtimePerformanceMonitor,
+  realtimePerformanceMonitor,
+} from './realtime-performance-monitor';
 export { RealtimeAlertManager, AlertFormatters } from './realtime-alerts';
 export {
   RealtimeMonitoringIntegration,
@@ -40,17 +43,12 @@ export type {
   RealtimeMonitoringEvent,
 } from './realtime-metrics';
 
-export type {
-  AlertChannel,
-  AlertNotification,
-} from './realtime-alerts';
+export type { AlertChannel, AlertNotification } from './realtime-alerts';
 
 // Default configuration
 export { defaultRealtimeMonitoringConfig } from './realtime-metrics';
 
 // Utility functions for easy integration
-import { realtimePerformanceMonitor } from './realtime-performance-monitor';
-import { realtimeMonitoringIntegration } from './realtime-integration';
 
 export const RealtimeMonitoring = {
   // Initialize monitoring
@@ -147,10 +145,13 @@ export const withRealtimeMonitoring = (handler: any) => {
 
     try {
       const result = await handler(req, res);
-      
+
       // Track successful completion
-      RealtimeMonitoring.eventReceived(eventId, JSON.stringify(result || {}).length);
-      
+      RealtimeMonitoring.eventReceived(
+        eventId,
+        JSON.stringify(result || {}).length
+      );
+
       return result;
     } catch (error) {
       // Track error
@@ -165,14 +166,13 @@ export const withRealtimeMonitoring = (handler: any) => {
           duration: Date.now() - startTime,
         }
       );
-      
+
       throw error;
     }
   };
 };
 
 // Supabase real-time monitoring helpers
-import { SupabaseRealtimeIntegration } from './realtime-integration';
 
 export const SupabaseMonitoring = {
   // Track Supabase subscription
@@ -192,7 +192,6 @@ export const SupabaseMonitoring = {
 };
 
 // WebSocket monitoring helpers (for future use)
-import { WebSocketGatewayIntegration } from './realtime-integration';
 
 export const WebSocketMonitoring = {
   // Track message sent
@@ -209,7 +208,6 @@ export const WebSocketMonitoring = {
 };
 
 // Event sourcing monitoring helpers (for future use)
-import { EventSourcingIntegration } from './realtime-integration';
 
 export const EventSourcingMonitoring = {
   // Track event sourced
