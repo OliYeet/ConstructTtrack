@@ -1,11 +1,11 @@
-// Authentication Middleware Unit Tests
-// Validates token-based authentication enforcement using `withAuth`.
+/**
+ * @file Authentication middleware unit tests
+ * @description Validates token-based authentication enforcement using `withAuth`.
+ */
 
 import { jest } from '@jest/globals';
 
-// -------------------------------------------------------------------------------------------------
 // Mock Supabase client
-// -------------------------------------------------------------------------------------------------
 jest.mock('@constructtrack/supabase/client', () => {
   // Minimal stub exposing the pieces exercised by the middleware
   const auth = { getUser: jest.fn() };
@@ -56,10 +56,7 @@ const buildRequest = (options: MockRequestOptions): NextRequest => {
   } as unknown as NextRequest;
 };
 
-// -------------------------------------------------------------------------------------------------
 // Test set-up
-// -------------------------------------------------------------------------------------------------
-
 const okHandler = async () =>
   createSuccessResponse({ message: 'Authenticated' }, 'OK', 200);
 
