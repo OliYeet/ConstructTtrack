@@ -93,10 +93,12 @@ describe('realtime helper – subscribeToTable & helpers', () => {
       await importModule();
 
     initRealtimeSubscriptions(jest.fn() as any);
+    // Capture the number of channels that exist **before** removal.
+    const channelCountBeforeRemoval = mockChannels.size;
     removeRealtimeSubscriptions();
 
     expect(mockClient.removeChannel).toHaveBeenCalledTimes(
-      mockChannels.size + 0, // after removal size may be 0
+      channelCountBeforeRemoval,
     );
     expect(mockChannels.size).toBe(0);
   });
