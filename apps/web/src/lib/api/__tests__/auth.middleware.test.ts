@@ -1,18 +1,16 @@
-/**
- * Authentication Middleware Unit Tests
- * Validates token-based authentication enforcement using `withAuth`.
- */
+// Authentication Middleware Unit Tests
+// Validates token-based authentication enforcement using `withAuth`.
 
 import { jest } from '@jest/globals';
 
-/* ----------------------------------------------------------------------------
- * Mock Supabase client
- * -------------------------------------------------------------------------- */
+// ----------------------------------------------------------------------------
+// Mock Supabase client
+// ----------------------------------------------------------------------------
 jest.mock('@constructtrack/supabase/client', () => {
-  /* Minimal stub exposing the pieces exercised by the middleware */
+  // Minimal stub exposing the pieces exercised by the middleware
   const auth = { getUser: jest.fn() };
   const from = jest.fn().mockImplementation(() => ({
-    /* Query-builder chain (select → eq → single) */
+    // Query-builder chain (select → eq → single)
     select: jest.fn().mockReturnThis(),
     eq: jest.fn().mockReturnThis(),
     single: jest.fn(),
@@ -36,7 +34,7 @@ interface MockRequestOptions {
   body?: unknown;
 }
 
-/* Build a minimal NextRequest-like object for middleware testing */
+// Build a minimal NextRequest-like object for middleware testing
 const buildRequest = (options: MockRequestOptions): NextRequest => {
   const {
     method = 'GET',
@@ -58,9 +56,9 @@ const buildRequest = (options: MockRequestOptions): NextRequest => {
   } as unknown as NextRequest;
 };
 
-/* -------------------------------------------------------------------------- */
-/* Test set-up                                                                */
-/* -------------------------------------------------------------------------- */
+// ----------------------------------------------------------------------------
+// Test set-up
+// ----------------------------------------------------------------------------
 
 const okHandler = async () =>
   createSuccessResponse({ message: 'Authenticated' }, 'OK', 200);
@@ -68,9 +66,9 @@ const okHandler = async () =>
 const wrappedHandler = withAuth({ GET: okHandler });
 const exec = (request: NextRequest) => wrappedHandler(request, { params: {} });
 
-/* -------------------------------------------------------------------------- */
-/* Tests                                                                      */
-/* -------------------------------------------------------------------------- */
+// ----------------------------------------------------------------------------
+// Tests
+// ----------------------------------------------------------------------------
 
 describe('Authentication middleware (`withAuth`)', () => {
   beforeEach(() => {
@@ -78,7 +76,7 @@ describe('Authentication middleware (`withAuth`)', () => {
   });
 
   it('allows request with a valid token', async () => {
-    /* Mock Supabase auth & profile queries */
+    // Mock Supabase auth & profile queries
     jest.mocked(supabase.auth.getUser).mockResolvedValueOnce({
       data: { user: { id: 'user-123', email: 'test@example.com' } },
       error: null,
