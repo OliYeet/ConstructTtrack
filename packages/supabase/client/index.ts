@@ -28,7 +28,7 @@ export const getSession = () => supabase.auth.getSession();
 // Public exports
 // ---------------------------------------------------------------------------
 
-export { supabase } from './core';
+export { supabase, getSupabaseClient } from './core';
 
 export {
   subscribeToTable,
