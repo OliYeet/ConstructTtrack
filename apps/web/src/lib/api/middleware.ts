@@ -94,9 +94,12 @@ async function logDetailedRequest(
         } else if (contentType.includes('application/x-www-form-urlencoded')) {
           const formData = await clonedRequest.formData();
           const formDataObj: Record<string, string> = {};
-          for (const [key, value] of formData) {
-            formDataObj[key] = value.toString();
-          }
+          // Use explicit type casting for TypeScript compatibility
+          (formData as any).forEach(
+            (value: FormDataEntryValue, key: string) => {
+              formDataObj[key] = value.toString();
+            }
+          );
           body = formDataObj;
         } else if (contentType.includes('text/')) {
           body = await clonedRequest.text();
