@@ -94,10 +94,10 @@ export class WebSocketGateway {
 
   private handleConnection(
     ws: AuthenticatedWebSocket,
-    req: { url?: string; socket?: { remoteAddress?: string } }
+    req: import('http').IncomingMessage
   ): void {
     const url = req.url || '';
-    const ipAddress = req.socket?.remoteAddress || 'unknown';
+    const ipAddress = req.socket.remoteAddress || 'unknown';
 
     try {
       // Check global connection limit - Charlie's requirement
@@ -201,6 +201,13 @@ export class WebSocketGateway {
     ws.on('message', data => this.handleMessage(ws, data));
     ws.on('close', () => this.handleDisconnection(ws));
     ws.on('error', error => this.handleError(ws, error));
+    ws.on('pong', () => {
+      // Update activity on pong response
+      const metadata = this.connectionMetadata.get(ws);
+      if (metadata) {
+        metadata.lastActivity = Date.now();
+      }
+    });
 
     // Send welcome message
     this.sendMessage(ws, {
@@ -404,8 +411,12 @@ export class WebSocketGateway {
       return authContext.userId === userId;
     }
 
-    // Public rooms (for now, restrict to authenticated users)
-    return true;
+    // Public rooms - explicit whitelist for security
+    return (
+      room.startsWith('public:') ||
+      room === 'general' ||
+      room === 'announcements'
+    );
   }
 
   private removeFromRoom(ws: AuthenticatedWebSocket, room: string): void {
@@ -490,6 +501,12 @@ export class WebSocketGateway {
 
       this.connections.forEach(ws => {
         const metadata = this.connectionMetadata.get(ws);
+
+        // Send ping frame to check connection health
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.ping();
+        }
+
         if (metadata && now - metadata.lastActivity > 60000) {
           // 60 seconds timeout
           staleConnections.push(ws);
