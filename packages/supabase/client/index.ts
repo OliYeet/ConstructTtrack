@@ -58,3 +58,14 @@ export const getCurrentUser = () => {
 export const getSession = () => {
   return supabase.auth.getSession();
 };
+
+// ------------------------------------------------------------------
+// Realtime helpers (exported for consumers)
+// ------------------------------------------------------------------
+export {
+  subscribeToTable,
+  initRealtimeSubscriptions,
+  removeRealtimeSubscriptions,
+  type ManagedTableName,
+  type RealtimeDispatch,
+} from './realtime';
