@@ -43,10 +43,9 @@ async function checkDatabase(): Promise<'healthy' | 'unhealthy'> {
 // GET /api/v1/health
 async function handleGet(
   request: ApiRequest,
-  _context: { params: Record<string, string> }
+  _context: { params: Record<string, string> },
+  requestContext: RequestContext
 ) {
-  const requestContext = (request as ApiRequest & { context?: RequestContext })
-    .context;
   const startTime = Date.now();
 
   // Check all services
@@ -80,7 +79,7 @@ async function handleGet(
     healthData,
     `System is ${overallStatus} (${responseTime}ms)`,
     statusCode,
-    requestContext?.requestId
+    requestContext.requestId
   );
 }
 
