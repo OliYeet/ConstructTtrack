@@ -33,20 +33,20 @@ interface TestResponse {
 async function handleGet(
   request: ApiRequest,
   _context: { params: Record<string, string> },
-  requestContext: RequestContext
+  requestContext: RequestContext | undefined
 ) {
   const testData: TestResponse = {
     message: 'API is working correctly!',
     timestamp: new Date().toISOString(),
-    requestId: requestContext.requestId ?? 'test-request',
-    user: requestContext.user,
+    requestId: requestContext?.requestId ?? 'test-request',
+    user: requestContext?.user,
   };
 
   return createSuccessResponse(
     testData,
     'Test endpoint successful',
     200,
-    requestContext.requestId
+    requestContext?.requestId
   );
 }
 
@@ -54,23 +54,23 @@ async function handleGet(
 async function handlePost(
   request: ApiRequest,
   _context: { params: Record<string, string> },
-  requestContext: RequestContext
+  requestContext: RequestContext | undefined
 ) {
   const body = await validateRequestBody(request, testRequestSchema);
 
   const testData: TestResponse = {
     message: `Received: ${body.message}`,
     timestamp: new Date().toISOString(),
-    requestId: requestContext.requestId ?? 'test-request',
+    requestId: requestContext?.requestId ?? 'test-request',
     receivedData: body.data,
-    user: requestContext.user,
+    user: requestContext?.user,
   };
 
   return createSuccessResponse(
     testData,
     'Test POST successful',
     200,
-    requestContext.requestId
+    requestContext?.requestId
   );
 }
 
