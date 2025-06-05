@@ -67,7 +67,7 @@ async function logDetailedRequest(
   context?: RequestContext
 ): Promise<void> {
   try {
-    const url = new URL(request.url);
+    // URL parsing removed as it's not used in simplified logging
     const headers: Record<string, string> = {};
 
     // Collect headers (excluding sensitive ones)
@@ -80,8 +80,7 @@ async function logDetailedRequest(
       }
     });
 
-    // Try to read request body for POST/PUT/PATCH requests
-    let body: any = null;
+    // Body parsing removed as it's not used in simplified logging
     if (['POST', 'PUT', 'PATCH'].includes(request.method)) {
       try {
         // Clone the request to avoid consuming the original body
@@ -110,28 +109,10 @@ async function logDetailedRequest(
 
     // Use enhancedLogRequest for detailed logging
     await enhancedLogRequest(request, {
-      requestId: context?.requestId,
-      userId: context?.user?.id,
+      requestId: context?.requestId || 'unknown',
       organizationId: context?.organizationId,
       user: context?.user,
-      metadata: {
-        detailedLogging: true,
-        url: {
-          pathname: url.pathname,
-          search: url.search,
-          searchParams: Object.fromEntries(url.searchParams.entries()),
-        },
-        headers,
-        body: body
-          ? typeof body === 'string'
-            ? body.substring(0, 1000)
-            : body
-          : null,
-        contentLength: request.headers.get('content-length'),
-        userAgent: request.headers.get('user-agent'),
-        referer: request.headers.get('referer'),
-        origin: request.headers.get('origin'),
-      },
+      timestamp: new Date().toISOString(),
     });
   } catch (error) {
     await enhancedLogError(
@@ -158,50 +139,14 @@ async function logDetailedResponse(
       responseHeaders[key] = value;
     });
 
-    // Try to read response body for logging (non-destructive)
-    let responseBody: any = null;
-    let contentLength = 0;
-
-    try {
-      const contentType = response.headers.get('content-type') || '';
-      const contentLengthHeader = response.headers.get('content-length');
-      contentLength = contentLengthHeader
-        ? parseInt(contentLengthHeader, 10)
-        : 0;
-
-      // Only log response body for small JSON responses to avoid memory issues
-      if (contentType.includes('application/json') && contentLength < 10000) {
-        // Clone response to avoid consuming the original
-        const clonedResponse = response.clone();
-        responseBody = await clonedResponse.json();
-      }
-    } catch {
-      responseBody = '[Unable to parse response body]';
-    }
+    // Response body parsing removed as it's not used in simplified logging
 
     // Use enhancedLogResponse for detailed response logging
     await enhancedLogResponse(request, response.status, duration, {
-      requestId: context?.requestId,
-      userId: context?.user?.id,
+      requestId: context?.requestId || 'unknown',
       organizationId: context?.organizationId,
       user: context?.user,
-      response: {
-        statusCode: response.status,
-        contentLength,
-      },
-      performance: {
-        duration,
-        memoryUsage:
-          typeof process !== 'undefined' ? process.memoryUsage() : undefined,
-      },
-      metadata: {
-        detailedLogging: true,
-        responseDetails: {
-          headers: responseHeaders,
-          body: responseBody,
-          contentType: response.headers.get('content-type'),
-        },
-      },
+      timestamp: new Date().toISOString(),
     });
   } catch (error) {
     await enhancedLogError(
@@ -221,34 +166,18 @@ async function recordDetailedMetrics(
   context?: RequestContext
 ): Promise<void> {
   try {
-    const url = new URL(request.url);
-    const endpoint = url.pathname;
-    const method = request.method;
+    // URL parsing and endpoint/method extraction removed as they're not used in simplified metrics
 
-    // Enhanced metrics with additional context
-    const tags = {
-      endpoint,
-      method,
-      status: response.status.toString(),
-      authenticated: context?.user ? 'true' : 'false',
-      userRole: context?.user?.role || 'anonymous',
-      organizationId: context?.organizationId || 'unknown',
-    };
+    // Tags removed as they're not used in simplified metrics logging
 
     // Request size metrics
     const contentLength = request.headers.get('content-length');
     if (contentLength) {
       await enhancedLogRequest(request, {
-        requestId: context?.requestId,
-        userId: context?.user?.id,
+        requestId: context?.requestId || 'unknown',
         organizationId: context?.organizationId,
         user: context?.user,
-        metadata: {
-          metricType: 'request_size',
-          value: parseInt(contentLength, 10),
-          unit: 'bytes',
-          tags,
-        },
+        timestamp: new Date().toISOString(),
       });
     }
 
@@ -256,91 +185,49 @@ async function recordDetailedMetrics(
     const responseSize = response.headers.get('content-length');
     if (responseSize) {
       await enhancedLogRequest(request, {
-        requestId: context?.requestId,
-        userId: context?.user?.id,
+        requestId: context?.requestId || 'unknown',
         organizationId: context?.organizationId,
         user: context?.user,
-        metadata: {
-          metricType: 'response_size',
-          value: parseInt(responseSize, 10),
-          unit: 'bytes',
-          tags,
-        },
+        timestamp: new Date().toISOString(),
       });
     }
 
     // User activity metrics
     if (context?.user) {
       await enhancedLogRequest(request, {
-        requestId: context?.requestId,
-        userId: context?.user?.id,
+        requestId: context?.requestId || 'unknown',
         organizationId: context?.organizationId,
         user: context?.user,
-        metadata: {
-          metricType: 'user_activity',
-          value: 1,
-          unit: 'count',
-          tags: {
-            ...tags,
-            userId: context.user.id,
-            userRole: context.user.role,
-          },
-        },
+        timestamp: new Date().toISOString(),
       });
     }
 
     // Error rate metrics
     if (response.status >= 400) {
       await enhancedLogRequest(request, {
-        requestId: context?.requestId,
-        userId: context?.user?.id,
+        requestId: context?.requestId || 'unknown',
         organizationId: context?.organizationId,
         user: context?.user,
-        metadata: {
-          metricType: 'api_error',
-          value: 1,
-          unit: 'count',
-          tags: {
-            ...tags,
-            errorType: response.status >= 500 ? 'server_error' : 'client_error',
-          },
-        },
+        timestamp: new Date().toISOString(),
       });
     }
 
     // Performance metrics by endpoint
     await enhancedLogRequest(request, {
-      requestId: context?.requestId,
-      userId: context?.user?.id,
+      requestId: context?.requestId || 'unknown',
       organizationId: context?.organizationId,
       user: context?.user,
-      performance: {
-        duration,
-        memoryUsage:
-          typeof process !== 'undefined' ? process.memoryUsage() : undefined,
-      },
-      metadata: {
-        metricType: 'endpoint_performance',
-        value: duration,
-        unit: 'ms',
-        tags,
-      },
+      timestamp: new Date().toISOString(),
     });
 
     // Rate limiting metrics (if rate limited)
     const rateLimitRemaining = response.headers.get('X-RateLimit-Remaining');
     if (rateLimitRemaining) {
       await enhancedLogRequest(request, {
-        requestId: context?.requestId,
-        userId: context?.user?.id,
+        requestId: context?.requestId || 'unknown',
         organizationId: context?.organizationId,
         user: context?.user,
-        metadata: {
-          metricType: 'rate_limit_usage',
-          value: parseInt(rateLimitRemaining, 10),
-          unit: 'remaining',
-          tags,
-        },
+        timestamp: new Date().toISOString(),
       });
     }
   } catch (error) {

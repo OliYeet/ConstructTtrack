@@ -85,7 +85,7 @@ jest.mock('../caching', () => ({
 
 jest.mock('../response', () => ({
   addCorsHeaders: jest.fn(response => response),
-  createErrorResponse: jest.fn((error, requestId) => {
+  createErrorResponse: jest.fn((error: any, requestId) => {
     const status = error?.status || 500;
     return NextResponse.json(
       {
@@ -185,8 +185,8 @@ describe('Authentication middleware (`withAuth`)', () => {
     (
       createRequestContext as jest.MockedFunction<typeof createRequestContext>
     ).mockResolvedValueOnce({
-      user: null,
-      organizationId: null,
+      user: undefined,
+      organizationId: undefined,
       requestId: 'test-request-id',
       timestamp: new Date().toISOString(),
     });
@@ -208,8 +208,8 @@ describe('Authentication middleware (`withAuth`)', () => {
     (
       createRequestContext as jest.MockedFunction<typeof createRequestContext>
     ).mockResolvedValueOnce({
-      user: null,
-      organizationId: null,
+      user: undefined,
+      organizationId: undefined,
       requestId: 'test-request-id',
       timestamp: new Date().toISOString(),
     });

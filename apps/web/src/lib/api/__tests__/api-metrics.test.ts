@@ -325,10 +325,11 @@ describe('Enhanced API Metrics', () => {
     // Mock unauthenticated context
     (
       createRequestContext as jest.MockedFunction<typeof createRequestContext>
-    ).mockReturnValueOnce({
+    ).mockResolvedValueOnce({
       requestId: 'test-request-id',
-      user: null,
-      organizationId: null,
+      user: undefined,
+      organizationId: undefined,
+      timestamp: new Date().toISOString(),
     });
 
     const handler = withApiMiddleware(
