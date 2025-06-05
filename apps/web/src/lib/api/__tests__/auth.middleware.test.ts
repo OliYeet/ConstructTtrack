@@ -8,6 +8,16 @@ import { createSuccessResponse } from '@/lib/api/response';
 import { withAuth } from '@/lib/api/middleware';
 import type { NextRequest } from 'next/server';
 
+jest.mock('@constructtrack/supabase/client', () => {
+  const auth = { getUser: jest.fn() };
+  return {
+    supabase: {
+      auth,
+      from: jest.fn(),
+    },
+  };
+});
+
 import { supabase } from '@constructtrack/supabase/client';
 
 interface MockRequestOptions {
@@ -45,7 +55,7 @@ const okHandler = async () =>
 
 const wrappedHandler = withAuth({ GET: okHandler });
 const exec = (request: NextRequest) =>
-  wrappedHandler(request, { params: Promise.resolve({}) });
+  wrappedHandler(request, { params: {} });
 
 // -------------------------------------------------------------------------------------------------
 // Tests
