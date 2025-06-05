@@ -1,60 +1,39 @@
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from './core';
 
-import type { Database } from '../types/database';
-
-const supabaseUrl =
-  process.env.NEXT_PUBLIC_SUPABASE_URL ||
-  process.env.EXPO_PUBLIC_SUPABASE_URL ||
-  process.env.SUPABASE_URL ||
-  '';
-const supabaseAnonKey =
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-  process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ||
-  process.env.SUPABASE_ANON_KEY ||
-  '';
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables');
-}
-
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: true,
-  },
-});
-
+// ---------------------------------------------------------------------------
 // Auth helpers
+// ---------------------------------------------------------------------------
+
 export const signUp = async (
   email: string,
   password: string,
   metadata?: Record<string, unknown>
 ) => {
-  return await supabase.auth.signUp({
+  return supabase.auth.signUp({
     email,
     password,
-    options: {
-      data: metadata,
-    },
+    options: { data: metadata },
   });
 };
 
 export const signIn = async (email: string, password: string) => {
-  return await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
+  return supabase.auth.signInWithPassword({ email, password });
 };
 
-export const signOut = async () => {
-  return await supabase.auth.signOut();
-};
+export const signOut = () => supabase.auth.signOut();
+export const getCurrentUser = () => supabase.auth.getUser();
+export const getSession = () => supabase.auth.getSession();
 
-export const getCurrentUser = () => {
-  return supabase.auth.getUser();
-};
+// ---------------------------------------------------------------------------
+// Public exports
+// ---------------------------------------------------------------------------
 
-export const getSession = () => {
-  return supabase.auth.getSession();
-};
+export { supabase, getSupabaseClient } from './core';
+
+export {
+  subscribeToTable,
+  initRealtimeSubscriptions,
+  removeRealtimeSubscriptions,
+  type ManagedTableName,
+  type RealtimeDispatch,
+} from './realtime';
