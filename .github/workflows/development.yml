@@ -2,9 +2,9 @@ name: 🔧 Development Workflow
 
 on:
   push:
-    branches: [develop, 'feature/*', 'hotfix/*']
+    branches: [develop, 'feature/*', 'hotfix/*', 'bugfix/*']
   pull_request:
-    branches: [develop]
+    branches: [develop, 'feature/*']
 
 env:
   NODE_VERSION: '18'
