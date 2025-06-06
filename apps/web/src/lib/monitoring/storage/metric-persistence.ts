@@ -104,6 +104,12 @@ export class SupabaseMetricStorage implements MetricStorageProvider {
       //   .limit(query.limit || 1000);
 
       logger.warn('Supabase retrieval not implemented – returning empty array');
+
+      // Delegate to memory fallback if it exists to maintain functional symmetry
+      if (memoryFallbackInstance) {
+        return memoryFallbackInstance.retrieve(query);
+      }
+
       return [];
     } catch (error) {
       logger.error('Failed to retrieve metrics from Supabase', {
@@ -130,6 +136,12 @@ export class SupabaseMetricStorage implements MetricStorageProvider {
       //   .lt('timestamp', cutoffTime);
 
       logger.warn('Supabase cleanup not implemented – skipping');
+
+      // Delegate to memory fallback if it exists to prevent unbounded growth
+      if (memoryFallbackInstance) {
+        return memoryFallbackInstance.cleanup(retentionPeriod);
+      }
+
       return 0;
     } catch (error) {
       logger.error('Failed to cleanup old metrics from Supabase', {
@@ -324,7 +336,13 @@ export class MetricPersistenceManager {
     // Only start periodic flush if storage is enabled and flush interval is configured
     if (this.config.storage.enabled && this.config.storage.flushInterval > 0) {
       this.flushTimer = setInterval(() => {
-        this.flush();
+        // Handle flush errors to prevent unhandled promise rejections
+        this.flush().catch(error => {
+          const logger = getLogger();
+          logger.error('Periodic flush failed', {
+            error: error instanceof Error ? error.message : String(error),
+          });
+        });
       }, this.config.storage.flushInterval);
     }
   }

@@ -275,7 +275,20 @@ export const CHANNEL_PATTERNS = {
 
 // Enhanced Validation Utilities
 export const isValidISO8601 = (timestamp: string): boolean => {
-  return !isNaN(Date.parse(timestamp));
+  // Use strict RFC 3339 regex to prevent false positives from Date.parse
+  // Date.parse accepts many non-ISO formats like "April 5 2025"
+  const iso8601Regex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z?$/;
+
+  if (!iso8601Regex.test(timestamp)) {
+    return false;
+  }
+
+  // Additional validation: ensure the date is actually valid
+  const date = new Date(timestamp);
+  return (
+    !isNaN(date.getTime()) &&
+    date.toISOString().startsWith(timestamp.substring(0, 19))
+  );
 };
 
 export const validateEventPayload = (event: RealtimeEvent): boolean => {
