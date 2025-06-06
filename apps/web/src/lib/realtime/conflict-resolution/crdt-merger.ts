@@ -16,8 +16,8 @@ import type {
   GeoPoint,
   ProgressUpdate,
   ResolutionStrategy,
-  DEFAULT_CONFLICT_RESOLUTION_CONFIG,
 } from './types';
+import { DEFAULT_CONFLICT_RESOLUTION_CONFIG } from './types';
 
 export class RealtimeCRDTMerger implements CRDTMerger {
   private config: ConflictResolutionConfig;

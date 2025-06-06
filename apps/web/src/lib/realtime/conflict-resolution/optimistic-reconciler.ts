@@ -18,8 +18,8 @@ import type {
   RealtimeEvent,
   ProgressUpdate,
   GeoPoint,
-  DEFAULT_CONFLICT_RESOLUTION_CONFIG,
 } from './types';
+import { DEFAULT_CONFLICT_RESOLUTION_CONFIG } from './types';
 
 export class RealtimeOptimisticReconciler implements OptimisticReconciler {
   private config: ConflictResolutionConfig;

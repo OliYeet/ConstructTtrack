@@ -17,8 +17,8 @@ import type {
   OptimisticUpdate,
   ProgressUpdate,
   RealtimeEvent,
-  DEFAULT_CONFLICT_RESOLUTION_CONFIG,
 } from './types';
+import { DEFAULT_CONFLICT_RESOLUTION_CONFIG } from './types';
 
 export class RealtimeConflictDetector implements ConflictDetector {
   private config: ConflictResolutionConfig;

@@ -60,8 +60,8 @@ import type {
   ConflictMetadata,
   OptimisticUpdate,
   ReconciliationResult,
-  DEFAULT_CONFLICT_RESOLUTION_CONFIG,
 } from './types';
+import { DEFAULT_CONFLICT_RESOLUTION_CONFIG } from './types';
 
 /**
  * Main Conflict Resolution Manager
