@@ -6,7 +6,7 @@
 import type {
   RealtimeEvent,
   EventType,
-} from '@constructtrack/realtime-protocol';
+} from '../../../src/types/realtime-protocol';
 
 import type {
   EventStore,

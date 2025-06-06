@@ -3,10 +3,11 @@
  * Core types for the event sourcing system
  */
 
+// Use relative import to avoid module resolution issues
 import type {
   RealtimeEvent,
   EventType,
-} from '@constructtrack/realtime-protocol';
+} from '../../../src/types/realtime-protocol';
 
 // CodeRabbit fix: Add UUID type alias for clarity
 export type UUID = string;

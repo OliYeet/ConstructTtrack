@@ -3,11 +3,12 @@
  * Handles publishing events to real-time subscribers and WebSocket gateway
  */
 
+import { v4 as uuidv4 } from 'uuid';
+
 import type {
   RealtimeEvent,
   EventType,
-} from '@constructtrack/realtime-protocol';
-import { v4 as uuidv4 } from 'uuid';
+} from '../../../src/types/realtime-protocol';
 
 import type {
   EventPublisher,

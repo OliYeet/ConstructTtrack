@@ -3,11 +3,12 @@
  * Provides event sourcing capabilities using Supabase as the backend
  */
 
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
+
 import type {
   RealtimeEvent,
   EventType,
-} from '@constructtrack/realtime-protocol';
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+} from '../../../src/types/realtime-protocol';
 
 import type {
   EventStore,
