@@ -264,6 +264,18 @@ export class WebSocketGateway {
             return;
           }
 
+          // Parse and validate message first
+          const dataString = performanceProfiler.timeOperation(
+            'message_parse',
+            () => {
+              return data instanceof ArrayBuffer
+                ? new globalThis.TextDecoder().decode(data)
+                : Array.isArray(data)
+                  ? Buffer.concat(data).toString()
+                  : data.toString();
+            }
+          );
+
           // Update activity tracking
           const metadata = this.connectionMetadata.get(ws);
           if (metadata) {
@@ -275,18 +287,6 @@ export class WebSocketGateway {
           connectionOptimizer.updateActivity(
             ws.connectionId,
             dataString.length
-          );
-
-          // Parse and validate message
-          const dataString = performanceProfiler.timeOperation(
-            'message_parse',
-            () => {
-              return data instanceof ArrayBuffer
-                ? new globalThis.TextDecoder().decode(data)
-                : Array.isArray(data)
-                  ? Buffer.concat(data).toString()
-                  : data.toString();
-            }
           );
 
           // Prevent DoS attacks with overly large messages
