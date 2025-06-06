@@ -316,23 +316,19 @@ export class RegressionDetector {
    * Get current performance snapshot without recording to baseline
    */
   private getCurrentPerformanceSnapshot(): PerformanceBaseline | null {
-    const profilerMetrics = performanceProfiler.getMetrics();
-    const connectionMetrics = connectionOptimizer.getMetrics();
-
-    if (!profilerMetrics || !connectionMetrics) {
-      return null;
-    }
+    const profilerSummary = performanceProfiler.getPerformanceSummary();
+    const connectionStats = connectionOptimizer.getPoolStats();
 
     return {
       timestamp: Date.now(),
-      averageLatency: profilerMetrics.averageLatency || 0,
-      p95Latency: profilerMetrics.p95Latency || 0,
-      p99Latency: profilerMetrics.p99Latency || 0,
-      throughput: profilerMetrics.throughput || 0,
-      errorRate: profilerMetrics.errorRate || 0,
+      averageLatency: profilerSummary.averageLatency || 0,
+      p95Latency: 0, // Not available in current profiler summary
+      p99Latency: 0, // Not available in current profiler summary
+      throughput: connectionStats.messagesPerSecond || 0,
+      errorRate: connectionStats.errorRate || 0,
       memoryUsage: process.memoryUsage().heapUsed / 1024 / 1024, // MB
-      cpuUsage: profilerMetrics.cpuUsage || 0,
-      connectionCount: connectionMetrics.activeConnections || 0,
+      cpuUsage: 0, // Not available in current profiler summary
+      connectionCount: connectionStats.activeConnections || 0,
     };
   }
 
