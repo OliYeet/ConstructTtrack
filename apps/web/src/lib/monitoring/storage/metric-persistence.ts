@@ -9,6 +9,9 @@ import { getLogger } from '../../logging';
 import { CollectorMetric } from '../metric-collectors/base-collector';
 import { getMonitoringConfig } from '../realtime-config';
 
+// Module-level singleton for memory storage fallback
+let memoryFallbackInstance: MemoryMetricStorage | null = null;
+
 // Storage interface for different providers
 export interface MetricStorageProvider {
   store(metrics: CollectorMetric[]): Promise<void>;
@@ -58,17 +61,23 @@ export class SupabaseMetricStorage implements MetricStorageProvider {
       });
 
       // TODO: Implement actual Supabase storage
-      // Temporary safeguard - switch to memory storage in production
+      // Temporary safeguard - use memory storage fallback
+      if (!memoryFallbackInstance) {
+        memoryFallbackInstance = new MemoryMetricStorage();
+      }
+
       if (process.env.NODE_ENV !== 'development') {
         logger.warn(
           'Supabase metric storage not yet implemented – switching to in-memory provider'
         );
-        return new MemoryMetricStorage().store(metrics);
+        return memoryFallbackInstance.store(metrics);
       }
-      // In development, throw to make the issue visible
-      throw new Error(
-        'Supabase metric storage not yet implemented - metrics will be lost'
+
+      // In development, don't crash – just warn loudly so metrics keep flowing
+      logger.warn(
+        'Supabase metric storage not yet implemented – metrics will be lost'
       );
+      return;
     } catch (error) {
       logger.error('Failed to store metrics to Supabase', {
         error: error instanceof Error ? error.message : String(error),
@@ -233,7 +242,10 @@ export class MetricPersistenceManager {
 
   constructor(storage?: MetricStorageProvider) {
     this.storage = storage || this.createStorageProvider();
-    this.startPeriodicFlush();
+    // Only start periodic flush if storage is enabled
+    if (this.config.storage.enabled) {
+      this.startPeriodicFlush();
+    }
   }
 
   // Add metrics to the buffer
