@@ -4,8 +4,11 @@
  * Tests the complete notification flow from event processing to delivery
  */
 
-import { NotificationAPI, notificationSystem } from '../index';
-import type { RealtimeEvent, NotificationRecipient } from '../index';
+import type {
+  RealtimeEvent,
+  NotificationRecipient,
+  NotificationSystem,
+} from '../index';
 import { createFiberNotificationRule } from '../fiber-notification-templates';
 
 // Mock dependencies
@@ -40,6 +43,7 @@ describe('Real-time Notification System Integration', () => {
     getOnlineUsers: jest.Mock;
     getUserConnections: jest.Mock;
   };
+  let testNotificationSystem: NotificationSystem;
 
   beforeEach(async () => {
     jest.clearAllMocks();
@@ -57,19 +61,24 @@ describe('Real-time Notification System Integration', () => {
       getUserConnections: jest.fn().mockReturnValue([]),
     };
 
-    // Initialize notification system
-    await NotificationAPI.initialize({
+    // Initialize notification system with a new instance to avoid conflicts
+    const { NotificationSystem: NotificationSystemClass } = await import(
+      '../index'
+    );
+    testNotificationSystem = new NotificationSystemClass({
       enableWebSocket: true,
       enableBatching: false, // Disable for simpler testing
       autoSetupFiberRules: false, // We'll set up rules manually
     });
 
-    // Connect mock WebSocket gateway
-    NotificationAPI.connectWebSocket(mockWebSocketGateway);
+    await testNotificationSystem.initialize();
+    testNotificationSystem.connectWebSocketGateway(mockWebSocketGateway);
   });
 
   afterEach(() => {
-    notificationSystem.shutdown();
+    if (testNotificationSystem) {
+      testNotificationSystem.shutdown();
+    }
   });
 
   describe('Fiber Installation Workflow', () => {
@@ -81,7 +90,7 @@ describe('Real-time Notification System Integration', () => {
         ['websocket'],
         'test-fiber-started-tech'
       );
-      notificationSystem.addRule(rule);
+      testNotificationSystem.addRule(rule);
 
       // Create test event
       const event: RealtimeEvent = {
@@ -115,7 +124,7 @@ describe('Real-time Notification System Integration', () => {
       ];
 
       // Process event
-      await NotificationAPI.processFiberEvent(event, recipients);
+      await testNotificationSystem.processEvent(event, recipients);
 
       // Verify WebSocket notification was sent
       expect(mockWebSocketGateway.sendToUser).toHaveBeenCalledWith(
@@ -141,7 +150,7 @@ describe('Real-time Notification System Integration', () => {
         ['websocket', 'email'],
         'test-fiber-failed-supervisor'
       );
-      notificationSystem.addRule(rule);
+      testNotificationSystem.addRule(rule);
 
       // Create critical failure event
       const event: RealtimeEvent = {
@@ -174,7 +183,7 @@ describe('Real-time Notification System Integration', () => {
       ];
 
       // Process critical event
-      await NotificationAPI.processFiberEvent(event, recipients);
+      await testNotificationSystem.processEvent(event, recipients);
 
       // Verify immediate WebSocket delivery for critical notification
       expect(mockWebSocketGateway.sendToUser).toHaveBeenCalledWith(
@@ -204,8 +213,8 @@ describe('Real-time Notification System Integration', () => {
         'test-splice-foreman'
       );
 
-      notificationSystem.addRule(technicianRule);
-      notificationSystem.addRule(foremanRule);
+      testNotificationSystem.addRule(technicianRule);
+      testNotificationSystem.addRule(foremanRule);
 
       // Create splice completed event
       const event: RealtimeEvent = {
@@ -250,7 +259,7 @@ describe('Real-time Notification System Integration', () => {
       ];
 
       // Process event
-      await NotificationAPI.processFiberEvent(event, recipients);
+      await testNotificationSystem.processEvent(event, recipients);
 
       // Verify both technician and foreman received notifications
       expect(mockWebSocketGateway.sendToUser).toHaveBeenCalledTimes(2);
@@ -272,7 +281,7 @@ describe('Real-time Notification System Integration', () => {
         ['email'],
         'test-inspection-customer'
       );
-      notificationSystem.addRule(rule);
+      testNotificationSystem.addRule(rule);
 
       const event: RealtimeEvent = {
         id: 'test-inspection-passed-1',
@@ -304,7 +313,7 @@ describe('Real-time Notification System Integration', () => {
       ];
 
       // Process event
-      await NotificationAPI.processFiberEvent(event, recipients);
+      await testNotificationSystem.processEvent(event, recipients);
 
       // Verify no WebSocket call was made (user offline)
       expect(mockWebSocketGateway.sendToUser).not.toHaveBeenCalled();
@@ -330,7 +339,7 @@ describe('Real-time Notification System Integration', () => {
         },
       ];
 
-      await NotificationAPI.sendNotification(
+      await testNotificationSystem.sendDirectNotification(
         'System Maintenance',
         'Scheduled maintenance will begin in 30 minutes',
         recipients,
@@ -360,11 +369,11 @@ describe('Real-time Notification System Integration', () => {
         subscriptions: ['workOrder:WO-001', 'section:SEC-001'],
       };
 
-      NotificationAPI.registerClient(client);
+      testNotificationSystem.registerWebSocketClient(client);
 
-      expect(NotificationAPI.isUserOnline('tech-1')).toBe(true);
+      expect(testNotificationSystem.isUserOnline('tech-1')).toBe(true);
 
-      NotificationAPI.unregisterClient('conn-1');
+      testNotificationSystem.unregisterWebSocketClient('conn-1');
 
       // Note: This test would need the actual WebSocket bridge implementation
       // to verify the user is no longer online
@@ -373,7 +382,7 @@ describe('Real-time Notification System Integration', () => {
 
   describe('System Statistics', () => {
     it('should provide system statistics', () => {
-      const stats = NotificationAPI.getStats();
+      const stats = testNotificationSystem.getStats();
 
       expect(stats).toHaveProperty('webSocket');
       expect(stats).toHaveProperty('traditional');
@@ -396,7 +405,7 @@ describe('Real-time Notification System Integration', () => {
         ['websocket', 'email'],
         'test-error-handling'
       );
-      notificationSystem.addRule(rule);
+      testNotificationSystem.addRule(rule);
 
       const event: RealtimeEvent = {
         id: 'test-error-1',
@@ -425,7 +434,7 @@ describe('Real-time Notification System Integration', () => {
 
       // Should not throw despite WebSocket failure
       await expect(
-        NotificationAPI.processFiberEvent(event, recipients)
+        testNotificationSystem.processEvent(event, recipients)
       ).resolves.not.toThrow();
 
       // Should fallback to traditional channels
