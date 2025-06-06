@@ -39,10 +39,10 @@ export interface PingMessage {
 }
 
 // Conflict resolution message types - Charlie's strategic guidance
-export interface ConflictResolutionMessage {
+export interface ConflictResolutionMessage<Local = unknown, Remote = Local> {
   action: 'resolve_conflict';
-  localState: unknown;
-  remoteState: unknown;
+  localState: Local;
+  remoteState: Remote;
   metadata: {
     userId: string;
     organizationId: string;

@@ -37,7 +37,7 @@ export class WebSocketGateway {
   private rooms = new Map<string, Set<AuthenticatedWebSocket>>();
 
   // Conflict resolution engine - Charlie's strategic guidance
-  private conflictEngine: ConflictEngine;
+  private readonly conflictEngine: ConflictEngine;
 
   // Enhanced security and performance features - CodeRabbit recommendations
   private rateLimiter = new MessageRateLimiter(

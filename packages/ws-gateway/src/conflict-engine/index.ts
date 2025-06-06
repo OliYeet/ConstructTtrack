@@ -62,7 +62,7 @@ export class ConflictEngineV1 implements ConflictEngine {
 
   constructor(
     private config: { enableConflictResolution: boolean } = {
-      enableConflictResolution: false,
+      enableConflictResolution: isConflictResolutionEnabled(),
     }
   ) {
     this.enabled = config.enableConflictResolution;
@@ -176,7 +176,7 @@ export class ConflictEngineV1 implements ConflictEngine {
       done: 3,
       completed: 3, // synonym for done
       failed: 0,
-    };
+    } as const;
 
     const localPrecedence =
       precedence[local.status as keyof typeof precedence] ?? 0;
