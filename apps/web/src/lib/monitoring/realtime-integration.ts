@@ -6,12 +6,35 @@
  * - Supabase real-time subscriptions
  * - WebSocket gateway (when implemented)
  * - Event sourcing system (future)
+ * - Multiple metric collectors (LUM-585 enhancement)
  */
 
 import { getLogger } from '../logging';
 
+import {
+  AggregateCollector,
+  defaultAggregateCollectorConfig,
+} from './metric-collectors/aggregate-collector';
+import {
+  CollectorRegistry,
+  collectorRegistry,
+  BaseMetricCollector,
+  CollectorMetric,
+} from './metric-collectors/base-collector';
+import {
+  ExportCollector,
+  defaultExportCollectorConfig,
+} from './metric-collectors/export-collector';
+import {
+  ResourceCollector,
+  defaultResourceCollectorConfig,
+} from './metric-collectors/resource-collector';
 import { performanceMonitor } from './performance-monitor';
 import { RealtimeAlertManager } from './realtime-alerts';
+import {
+  getMonitoringConfig,
+  EnhancedRealtimeMonitoringConfig,
+} from './realtime-config';
 import {
   RealtimeLatencyMetric,
   RealtimeAlert,
@@ -19,15 +42,27 @@ import {
 } from './realtime-metrics';
 import { realtimePerformanceMonitor } from './realtime-performance-monitor';
 
+// LUM-585: Enhanced monitoring imports
+
 // Integration manager for real-time monitoring
 export class RealtimeMonitoringIntegration {
   private alertManager: RealtimeAlertManager;
   private isInitialized = false;
 
+  // LUM-585: Enhanced monitoring properties
+  private enhancedConfig: EnhancedRealtimeMonitoringConfig;
+  private metricCollectors = new Map<string, BaseMetricCollector>();
+  private collectorRegistry: CollectorRegistry;
+
   constructor() {
     this.alertManager = new RealtimeAlertManager(
       defaultRealtimeMonitoringConfig.alertConfig
     );
+
+    // LUM-585: Initialize enhanced monitoring
+    this.enhancedConfig = getMonitoringConfig();
+    this.collectorRegistry = collectorRegistry;
+    this.setupCollectorEventListeners();
   }
 
   // Initialize the integration
@@ -45,10 +80,28 @@ export class RealtimeMonitoringIntegration {
     // Integrate with existing performance monitor
     this.integrateWithPerformanceMonitor();
 
+    // LUM-585: Initialize enhanced monitoring collectors
+    this.initializeMetricCollectors();
+
     this.isInitialized = true;
 
     const logger = getLogger();
-    logger.info('Real-time monitoring integration initialized');
+    logger.info(
+      'Real-time monitoring integration initialized with enhanced collectors',
+      {
+        metadata: {
+          collectorsEnabled: Array.from(this.metricCollectors.keys()),
+          enhancedConfig: {
+            resourceMonitoring: this.enhancedConfig.collectors.resource.enabled,
+            aggregateMonitoring:
+              this.enhancedConfig.collectors.aggregate.enabled,
+            exportMonitoring:
+              this.enhancedConfig.collectors.export.prometheus.enabled ||
+              this.enhancedConfig.collectors.export.openTelemetry.enabled,
+          },
+        },
+      }
+    );
   }
 
   // Shutdown the integration
@@ -57,11 +110,41 @@ export class RealtimeMonitoringIntegration {
       return;
     }
 
+    // Stop real-time performance monitoring
     realtimePerformanceMonitor.stop();
+
+    // LUM-585: Stop all metric collectors
+    this.shutdownMetricCollectors();
+
     this.isInitialized = false;
 
     const logger = getLogger();
-    logger.info('Real-time monitoring integration shutdown');
+    logger.info(
+      'Real-time monitoring integration shutdown with enhanced collectors'
+    );
+  }
+
+  // LUM-585: Shutdown all metric collectors
+  private shutdownMetricCollectors(): void {
+    const logger = getLogger();
+
+    try {
+      // Stop all collectors
+      for (const [name, collector] of this.metricCollectors.entries()) {
+        collector.stop();
+        this.collectorRegistry.unregister(collector.id);
+        logger.info(`Collector ${name} stopped and unregistered`);
+      }
+
+      // Clear the collectors map
+      this.metricCollectors.clear();
+
+      logger.info('All metric collectors shutdown successfully');
+    } catch (error) {
+      logger.error('Error during metric collectors shutdown', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
   }
 
   // Setup event listeners for real-time monitoring
@@ -165,11 +248,33 @@ export class RealtimeMonitoringIntegration {
   getStatus(): {
     initialized: boolean;
     monitoring: boolean;
-    stats?: any;
+    stats?: {
+      totalEvents: number;
+      errorRate: number;
+      p99Latency: number;
+      activeConnections: number;
+      eventsPerSecond: number;
+    };
     alerts: number;
+    collectors?: Record<
+      string,
+      {
+        id: string;
+        name: string;
+        enabled: boolean;
+        running: boolean;
+        lastCollection: number | null;
+        nextCollection: number | null;
+        metricsCollected: number;
+        errors: number;
+      }
+    >; // LUM-585: Enhanced collector status
   } {
     const stats = realtimePerformanceMonitor.getCurrentStats();
     const alerts = realtimePerformanceMonitor.getActiveAlerts();
+
+    // LUM-585: Get collector status
+    const collectorStatus = this.getCollectorStatus();
 
     return {
       initialized: this.isInitialized,
@@ -184,7 +289,199 @@ export class RealtimeMonitoringIntegration {
           }
         : undefined,
       alerts: alerts.length,
+      collectors: collectorStatus,
     };
+  }
+
+  // LUM-585: Initialize metric collectors based on configuration
+  private initializeMetricCollectors(): void {
+    const logger = getLogger();
+
+    try {
+      // Initialize Resource Collector
+      if (this.enhancedConfig.collectors.resource.enabled) {
+        const resourceCollector = new ResourceCollector({
+          ...defaultResourceCollectorConfig,
+          enabled: this.enhancedConfig.collectors.resource.enabled,
+          interval: this.enhancedConfig.collectors.resource.interval,
+          metrics: this.enhancedConfig.collectors.resource.metrics,
+        });
+
+        this.metricCollectors.set('resource', resourceCollector);
+        this.collectorRegistry.register(resourceCollector);
+        resourceCollector.start();
+
+        logger.info('Resource collector initialized and started');
+      }
+
+      // Initialize Aggregate Collector
+      if (this.enhancedConfig.collectors.aggregate.enabled) {
+        const aggregateCollector = new AggregateCollector({
+          ...defaultAggregateCollectorConfig,
+          enabled: this.enhancedConfig.collectors.aggregate.enabled,
+          interval: this.enhancedConfig.collectors.aggregate.interval,
+          retentionPeriods:
+            this.enhancedConfig.collectors.aggregate.retentionPeriods,
+        });
+
+        this.metricCollectors.set('aggregate', aggregateCollector);
+        this.collectorRegistry.register(aggregateCollector);
+        aggregateCollector.start();
+
+        logger.info('Aggregate collector initialized and started');
+      }
+
+      // Initialize Export Collector
+      if (
+        this.enhancedConfig.collectors.export.prometheus.enabled ||
+        this.enhancedConfig.collectors.export.openTelemetry.enabled
+      ) {
+        const exportCollector = new ExportCollector({
+          ...defaultExportCollectorConfig,
+          enabled: true,
+          exporters: {
+            prometheus: this.enhancedConfig.collectors.export.prometheus,
+            openTelemetry: this.enhancedConfig.collectors.export.openTelemetry,
+            json: { enabled: true, format: 'structured' },
+          },
+        });
+
+        this.metricCollectors.set('export', exportCollector);
+        this.collectorRegistry.register(exportCollector);
+        exportCollector.start();
+
+        logger.info('Export collector initialized and started');
+      }
+    } catch (error) {
+      logger.error('Failed to initialize metric collectors', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+
+  // LUM-585: Setup event listeners for collector registry
+  private setupCollectorEventListeners(): void {
+    const logger = getLogger();
+
+    // Listen for metrics from all collectors
+    this.collectorRegistry.on(
+      'metrics',
+      (data: { collector: string; metrics: CollectorMetric[] }) => {
+        logger.debug('Metrics collected', {
+          metadata: {
+            collector: data.collector,
+            count: data.metrics.length,
+          },
+        });
+
+        // Forward metrics to aggregate collector if it exists
+        const aggregateCollector = this.metricCollectors.get(
+          'aggregate'
+        ) as AggregateCollector;
+        if (aggregateCollector) {
+          aggregateCollector.addMetricsToBuffer(data.metrics);
+        }
+
+        // Forward metrics to export collector if it exists
+        const exportCollector = this.metricCollectors.get(
+          'export'
+        ) as ExportCollector;
+        if (exportCollector) {
+          exportCollector.addMetricsToQueue(data.metrics);
+        }
+
+        // Integrate with existing performance monitor
+        this.integrateCollectorMetricsWithPerformanceMonitor(data.metrics);
+      }
+    );
+
+    // Listen for collector errors
+    this.collectorRegistry.on(
+      'error',
+      (data: { collector: string; error: any }) => {
+        logger.error('Collector error', {
+          metadata: {
+            collector: data.collector,
+            error: data.error,
+          },
+        });
+      }
+    );
+
+    // Listen for collector lifecycle events
+    this.collectorRegistry.on(
+      'collectorStarted',
+      (data: { collector: string }) => {
+        logger.info('Collector started', {
+          metadata: { collector: data.collector },
+        });
+      }
+    );
+
+    this.collectorRegistry.on(
+      'collectorStopped',
+      (data: { collector: string }) => {
+        logger.info('Collector stopped', {
+          metadata: { collector: data.collector },
+        });
+      }
+    );
+  }
+
+  // LUM-585: Get status of all collectors
+  private getCollectorStatus(): Record<
+    string,
+    {
+      id: string;
+      name: string;
+      enabled: boolean;
+      running: boolean;
+      lastCollection: number | null;
+      nextCollection: number | null;
+      metricsCollected: number;
+      errors: number;
+    }
+  > {
+    const status: Record<
+      string,
+      {
+        id: string;
+        name: string;
+        enabled: boolean;
+        running: boolean;
+        lastCollection: number | null;
+        nextCollection: number | null;
+        metricsCollected: number;
+        errors: number;
+      }
+    > = {};
+
+    for (const [name, collector] of this.metricCollectors.entries()) {
+      status[name] = collector.getStatus();
+    }
+
+    return status;
+  }
+
+  // LUM-585: Integrate collector metrics with existing performance monitor
+  private integrateCollectorMetricsWithPerformanceMonitor(
+    metrics: CollectorMetric[]
+  ): void {
+    for (const metric of metrics) {
+      if (metric.type === 'resource') {
+        // Record resource metrics in the main performance monitor
+        performanceMonitor.recordMetric(
+          `realtime_${metric.resourceType}_${metric.tags.metric || 'value'}`,
+          metric.value,
+          metric.unit,
+          {
+            component: 'realtime-enhanced',
+            collector: metric.source,
+            resourceType: metric.resourceType,
+          }
+        );
+      }
+    }
   }
 }
 
@@ -197,7 +494,7 @@ export class SupabaseRealtimeIntegration {
     startTime: number
   ): string {
     const eventId = realtimePerformanceMonitor.recordLatencyMetric({
-      eventType: eventType as any,
+      eventType: eventType as 'WorkOrderUpdated',
       timestamps: {
         dbCommit: startTime,
       },
@@ -234,7 +531,7 @@ export class SupabaseRealtimeIntegration {
   ): void {
     const now = Date.now();
 
-    const timestamps: any = {
+    const timestamps: Record<string, number> = {
       connectionStart: now,
       lastActivity: now,
     };
@@ -327,7 +624,7 @@ export class WebSocketGatewayIntegration {
   ): void {
     const now = Date.now();
 
-    const timestamps: any = {
+    const timestamps: Record<string, number> = {
       connectionStart: now,
       lastActivity: now,
     };

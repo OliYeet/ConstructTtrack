@@ -1,0 +1,297 @@
+# Enhanced Real-time Monitoring Setup Guide
+
+## Overview
+
+The enhanced real-time monitoring system (LUM-585) extends the existing ConstructTrack monitoring
+infrastructure with multiple metric collectors, aggregation capabilities, and export functionality.
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                Enhanced Monitoring System                        │
+├─────────────────────────────────────────────────────────────────┤
+│  RealtimeMonitoringIntegration (Enhanced)                      │
+│  ├── Existing Performance Monitor                              │
+│  ├── Resource Collector (CPU, Memory, Disk, Network)          │
+│  ├── Aggregate Collector (Hourly, Daily, Weekly)              │
+│  └── Export Collector (Prometheus, OpenTelemetry, JSON)       │
+├─────────────────────────────────────────────────────────────────┤
+│  Storage Layer                                                  │
+│  ├── Supabase Persistence                                      │
+│  ├── Memory Storage (Development)                              │
+│  └── Redis Storage (Future)                                    │
+├─────────────────────────────────────────────────────────────────┤
+│  Configuration Management                                       │
+│  ├── Environment Variables                                     │
+│  ├── Runtime Configuration                                     │
+│  └── Validation & Defaults                                     │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## Quick Start
+
+### 1. Environment Configuration
+
+Create a `.env.test` file for testing (following the `.env.example` pattern):
+
+```bash
+# Core monitoring
+REALTIME_MONITORING_ENABLED=true
+REALTIME_MONITORING_SAMPLING_RATE=1.0
+
+# Resource monitoring
+RESOURCE_MONITORING_ENABLED=true
+RESOURCE_MONITORING_INTERVAL=30000
+CPU_MONITORING_ENABLED=true
+MEMORY_MONITORING_ENABLED=true
+
+# Aggregation
+AGGREGATE_MONITORING_ENABLED=true
+AGGREGATE_MONITORING_INTERVAL=300000
+
+# Storage
+MONITORING_STORAGE_ENABLED=true
+MONITORING_STORAGE_PROVIDER=memory
+```
+
+### 2. Initialize Monitoring
+
+```typescript
+import { RealtimeMonitoring } from '@/lib/monitoring/realtime-index';
+
+// Initialize the enhanced monitoring system
+RealtimeMonitoring.initialize();
+
+// Check status
+const status = RealtimeMonitoring.getStatus();
+console.log('Monitoring status:', status);
+```
+
+### 3. Track Custom Events
+
+```typescript
+// Track a real-time event
+const eventId = RealtimeMonitoring.trackEvent('WorkOrderUpdated', 'work-orders', {
+  workOrderId: '123',
+  userId: 'user-456',
+});
+
+// Track Supabase subscription
+import { SupabaseMonitoring } from '@/lib/monitoring/realtime-index';
+
+const subscriptionId = SupabaseMonitoring.trackSubscription('work-orders', 'UPDATE', Date.now());
+```
+
+## Configuration Options
+
+### Core Monitoring
+
+| Variable                               | Default    | Description               |
+| -------------------------------------- | ---------- | ------------------------- |
+| `REALTIME_MONITORING_ENABLED`          | `true`     | Enable/disable monitoring |
+| `REALTIME_MONITORING_SAMPLING_RATE`    | `1.0`      | Sampling rate (0-1)       |
+| `REALTIME_MONITORING_RETENTION_PERIOD` | `86400000` | Retention period (ms)     |
+
+### Resource Monitoring
+
+| Variable                        | Default | Description                |
+| ------------------------------- | ------- | -------------------------- |
+| `RESOURCE_MONITORING_ENABLED`   | `true`  | Enable resource monitoring |
+| `RESOURCE_MONITORING_INTERVAL`  | `30000` | Collection interval (ms)   |
+| `CPU_MONITORING_ENABLED`        | `true`  | Monitor CPU usage          |
+| `MEMORY_MONITORING_ENABLED`     | `true`  | Monitor memory usage       |
+| `DISK_IO_MONITORING_ENABLED`    | `false` | Monitor disk I/O           |
+| `NETWORK_IO_MONITORING_ENABLED` | `false` | Monitor network I/O        |
+
+### Export Configuration
+
+| Variable                       | Default    | Description                 |
+| ------------------------------ | ---------- | --------------------------- |
+| `PROMETHEUS_EXPORT_ENABLED`    | `false`    | Enable Prometheus export    |
+| `PROMETHEUS_ENDPOINT`          | `/metrics` | Prometheus endpoint         |
+| `OPENTELEMETRY_EXPORT_ENABLED` | `false`    | Enable OpenTelemetry export |
+| `OPENTELEMETRY_ENDPOINT`       | ``         | OpenTelemetry endpoint      |
+
+## Metric Types
+
+### Resource Metrics
+
+Collected by the Resource Collector:
+
+- **CPU Usage**: Overall and per-core CPU utilization
+- **Memory Usage**: RAM and swap usage statistics
+- **Disk I/O**: Read/write operations and throughput
+- **Network I/O**: Network traffic and packet statistics
+
+### Aggregate Metrics
+
+Calculated by the Aggregate Collector:
+
+- **Hourly Rollups**: Hourly aggregations of all metrics
+- **Daily Rollups**: Daily aggregations for trend analysis
+- **Weekly Rollups**: Weekly aggregations for capacity planning
+
+### Export Metrics
+
+Generated by the Export Collector:
+
+- **Prometheus Format**: Text-based metrics for Prometheus
+- **OpenTelemetry Format**: OTLP-compatible metrics
+- **JSON Format**: Structured JSON for custom integrations
+
+## Storage
+
+### Supabase Storage
+
+The default storage provider persists metrics to Supabase tables:
+
+```sql
+-- Example table structure
+CREATE TABLE realtime_metrics (
+  id TEXT PRIMARY KEY,
+  timestamp TIMESTAMPTZ NOT NULL,
+  type TEXT NOT NULL,
+  source TEXT NOT NULL,
+  tags JSONB,
+  metadata JSONB,
+  value NUMERIC,
+  unit TEXT,
+  resource_type TEXT,
+  export_format TEXT,
+  aggregation_type TEXT
+);
+
+-- Indexes for performance
+CREATE INDEX idx_realtime_metrics_timestamp ON realtime_metrics(timestamp);
+CREATE INDEX idx_realtime_metrics_type ON realtime_metrics(type);
+CREATE INDEX idx_realtime_metrics_source ON realtime_metrics(source);
+```
+
+### Memory Storage
+
+For development and testing, metrics can be stored in memory:
+
+```typescript
+import { MemoryMetricStorage } from '@/lib/monitoring/storage/metric-persistence';
+
+const storage = new MemoryMetricStorage(10000); // Max 10k metrics
+```
+
+## API Reference
+
+### RealtimeMonitoring
+
+Main interface for the enhanced monitoring system:
+
+```typescript
+interface RealtimeMonitoring {
+  initialize(): void;
+  shutdown(): void;
+  getStatus(): MonitoringStatus;
+  getStats(): PerformanceStats;
+  getAlerts(): Alert[];
+  trackEvent(type: string, channel: string, metadata?: object): string;
+}
+```
+
+### Collector Registry
+
+Manage metric collectors:
+
+```typescript
+import { collectorRegistry } from '@/lib/monitoring/metric-collectors/base-collector';
+
+// Get all collectors
+const collectors = collectorRegistry.getAll();
+
+// Get collector status
+const status = collectorRegistry.getStatus();
+
+// Start/stop all collectors
+collectorRegistry.startAll();
+collectorRegistry.stopAll();
+```
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Collectors not starting**
+
+   - Check environment variables
+   - Verify configuration validation
+   - Check logs for initialization errors
+
+2. **High memory usage**
+
+   - Reduce sampling rate
+   - Decrease retention periods
+   - Enable storage persistence
+
+3. **Missing metrics**
+   - Verify collector configuration
+   - Check collector status
+   - Review filtering settings
+
+### Debug Mode
+
+Enable debug logging:
+
+```bash
+DEBUG=constructtrack:monitoring:*
+LOG_LEVEL=debug
+```
+
+### Health Checks
+
+Check system health:
+
+```typescript
+const status = RealtimeMonitoring.getStatus();
+
+if (!status.initialized) {
+  console.error('Monitoring not initialized');
+}
+
+if (status.collectors) {
+  for (const [name, collector] of Object.entries(status.collectors)) {
+    if (!collector.running) {
+      console.warn(`Collector ${name} is not running`);
+    }
+  }
+}
+```
+
+## Performance Considerations
+
+### Resource Impact
+
+- **CPU**: Minimal impact with default settings
+- **Memory**: ~10-50MB depending on retention settings
+- **Network**: Minimal for local storage, varies for exports
+- **Disk**: Depends on storage provider and retention
+
+### Optimization Tips
+
+1. **Adjust sampling rates** for high-volume environments
+2. **Use memory storage** for development
+3. **Configure retention periods** based on requirements
+4. **Enable only needed collectors** to reduce overhead
+5. **Batch exports** to reduce network overhead
+
+## Migration from Legacy Monitoring
+
+The enhanced monitoring system is backward compatible:
+
+1. Existing monitoring continues to work
+2. New collectors are additive
+3. Configuration is optional
+4. Gradual migration is supported
+
+## Next Steps
+
+1. Review the [Collector Development Guide](./collector-development.md)
+2. Set up Prometheus/OpenTelemetry integration
+3. Configure alerting based on new metrics
+4. Implement custom collectors for specific needs
