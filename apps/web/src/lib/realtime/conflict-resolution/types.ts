@@ -5,7 +5,7 @@
  * in ConstructTrack's fiber installation workflows.
  */
 
-import type { EventType } from '@/types/realtime-protocol';
+import type { EventType } from '../../../../../src/types/realtime-protocol';
 
 // Core conflict resolution types
 export interface ConflictMetadata {

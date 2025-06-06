@@ -5,7 +5,9 @@
  * for ConstructTrack's real-time fiber installation workflows.
  */
 
-import { logger } from '../../logging';
+import { getLogger } from '../../logging';
+
+const logger = getLogger();
 
 import { RealtimeConflictDetector } from './conflict-detector';
 import { RealtimeCRDTMerger } from './crdt-merger';

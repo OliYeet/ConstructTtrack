@@ -9,7 +9,7 @@ import { randomUUID } from 'crypto';
 
 import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 
-import { logger } from '../../logging';
+import { getLogger } from '../../logging';
 import { SupabaseRealtimeIntegration } from '../../monitoring/realtime-integration';
 import { getConflictResolutionManager } from '../conflict-resolution';
 import type {
@@ -17,6 +17,8 @@ import type {
   OptimisticUpdate,
   RealtimeEvent,
 } from '../conflict-resolution/types';
+
+const logger = getLogger();
 
 /**
  * Bridge between Supabase real-time events and conflict resolution system

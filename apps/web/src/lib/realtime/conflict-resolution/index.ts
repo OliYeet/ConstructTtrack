@@ -50,7 +50,9 @@ export type {
 // Default configuration
 export { DEFAULT_CONFLICT_RESOLUTION_CONFIG } from './types';
 
-import { logger } from '../../logging';
+import { getLogger } from '../../logging';
+
+const logger = getLogger();
 
 import { RealtimeConflictDetector } from './conflict-detector';
 import { RealtimeCRDTMerger } from './crdt-merger';
@@ -261,7 +263,7 @@ export async function shutdownConflictResolution(): Promise<void> {
 }
 
 // Convenience exports for common operations
-export const ConflictResolution = {
+export const ConflictResolutionAPI = {
   // Initialize system
   initialize: initializeConflictResolution,
   shutdown: shutdownConflictResolution,
@@ -279,4 +281,4 @@ export const ConflictResolution = {
 };
 
 // Default export
-export default ConflictResolution;
+export default ConflictResolutionAPI;

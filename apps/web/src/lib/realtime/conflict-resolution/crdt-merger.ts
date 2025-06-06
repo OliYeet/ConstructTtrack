@@ -5,7 +5,9 @@
  * progress percentages, and fiber section states in rural connectivity scenarios.
  */
 
-import { logger } from '../../logging';
+import { getLogger } from '../../logging';
+
+const logger = getLogger();
 
 import type {
   CRDTMerger,

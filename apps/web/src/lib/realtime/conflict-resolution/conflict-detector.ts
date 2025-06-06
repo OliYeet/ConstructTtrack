@@ -5,7 +5,9 @@
  * Focuses on geo-coordinates, progress percentages, and state transitions.
  */
 
-import { logger } from '../../logging';
+import { getLogger } from '../../logging';
+
+const logger = getLogger();
 
 import type {
   Conflict,
@@ -252,7 +254,13 @@ export class RealtimeConflictDetector implements ConflictDetector {
       if (!remoteState) continue;
 
       // Check for invalid state transitions
-      if (!this.isValidStateTransition(localState.status, remoteState.status)) {
+      if (
+        remoteState.status &&
+        !this.isValidStateTransition(
+          localState.status,
+          remoteState.status as string
+        )
+      ) {
         conflicts.push({
           id: `state_transition_${event.id}_${Date.now()}`,
           type: 'state_transition',
@@ -346,7 +354,7 @@ export class RealtimeConflictDetector implements ConflictDetector {
   ): Partial<FiberSectionState> | null {
     const payload = event.payload as Record<string, unknown>;
     return {
-      status: payload?.status,
+      status: typeof payload?.status === 'string' ? payload.status : undefined,
       lastModified: event.timestamp,
       modifiedBy: event.userId,
     };
