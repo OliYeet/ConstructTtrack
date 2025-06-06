@@ -30,9 +30,9 @@ wait for event sourcing completion?
 ### **1. Conflict Detection System**
 
 ```typescript
-// Location: apps/web/src/lib/realtime/conflict-detection.ts
-interface ConflictDetector {
-  detectConflicts(localState: any, remoteEvents: RealtimeEvent[]): Conflict[];
+// Location: apps/web/src/lib/realtime/conflict-detector.ts
+interface ConflictDetector<StateType> {
+  detectConflicts(localState: StateType, remoteEvents: RealtimeEvent[]): Conflict[];
   resolveConflicts(conflicts: Conflict[]): Resolution[];
 }
 ```
@@ -40,7 +40,7 @@ interface ConflictDetector {
 ### **2. CRDT-Style Merge Algorithms**
 
 ```typescript
-// Location: apps/web/src/lib/realtime/crdt-merge.ts
+// Location: apps/web/src/lib/realtime/crdt-merger.ts
 interface CRDTMerger {
   mergeGeoCoordinates(local: GeoPoint, remote: GeoPoint, timestamps: Timestamps): GeoPoint;
   mergeProgressPercentages(local: number, remote: number, metadata: ConflictMetadata): number;
@@ -51,7 +51,7 @@ interface CRDTMerger {
 ### **3. Optimistic Update Reconciliation**
 
 ```typescript
-// Location: apps/web/src/lib/realtime/optimistic-reconciliation.ts
+// Location: apps/web/src/lib/realtime/optimistic-reconciler.ts
 interface OptimisticReconciler {
   applyOptimisticUpdate(update: LocalUpdate): void;
   reconcileWithAuthoritative(authoritativeState: RemoteState): ReconciliationResult;
@@ -81,7 +81,7 @@ interface OptimisticReconciler {
 
 ## 📁 **File Structure Plan**
 
-```
+```text
 apps/web/src/lib/realtime/
 ├── conflict-resolution/
 │   ├── index.ts                    # Main exports
@@ -111,12 +111,12 @@ apps/web/src/lib/realtime/
 ### **2. WebSocket Gateway Integration**
 
 - Extend `WebSocketGatewayIntegration` for conflict broadcasting
-- Add conflict resolution message types to protocol
+- Add conflict resolution message types to the protocol
 - Implement room-based conflict notifications
 
 ### **3. Event Sourcing Integration** (Pending LUM-588)
 
-- Use event log for authoritative state reconstruction
+- Use the event log for authoritative state reconstruction
 - Implement event-based conflict detection
 - Provide audit trail for conflict resolutions
 

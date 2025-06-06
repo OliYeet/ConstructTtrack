@@ -5,7 +5,7 @@
  * in ConstructTrack's fiber installation workflows.
  */
 
-import type { EventType } from '../../../../../src/types/realtime-protocol';
+import type { EventType } from '@/types/realtime-protocol';
 
 // Core conflict resolution types
 export interface ConflictMetadata {
@@ -44,7 +44,7 @@ export interface FiberSectionState {
 }
 
 // Conflict detection types
-export interface Conflict {
+export interface Conflict<T = unknown> {
   id: string;
   type:
     | 'geo_coordinate'
@@ -52,17 +52,17 @@ export interface Conflict {
     | 'state_transition'
     | 'concurrent_update';
   severity: 'low' | 'medium' | 'high' | 'critical';
-  localValue: unknown;
-  remoteValue: unknown;
+  localValue: T;
+  remoteValue: T;
   metadata: ConflictMetadata;
   detectedAt: number;
   autoResolvable: boolean;
 }
 
-export interface ConflictResolution {
+export interface ConflictResolution<T = unknown> {
   conflictId: string;
   strategy: ResolutionStrategy;
-  resolvedValue: unknown;
+  resolvedValue: T;
   confidence: number; // 0-1
   appliedAt: number;
   appliedBy: string; // user ID or 'system'

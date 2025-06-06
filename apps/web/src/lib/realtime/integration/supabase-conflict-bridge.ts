@@ -5,6 +5,8 @@
  * for ConstructTrack's fiber installation workflows.
  */
 
+import { randomUUID } from 'crypto';
+
 import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 
 import { logger } from '../../logging';
@@ -31,6 +33,12 @@ export class SupabaseConflictBridge {
    * Start monitoring Supabase real-time events for conflicts
    */
   async start(): Promise<void> {
+    // Guard against duplicate calls
+    if (this.isActive) {
+      logger.debug('Supabase conflict bridge already active, skipping start');
+      return;
+    }
+
     try {
       logger.info('Starting Supabase conflict resolution bridge');
 
@@ -57,6 +65,12 @@ export class SupabaseConflictBridge {
    * Stop monitoring and clean up subscriptions
    */
   async stop(): Promise<void> {
+    // Guard against duplicate calls
+    if (!this.isActive) {
+      logger.debug('Supabase conflict bridge already inactive, skipping stop');
+      return;
+    }
+
     try {
       logger.info('Stopping Supabase conflict resolution bridge');
 
@@ -88,7 +102,7 @@ export class SupabaseConflictBridge {
   ): Promise<void> {
     try {
       const update: OptimisticUpdate = {
-        id: `${table}_${operation}_${Date.now()}_${Math.random()}`,
+        id: randomUUID(),
         type: this.mapTableOperationToEventType(table, operation),
         localValue: localData,
         appliedAt: Date.now(),
@@ -183,7 +197,7 @@ export class SupabaseConflictBridge {
 
       // Convert Supabase payload to our event format
       const realtimeEvent: RealtimeEvent = {
-        id: `supabase_${payload.table}_${Date.now()}`,
+        id: randomUUID(),
         type: this.mapSupabaseEventToEventType(payload),
         payload: payload.new || payload.old,
         timestamp: Date.now(),
