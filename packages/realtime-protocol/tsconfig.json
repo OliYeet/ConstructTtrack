@@ -9,7 +9,6 @@
     "composite": true,
     "incremental": true
   },
-  "include": ["src/**/*", "src/types/**/*"],
-  "exclude": ["dist", "node_modules", "**/*.test.ts", "**/*.spec.ts"],
-  "references": []
+  "include": ["src/**/*"],
+  "exclude": ["dist", "node_modules"]
 }

@@ -218,7 +218,7 @@ export class SupabaseBridge {
       version: 'v1.alpha',
       timestamp: new Date().toISOString(),
       workOrderId: fiberSection.work_order_id || fiberSection.project_id,
-      userId: fiberSection.assigned_to || 'system',
+      userId: 'system', // FiberSection doesn't have assigned_to field
       metadata: {
         eventType: payload.eventType,
         table: payload.table,
@@ -226,12 +226,13 @@ export class SupabaseBridge {
       },
       payload: {
         sectionId: fiberSection.id,
-        status: fiberSection.status,
-        progress: fiberSection.progress || 0,
-        location: fiberSection.location,
-        eventType: payload.eventType.toLowerCase(),
-        oldFiberSection:
-          payload.eventType === 'UPDATE' ? oldFiberSection : undefined,
+        overallProgress: 0, // Default progress since field doesn't exist
+        currentPhase: 'planning' as const, // Default phase
+        location: {
+          latitude: 0, // Default location since field structure is different
+          longitude: 0,
+        },
+        estimatedTimeRemaining: 0, // Default time
       },
     };
 

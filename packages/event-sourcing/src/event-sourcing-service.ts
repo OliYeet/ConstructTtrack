@@ -17,8 +17,8 @@ import type {
   EventStatistics,
   TimeRange,
   EventSourcingConfig,
-  EventStoreError,
 } from './types';
+import { EventStoreError } from './types';
 
 export class EventSourcingService {
   private eventStore: EventStore;

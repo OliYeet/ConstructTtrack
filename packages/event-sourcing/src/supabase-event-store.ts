@@ -20,9 +20,8 @@ import type {
   EventSourcingConfig,
   EventProcessingResult,
   BatchProcessingResult,
-  EventStoreError,
-  AggregateNotFoundError,
 } from './types';
+import { EventStoreError, AggregateNotFoundError } from './types';
 
 export class SupabaseEventStore implements EventStore {
   private supabase: SupabaseClient;
@@ -255,11 +254,11 @@ export class SupabaseEventStore implements EventStore {
       }
 
       return (data || []).map((row: Record<string, unknown>) => ({
-        eventType: row.event_type,
-        eventCount: parseInt(row.event_count),
-        uniqueAggregates: parseInt(row.unique_aggregates),
-        firstEvent: new Date(row.first_event),
-        lastEvent: new Date(row.last_event),
+        eventType: row.event_type as EventType,
+        eventCount: parseInt(row.event_count as string),
+        uniqueAggregates: parseInt(row.unique_aggregates as string),
+        firstEvent: new Date(row.first_event as string),
+        lastEvent: new Date(row.last_event as string),
       }));
     } catch (error) {
       throw new EventStoreError(

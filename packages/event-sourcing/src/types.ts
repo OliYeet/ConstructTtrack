@@ -67,7 +67,7 @@ export interface EventStore {
   /**
    * Get event statistics
    */
-  getStatistics(timeRange?: TimeRange): Promise<EventStatistics>;
+  getStatistics(timeRange?: TimeRange): Promise<EventStatistics[]>;
 }
 
 // Event Filters

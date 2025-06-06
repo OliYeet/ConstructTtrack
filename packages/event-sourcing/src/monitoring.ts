@@ -199,7 +199,7 @@ export class EventSourcingMonitor {
   createReport(): {
     timestamp: string;
     metrics: EventStoreMetrics;
-    processingStats: ReturnType<typeof this.getProcessingStats>;
+    processingStats: ReturnType<EventSourcingMonitor['getProcessingStats']>;
     health: 'healthy' | 'warning' | 'critical';
   } {
     const processingStats = this.getProcessingStats();

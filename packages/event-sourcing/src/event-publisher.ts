@@ -15,8 +15,8 @@ import type {
   EventSubscription,
   EventFilters,
   StoredEvent,
-  EventStoreError,
 } from './types';
+import { EventStoreError } from './types';
 
 export class RealtimeEventPublisher implements EventPublisher {
   private subscriptions = new Map<string, InternalSubscription>();
