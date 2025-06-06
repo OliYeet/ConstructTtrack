@@ -58,7 +58,14 @@ export class SupabaseMetricStorage implements MetricStorageProvider {
       });
 
       // TODO: Implement actual Supabase storage
-      // For now, throw an error to make the issue visible
+      // Temporary safeguard - switch to memory storage in production
+      if (process.env.NODE_ENV !== 'development') {
+        logger.warn(
+          'Supabase metric storage not yet implemented – switching to in-memory provider'
+        );
+        return new MemoryMetricStorage().store(metrics);
+      }
+      // In development, throw to make the issue visible
       throw new Error(
         'Supabase metric storage not yet implemented - metrics will be lost'
       );
@@ -87,10 +94,8 @@ export class SupabaseMetricStorage implements MetricStorageProvider {
       //   .lte('timestamp', new Date(query.endTime).toISOString())
       //   .limit(query.limit || 1000);
 
-      logger.warn(
-        'Supabase retrieval not implemented - returning empty results'
-      );
-      throw new Error('Supabase metric retrieval not yet implemented');
+      logger.warn('Supabase retrieval not implemented – returning empty array');
+      return [];
     } catch (error) {
       logger.error('Failed to retrieve metrics from Supabase', {
         error: error instanceof Error ? error.message : String(error),
@@ -115,7 +120,8 @@ export class SupabaseMetricStorage implements MetricStorageProvider {
       //   .delete()
       //   .lt('timestamp', cutoffTime);
 
-      throw new Error('Supabase metric cleanup not yet implemented');
+      logger.warn('Supabase cleanup not implemented – skipping');
+      return 0;
     } catch (error) {
       logger.error('Failed to cleanup old metrics from Supabase', {
         error: error instanceof Error ? error.message : String(error),
@@ -288,6 +294,10 @@ export class MetricPersistenceManager {
   }
 
   private createStorageProvider(): MetricStorageProvider {
+    if (!this.config.storage.enabled) {
+      return new MemoryMetricStorage();
+    }
+
     switch (this.config.storage.provider) {
       case 'supabase':
         return new SupabaseMetricStorage();

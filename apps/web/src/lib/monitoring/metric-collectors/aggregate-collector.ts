@@ -245,6 +245,11 @@ export class AggregateCollector extends BaseMetricCollector {
     // Update last aggregation time
     this.lastAggregation.set(type, windowStart);
 
+    // Clear processed metrics from buffer to prevent overlapping aggregations
+    for (const metricKey of this.metricBuffer.keys()) {
+      this.metricBuffer.set(metricKey, []);
+    }
+
     return metrics;
   }
 
@@ -284,9 +289,8 @@ export class AggregateCollector extends BaseMetricCollector {
 
   private filterValuesByTimeWindow(values: number[]): number[] {
     // TODO: Implement actual time-based filtering with timestamps
-    // For now, clear the buffer after processing to prevent overlap
-    // This is a temporary solution until proper timestamp tracking is implemented
-    return values.slice(); // Return a copy, buffer will be cleared elsewhere
+    // For now, return all values and clear buffer after processing to prevent overlap
+    return values.slice(); // Return a copy
   }
 
   private getSourceMetricIds(
