@@ -331,6 +331,7 @@ export class RealtimePerformanceMonitor {
     }
 
     this.connectionMetrics.set(connectionId, fullMetric);
+    this.cleanup(); // Prevent memory leaks
 
     // Emit event
     this.emit('metric', { type: 'connection', metric: fullMetric });
@@ -375,6 +376,7 @@ export class RealtimePerformanceMonitor {
     };
 
     this.subscriptionMetrics.set(subscriptionId, fullMetric);
+    this.cleanup(); // Prevent memory leaks
 
     // Emit event
     this.emit('metric', { type: 'subscription', metric: fullMetric });
@@ -493,12 +495,24 @@ export class RealtimePerformanceMonitor {
     const listeners = this.eventListeners.get(event);
     if (listeners) {
       listeners.forEach(listener => {
-        try {
-          listener(data);
-        } catch (error) {
-          const logger = getLogger();
-          logger.error('Error in real-time monitor event listener', { error });
-        }
+        // Make asynchronous to prevent blocking monitoring
+        setImmediate(() => {
+          try {
+            listener(data);
+          } catch (error) {
+            // Record error through monitoring system
+            this.recordErrorMetric({
+              type: 'processing',
+              severity: 'error',
+              code: 'LISTENER_ERROR',
+              message: `Event listener failed for ${event}`,
+              context: {
+                event,
+                error: error instanceof Error ? error.message : String(error),
+              },
+            });
+          }
+        });
       });
     }
   }
@@ -876,6 +890,11 @@ export class RealtimePerformanceMonitor {
   // Check error rate thresholds (Charlie's requirement: >1% error rate)
   private checkErrorRateThresholds(): void {
     if (!this.config.alertConfig.enabled) {
+      return;
+    }
+
+    // Prevent re-entry during stats calculation to avoid long tick overruns
+    if (!this.isMonitoring) {
       return;
     }
 

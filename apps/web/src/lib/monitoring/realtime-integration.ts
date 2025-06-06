@@ -141,7 +141,7 @@ export class RealtimeMonitoringIntegration {
     );
 
     // Setup periodic reporting to main performance monitor
-    this.statsInterval = setInterval(() => {
+    const reportStats = () => {
       const stats = realtimePerformanceMonitor.getCurrentStats();
       if (stats) {
         // Report key metrics to main performance monitor
@@ -175,7 +175,10 @@ export class RealtimeMonitoringIntegration {
           );
         }
       }
-    }, 60000); // Report every minute
+    };
+
+    this.statsInterval = setInterval(reportStats, 60000); // Report every minute
+    reportStats(); // Immediate first report to prevent startup delay
   }
 
   // Get alert manager for external configuration
