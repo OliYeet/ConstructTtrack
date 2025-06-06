@@ -123,12 +123,12 @@ export class SupabaseEventStore implements EventStore {
         processingTime: Date.now() - startTime,
       };
     } catch (error) {
-      return {
-        success: false,
-        eventId: event.id,
-        error: error instanceof Error ? error.message : 'Unknown error',
-        processingTime: Date.now() - startTime,
-      };
+      // CodeRabbit fix: Don't swallow errors - throw them to ensure proper error handling
+      throw new EventStoreError(
+        `Failed to append event ${event.id}`,
+        'APPEND_FAILED',
+        { error, event }
+      );
     }
   }
 

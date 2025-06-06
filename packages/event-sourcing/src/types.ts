@@ -8,9 +8,12 @@ import type {
   EventType,
 } from '@constructtrack/realtime-protocol';
 
+// CodeRabbit fix: Add UUID type alias for clarity
+export type UUID = string;
+
 // Event Store Core Types
 export interface StoredEvent {
-  id: string;
+  id: UUID;
   eventId: string;
   eventType: EventType;
   version: string;

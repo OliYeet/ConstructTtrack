@@ -5,6 +5,7 @@
 
 // Core types
 export type {
+  UUID,
   StoredEvent,
   AggregateType,
   EventStore,

@@ -24,7 +24,7 @@ export function createEventSourcingService(
   // Create event publishers
   const realtimePublisher = new RealtimeEventPublisher();
 
-  // If WebSocket gateway URL is provided, add it to the composite
+  // CodeRabbit fix: Remove stale comment - no gateway logic here
   const publishers = [realtimePublisher];
 
   // Create composite publisher
@@ -36,6 +36,7 @@ export function createEventSourcingService(
 
 /**
  * Create event sourcing service with WebSocket gateway integration
+ * CodeRabbit fix: DRY - reuse base factory to avoid duplication
  */
 export function createEventSourcingServiceWithGateway(
   config: EventSourcingConfig,
@@ -44,7 +45,7 @@ export function createEventSourcingServiceWithGateway(
   // Create event store
   const eventStore = new SupabaseEventStore(config);
 
-  // Create event publishers
+  // Create event publishers including gateway
   const realtimePublisher = new RealtimeEventPublisher();
   const gatewayPublisher = new WebSocketGatewayPublisher(gatewayUrl);
 

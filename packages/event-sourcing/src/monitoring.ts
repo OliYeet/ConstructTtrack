@@ -46,6 +46,13 @@ export class EventSourcingMonitor {
       this.errorCount++;
     }
 
+    // CodeRabbit fix: Update timestamp-based metrics
+    const now = new Date();
+    if (this.totalEvents === 1) {
+      this.metrics.oldestEvent = now;
+    }
+    this.metrics.newestEvent = now;
+
     this.updateMetrics();
   }
 
@@ -106,6 +113,9 @@ export class EventSourcingMonitor {
     this.metrics.errorRate =
       this.totalEvents > 0 ? this.errorCount / this.totalEvents : 0;
 
+    // CodeRabbit fix: Update storage size metric
+    this.metrics.storageSize = this.totalEvents;
+
     if (this.processingTimes.length > 0) {
       this.metrics.averageProcessingTime =
         this.processingTimes.reduce((sum, time) => sum + time, 0) /
@@ -144,8 +154,15 @@ export class EventSourcingMonitor {
     const successfulEvents = this.totalEvents - this.errorCount;
     const sortedTimes = [...this.processingTimes].sort((a, b) => a - b);
 
-    const p95Index = Math.floor(sortedTimes.length * 0.95);
-    const p99Index = Math.floor(sortedTimes.length * 0.99);
+    // CodeRabbit fix: Correct percentile calculation to avoid off-by-one errors
+    const p95ProcessingTime =
+      sortedTimes.length > 0
+        ? (sortedTimes[Math.ceil(0.95 * sortedTimes.length) - 1] ?? 0)
+        : 0;
+    const p99ProcessingTime =
+      sortedTimes.length > 0
+        ? (sortedTimes[Math.ceil(0.99 * sortedTimes.length) - 1] ?? 0)
+        : 0;
 
     return {
       totalEvents: this.totalEvents,
@@ -153,8 +170,8 @@ export class EventSourcingMonitor {
       failedEvents: this.errorCount,
       errorRate: this.metrics.errorRate,
       averageProcessingTime: this.metrics.averageProcessingTime,
-      p95ProcessingTime: sortedTimes[p95Index] || 0,
-      p99ProcessingTime: sortedTimes[p99Index] || 0,
+      p95ProcessingTime,
+      p99ProcessingTime,
     };
   }
 
