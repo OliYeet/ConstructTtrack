@@ -286,8 +286,16 @@ export abstract class BaseMetricCollector extends EventEmitter {
       try {
         const metrics = await this.collect();
 
-        this.status.metricsCollected += metrics.length;
-        this.emit('metrics', { collector: this.id, metrics });
+        const enriched = metrics.map(m => ({
+          ...m,
+          tags: { ...this.config.tags, ...m.tags },
+          metadata: { ...this.config.metadata, ...m.metadata },
+        }));
+
+        this.status.metricsCollected += enriched.length;
+        this.status.lastCollection = Date.now();
+
+        this.emit('metrics', { collector: this.id, metrics: enriched });
         this.emit('retrySuccess', { collector: this.id, attempt });
         return;
       } catch (error) {

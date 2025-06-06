@@ -324,20 +324,40 @@ export class ResourceCollector extends BaseMetricCollector {
     const cores = cpus.length;
     const loadAverage = os.loadavg();
 
-    // Calculate CPU usage
-    let totalIdle = 0;
-    let totalTick = 0;
+    // Calculate CPU usage using delta from previous snapshot
+    let usage = 0;
 
-    for (const cpu of cpus) {
-      for (const type in cpu.times) {
-        totalTick += cpu.times[type as keyof typeof cpu.times];
+    if (this.lastCPUTimes) {
+      let totalDelta = 0;
+      let idleDelta = 0;
+
+      for (const cpu of cpus) {
+        totalDelta +=
+          cpu.times.user +
+          cpu.times.nice +
+          cpu.times.sys +
+          cpu.times.irq +
+          cpu.times.idle;
+        idleDelta += cpu.times.idle;
       }
-      totalIdle += cpu.times.idle;
+
+      const prevTotal =
+        this.lastCPUTimes.user +
+        this.lastCPUTimes.system +
+        this.lastCPUTimes.idle;
+
+      const deltaTotal = totalDelta - prevTotal;
+      const deltaIdle = idleDelta - this.lastCPUTimes.idle;
+
+      usage = Math.max(0, Math.min(100, (1 - deltaIdle / deltaTotal) * 100));
     }
 
-    const idle = totalIdle / cpus.length;
-    const total = totalTick / cpus.length;
-    const usage = 100 - ~~((100 * idle) / total);
+    // Store snapshot for next iteration
+    this.lastCPUTimes = {
+      user: cpus.reduce((s, c) => s + c.times.user, 0),
+      system: cpus.reduce((s, c) => s + c.times.sys, 0),
+      idle: cpus.reduce((s, c) => s + c.times.idle, 0),
+    };
 
     let processes: Array<{ pid: number; name: string; usage: number }> = [];
 

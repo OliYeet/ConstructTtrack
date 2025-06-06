@@ -57,8 +57,11 @@ export class SupabaseMetricStorage implements MetricStorageProvider {
         metadata: { count: storageMetrics.length, table: this.tableName },
       });
 
-      // Placeholder for actual Supabase storage
-      // await supabase.from(this.tableName).insert(storageMetrics);
+      // TODO: Implement actual Supabase storage
+      // For now, throw an error to make the issue visible
+      throw new Error(
+        'Supabase metric storage not yet implemented - metrics will be lost'
+      );
     } catch (error) {
       logger.error('Failed to store metrics to Supabase', {
         error: error instanceof Error ? error.message : String(error),
@@ -84,7 +87,10 @@ export class SupabaseMetricStorage implements MetricStorageProvider {
       //   .lte('timestamp', new Date(query.endTime).toISOString())
       //   .limit(query.limit || 1000);
 
-      return []; // Placeholder return
+      logger.warn(
+        'Supabase retrieval not implemented - returning empty results'
+      );
+      throw new Error('Supabase metric retrieval not yet implemented');
     } catch (error) {
       logger.error('Failed to retrieve metrics from Supabase', {
         error: error instanceof Error ? error.message : String(error),
@@ -109,7 +115,7 @@ export class SupabaseMetricStorage implements MetricStorageProvider {
       //   .delete()
       //   .lt('timestamp', cutoffTime);
 
-      return 0; // Placeholder return
+      throw new Error('Supabase metric cleanup not yet implemented');
     } catch (error) {
       logger.error('Failed to cleanup old metrics from Supabase', {
         error: error instanceof Error ? error.message : String(error),
@@ -183,8 +189,9 @@ export class MemoryMetricStorage implements MetricStorageProvider {
 
         // Filter by tags
         if (query.tags) {
+          const metricTags = metric.tags || {};
           for (const [key, value] of Object.entries(query.tags)) {
-            if (metric.tags[key] !== value) {
+            if (metricTags[key] !== value) {
               return false;
             }
           }

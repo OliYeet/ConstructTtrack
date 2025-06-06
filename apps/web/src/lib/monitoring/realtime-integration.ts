@@ -9,6 +9,7 @@
  * - Multiple metric collectors (LUM-585 enhancement)
  */
 
+import type { EventType } from '../../types/realtime-protocol';
 import { getLogger } from '../logging';
 
 import {
@@ -53,6 +54,7 @@ export class RealtimeMonitoringIntegration {
   private enhancedConfig: EnhancedRealtimeMonitoringConfig;
   private metricCollectors = new Map<string, BaseMetricCollector>();
   private collectorRegistry: CollectorRegistry;
+  private reportingTimer?: NodeJS.Timeout;
 
   constructor() {
     this.alertManager = new RealtimeAlertManager(
@@ -115,6 +117,12 @@ export class RealtimeMonitoringIntegration {
 
     // LUM-585: Stop all metric collectors
     this.shutdownMetricCollectors();
+
+    // Clear reporting timer
+    if (this.reportingTimer) {
+      clearInterval(this.reportingTimer);
+      this.reportingTimer = undefined;
+    }
 
     this.isInitialized = false;
 
@@ -202,7 +210,7 @@ export class RealtimeMonitoringIntegration {
     );
 
     // Setup periodic reporting to main performance monitor
-    setInterval(() => {
+    this.reportingTimer = setInterval(() => {
       const stats = realtimePerformanceMonitor.getCurrentStats();
       if (stats) {
         // Report key metrics to main performance monitor
@@ -358,7 +366,10 @@ export class RealtimeMonitoringIntegration {
                 this.enhancedConfig.collectors.export.openTelemetry.headers,
               compression: 'none',
             },
-            json: { enabled: true, format: 'structured' },
+            json: {
+              enabled: false, // JSON export not configured in enhanced config
+              format: 'structured',
+            },
           },
         });
 
@@ -506,11 +517,11 @@ export class SupabaseRealtimeIntegration {
   // Track Supabase real-time subscription performance
   static trackSubscription(
     channel: string,
-    eventType: string,
+    eventType: EventType,
     startTime: number
   ): string {
     const eventId = realtimePerformanceMonitor.recordLatencyMetric({
-      eventType: eventType as 'WorkOrderUpdated',
+      eventType,
       timestamps: {
         dbCommit: startTime,
       },

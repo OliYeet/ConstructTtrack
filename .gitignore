@@ -53,6 +53,7 @@ coverage/
 .env.staging.local
 .env.production.local
 .env.test.local
+.env.test
 
 # Keep environment templates and examples
 !.env.example

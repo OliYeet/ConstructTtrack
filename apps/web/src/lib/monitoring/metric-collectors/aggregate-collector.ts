@@ -283,9 +283,10 @@ export class AggregateCollector extends BaseMetricCollector {
   }
 
   private filterValuesByTimeWindow(values: number[]): number[] {
-    // For now, return all values since we don't have timestamps per value
-    // In a more sophisticated implementation, you'd filter by timestamp
-    return values;
+    // TODO: Implement actual time-based filtering with timestamps
+    // For now, clear the buffer after processing to prevent overlap
+    // This is a temporary solution until proper timestamp tracking is implemented
+    return values.slice(); // Return a copy, buffer will be cleared elsewhere
   }
 
   private getSourceMetricIds(

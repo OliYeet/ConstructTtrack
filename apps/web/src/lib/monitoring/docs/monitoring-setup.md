@@ -7,7 +7,7 @@ infrastructure with multiple metric collectors, aggregation capabilities, and ex
 
 ## Architecture
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────┐
 │                Enhanced Monitoring System                        │
 ├─────────────────────────────────────────────────────────────────┤
