@@ -20,6 +20,7 @@
     "test:db": "jest tests/database/",
     "test:migration": "jest tests/database/migration-system.test.js",
     "lint": "eslint .",
+    "lint:changed": "node scripts/lint-changed-files.js",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "type-check": "tsc --noEmit",
