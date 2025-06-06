@@ -14,6 +14,7 @@ import { cacheManager } from './optimization/cache-manager';
 import { connectionOptimizer } from './optimization/connection-optimizer';
 import { messageOptimizer } from './optimization/message-optimizer';
 import { performanceProfiler } from './optimization/performance-profiler';
+import { regressionDetector } from './optimization/regression-detector';
 import type {
   AuthenticatedWebSocket,
   ClientMessage,
@@ -59,6 +60,7 @@ export class WebSocketGateway {
     // Start optimization components
     performanceProfiler.start();
     connectionOptimizer.start();
+    regressionDetector.start();
 
     // Create HTTP server for health checks
     this.server = createServer((req, res) => {
@@ -67,6 +69,7 @@ export class WebSocketGateway {
         const cacheStats = cacheManager.getStats();
         const connectionStats = connectionOptimizer.getPoolStats();
         const optimizationStats = messageOptimizer.getOptimizationStats();
+        const regressionSummary = regressionDetector.getRegressionSummary();
 
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(
@@ -79,6 +82,7 @@ export class WebSocketGateway {
             cache: cacheStats,
             connectionPool: connectionStats,
             messageOptimization: optimizationStats,
+            regressionDetection: regressionSummary,
           })
         );
         return;
@@ -539,6 +543,7 @@ export class WebSocketGateway {
     // Stop optimization components first
     performanceProfiler.stop();
     connectionOptimizer.stop();
+    regressionDetector.stop();
     messageOptimizer.clearCaches();
     await cacheManager.close();
 
