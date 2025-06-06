@@ -7,8 +7,7 @@ const config = {
   collectCoverageFrom: ['src/**/*.ts', '!src/**/*.d.ts', '!src/__tests__/**'],
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html'],
-  setupFilesAfterEnv: ['<rootDir>/src/__tests__/setup.ts'],
-  moduleNameMapping: {
+  moduleNameMapper: {
     '^@constructtrack/(.*)$': '<rootDir>/../$1/src',
   },
 };
