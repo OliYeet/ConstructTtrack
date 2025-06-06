@@ -9,6 +9,11 @@ import { WebSocketServer, WebSocket } from 'ws';
 
 import { verifyToken, generateConnectionId } from './auth';
 import { config } from './config';
+import {
+  createConflictEngine,
+  isConflictResolutionEnabled,
+  type ConflictEngine,
+} from './conflict-engine';
 import { ErrorFactory, ErrorHandler, type GatewayError } from './errors';
 import type {
   AuthenticatedWebSocket,
@@ -16,6 +21,7 @@ import type {
   SubscribeMessage,
   UnsubscribeMessage,
   PingMessage,
+  ConflictResolutionMessage,
 } from './types';
 import { logger } from './utils/logger';
 import {
@@ -29,6 +35,9 @@ export class WebSocketGateway {
   private server: ReturnType<typeof createServer>;
   private connections = new Map<string, AuthenticatedWebSocket>();
   private rooms = new Map<string, Set<AuthenticatedWebSocket>>();
+
+  // Conflict resolution engine - Charlie's strategic guidance
+  private conflictEngine: ConflictEngine;
 
   // Enhanced security and performance features - CodeRabbit recommendations
   private rateLimiter = new MessageRateLimiter(
@@ -52,6 +61,11 @@ export class WebSocketGateway {
   >();
 
   constructor() {
+    // Initialize conflict engine with feature flag
+    this.conflictEngine = createConflictEngine({
+      enableConflictResolution: isConflictResolutionEnabled(),
+    });
+
     // Create HTTP server for health checks
     this.server = createServer((req, res) => {
       if (req.url === '/healthz') {
@@ -283,6 +297,10 @@ export class WebSocketGateway {
           this.handlePing(ws, message);
           break;
         }
+        case 'resolve_conflict': {
+          this.handleConflictResolution(ws, message);
+          break;
+        }
         default: {
           const error = ErrorFactory.validation(
             `Unknown action: ${(message as { action: string }).action}`
@@ -356,6 +374,110 @@ export class WebSocketGateway {
       type: 'pong',
       data: { timestamp: Date.now() },
     });
+  }
+
+  private async handleConflictResolution(
+    ws: AuthenticatedWebSocket,
+    message: ConflictResolutionMessage
+  ): Promise<void> {
+    try {
+      // Check if conflict resolution is enabled
+      if (!this.conflictEngine.isEnabled()) {
+        this.sendMessage(ws, {
+          type: 'conflict_resolution_disabled',
+          data: { message: 'Conflict resolution is not enabled' },
+        });
+        return;
+      }
+
+      const { localState, remoteState, metadata } = message;
+
+      // Enhance metadata with connection context
+      const enhancedMetadata = {
+        ...metadata,
+        userId: ws.authContext?.userId || metadata.userId,
+        timestamp: Date.now(),
+      };
+
+      // Detect conflicts using the conflict engine
+      const conflictResult = await this.conflictEngine.detectConflict(
+        localState,
+        remoteState,
+        enhancedMetadata
+      );
+
+      if (!conflictResult.hasConflict) {
+        // No conflicts detected - send success response
+        this.sendMessage(ws, {
+          type: 'conflict_resolved',
+          data: {
+            hasConflict: false,
+            resolvedValue: remoteState, // Use remote state as authoritative
+            strategy: 'no_conflict',
+            confidence: 1.0,
+          },
+        });
+        return;
+      }
+
+      // Process each conflict
+      const resolutions = [];
+      for (const conflict of conflictResult.conflicts) {
+        if (conflict.autoResolvable) {
+          const resolution =
+            await this.conflictEngine.resolveConflict(conflict);
+          resolutions.push({
+            conflictId: conflict.id,
+            type: conflict.type,
+            resolution,
+          });
+        } else {
+          // Manual resolution required
+          resolutions.push({
+            conflictId: conflict.id,
+            type: conflict.type,
+            requiresManualResolution: true,
+            localValue: conflict.localValue,
+            remoteValue: conflict.remoteValue,
+          });
+        }
+      }
+
+      // Send conflict resolution response
+      this.sendMessage(ws, {
+        type: 'conflict_resolved',
+        data: {
+          hasConflict: true,
+          conflicts: conflictResult.conflicts.length,
+          autoResolved: resolutions.filter(r => !r.requiresManualResolution)
+            .length,
+          manualResolutionRequired: resolutions.filter(
+            r => r.requiresManualResolution
+          ).length,
+          resolutions,
+        },
+      });
+
+      // Log conflict resolution for monitoring
+      logger.info('Conflict resolution processed', {
+        connectionId: ws.connectionId,
+        userId: enhancedMetadata.userId,
+        conflictsDetected: conflictResult.conflicts.length,
+        autoResolved: resolutions.filter(r => !r.requiresManualResolution)
+          .length,
+        workOrderId: metadata.workOrderId,
+      });
+    } catch (error) {
+      const gatewayError = ErrorHandler.normalize(
+        error,
+        'Conflict resolution failed'
+      );
+      logger.error(
+        gatewayError.message,
+        ErrorHandler.toLogEntry(gatewayError, ws.connectionId)
+      );
+      this.sendErrorMessage(ws, gatewayError);
+    }
   }
 
   private handleDisconnection(ws: AuthenticatedWebSocket): void {

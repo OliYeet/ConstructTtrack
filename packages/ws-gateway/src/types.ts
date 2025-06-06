@@ -38,7 +38,27 @@ export interface PingMessage {
   timestamp?: number;
 }
 
-export type ClientMessage = SubscribeMessage | UnsubscribeMessage | PingMessage;
+// Conflict resolution message types - Charlie's strategic guidance
+export interface ConflictResolutionMessage {
+  action: 'resolve_conflict';
+  localState: unknown;
+  remoteState: unknown;
+  metadata: {
+    userId: string;
+    organizationId: string;
+    workOrderId: string;
+    sectionId?: string;
+    timestamp: number;
+    source: 'local' | 'remote' | 'authoritative';
+    connectionQuality?: 'excellent' | 'good' | 'poor' | 'offline';
+  };
+}
+
+export type ClientMessage =
+  | SubscribeMessage
+  | UnsubscribeMessage
+  | PingMessage
+  | ConflictResolutionMessage;
 
 // Enhanced types for security features - CodeRabbit recommendations
 
