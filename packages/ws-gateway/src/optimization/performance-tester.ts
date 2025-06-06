@@ -50,6 +50,7 @@ export interface ConnectionResult {
 export class PerformanceTester {
   private connections: WebSocket[] = [];
   private results: ConnectionResult[] = [];
+  private resultMap: Map<string, ConnectionResult> = new Map();
   private isRunning = false;
 
   constructor(
@@ -288,6 +289,7 @@ export class PerformanceTester {
 
       // Record result immediately when connection is established
       this.results.push(result);
+      this.resultMap.set(connectionId, result);
 
       ws.on('close', () => {
         // Update final connection metrics on close
@@ -319,9 +321,9 @@ export class PerformanceTester {
     connectionIndex: number,
     _config: LoadTestConfig
   ): Promise<void> {
-    const result = this.results.find(
-      r => r.connectionId === `test_${connectionIndex}`
-    );
+    // Use O(1) map lookup instead of O(N) array find
+    const connectionId = `test_${connectionIndex}`;
+    const result = this.resultMap.get(connectionId);
     if (!result) return;
 
     for (let i = 0; i < _config.messagesPerConnection; i++) {
@@ -485,6 +487,7 @@ export class PerformanceTester {
 
     await Promise.allSettled(closePromises);
     this.connections = [];
+    this.resultMap.clear();
   }
 
   /**

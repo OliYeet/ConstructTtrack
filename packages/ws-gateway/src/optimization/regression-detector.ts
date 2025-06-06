@@ -161,10 +161,8 @@ export class RegressionDetector {
       return;
     }
 
-    // Record current baseline for comparison
-    this.recordBaseline();
-
-    const current = this.baselines[this.baselines.length - 1];
+    // Get current performance metrics without recording to baseline yet
+    const current = this.getCurrentPerformanceSnapshot();
     if (!current) return;
 
     const newAlerts: RegressionAlert[] = [];
@@ -194,7 +192,7 @@ export class RegressionDetector {
     }
 
     // Check throughput regression (inverse - lower is worse)
-    const throughputDegradation = this.calculateDegradation(
+    const throughputDegradation = this.calculateThroughputDegradation(
       baseline.throughput,
       current.throughput
     );
@@ -271,6 +269,9 @@ export class RegressionDetector {
       this.logAlert(alert);
     });
 
+    // Now record the current baseline after comparison (prevents double-counting)
+    this.recordBaseline();
+
     // Cleanup old alerts (keep last 24 hours)
     const alertCutoff = Date.now() - 86400000; // 24 hours
     this.alerts = this.alerts.filter(alert => alert.timestamp >= alertCutoff);
@@ -312,7 +313,31 @@ export class RegressionDetector {
   }
 
   /**
-   * Calculate performance degradation percentage
+   * Get current performance snapshot without recording to baseline
+   */
+  private getCurrentPerformanceSnapshot(): PerformanceBaseline | null {
+    const profilerMetrics = performanceProfiler.getMetrics();
+    const connectionMetrics = connectionOptimizer.getMetrics();
+
+    if (!profilerMetrics || !connectionMetrics) {
+      return null;
+    }
+
+    return {
+      timestamp: Date.now(),
+      averageLatency: profilerMetrics.averageLatency || 0,
+      p95Latency: profilerMetrics.p95Latency || 0,
+      p99Latency: profilerMetrics.p99Latency || 0,
+      throughput: profilerMetrics.throughput || 0,
+      errorRate: profilerMetrics.errorRate || 0,
+      memoryUsage: process.memoryUsage().heapUsed / 1024 / 1024, // MB
+      cpuUsage: profilerMetrics.cpuUsage || 0,
+      connectionCount: connectionMetrics.activeConnections || 0,
+    };
+  }
+
+  /**
+   * Calculate performance degradation percentage (only returns positive for actual degradations)
    */
   private calculateDegradation(baseline: number, current: number): number {
     // Prevent division by zero and handle edge cases
@@ -322,10 +347,34 @@ export class RegressionDetector {
 
     // For very small baselines, use absolute difference instead of percentage
     if (Math.abs(baseline) < 0.001) {
-      return Math.abs(current - baseline) > 0.001 ? 100 : 0;
+      return current > baseline + 0.001 ? 100 : 0;
     }
 
-    return Math.abs((current - baseline) / baseline) * 100;
+    // Only return positive values for actual degradations (current > baseline)
+    const degradation = ((current - baseline) / baseline) * 100;
+    return Math.max(0, degradation);
+  }
+
+  /**
+   * Calculate throughput degradation (for throughput, lower is worse)
+   */
+  private calculateThroughputDegradation(
+    baseline: number,
+    current: number
+  ): number {
+    // Prevent division by zero and handle edge cases
+    if (baseline === 0 || !isFinite(baseline) || !isFinite(current)) {
+      return 0;
+    }
+
+    // For very small baselines, use absolute difference instead of percentage
+    if (Math.abs(baseline) < 0.001) {
+      return current < baseline - 0.001 ? 100 : 0;
+    }
+
+    // For throughput, degradation is when current < baseline
+    const degradation = ((baseline - current) / baseline) * 100;
+    return Math.max(0, degradation);
   }
 
   /**
