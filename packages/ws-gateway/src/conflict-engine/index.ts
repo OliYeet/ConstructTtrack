@@ -170,7 +170,13 @@ export class ConflictEngineV1 implements ConflictEngine {
     };
 
     // Precedence graph: PLANNED < IN_PROGRESS < DONE
-    const precedence = { planned: 1, in_progress: 2, completed: 3, failed: 0 };
+    const precedence = {
+      planned: 1,
+      in_progress: 2,
+      done: 3,
+      completed: 3, // synonym for done
+      failed: 0,
+    };
 
     const localPrecedence =
       precedence[local.status as keyof typeof precedence] ?? 0;
@@ -210,8 +216,9 @@ export class ConflictEngineV1 implements ConflictEngine {
       return null;
     }
 
-    // Check for invalid progress decrease
-    const hasDecrease = remote.percentage < local.percentage;
+    // Check for invalid progress decrease (only if remote is newer)
+    const isRemoteNewer = remote.timestamp > local.timestamp;
+    const hasDecrease = isRemoteNewer && remote.percentage < local.percentage;
     const largeDiff = Math.abs(local.percentage - remote.percentage) > 25; // >25% jump
 
     if (!hasDecrease && !largeDiff) {
@@ -291,8 +298,9 @@ export class ConflictEngineV1 implements ConflictEngine {
   private isValidStateTransition(from: string, to: string): boolean {
     const validTransitions: Record<string, string[]> = {
       planned: ['in_progress'],
-      in_progress: ['completed', 'failed'],
-      completed: [], // Terminal state
+      in_progress: ['done', 'completed', 'failed'],
+      done: [], // Terminal state
+      completed: [], // Terminal state (synonym for done)
       failed: ['planned'], // Can restart
     };
 

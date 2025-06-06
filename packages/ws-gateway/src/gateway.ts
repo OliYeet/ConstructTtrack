@@ -390,13 +390,24 @@ export class WebSocketGateway {
         return;
       }
 
-      const { localState, remoteState, metadata } = message;
+      const { localState, remoteState } = message;
 
-      // Enhance metadata with connection context
+      // Create metadata from authenticated context (don't trust client)
+      if (!ws.authContext) {
+        this.sendMessage(ws, {
+          type: 'error',
+          data: { message: 'Authentication required for conflict resolution' },
+        });
+        return;
+      }
+
       const enhancedMetadata = {
-        ...metadata,
-        userId: ws.authContext?.userId || metadata.userId,
+        userId: ws.authContext.userId,
+        organizationId: ws.authContext.projects[0] ?? 'unknown',
+        workOrderId: 'unknown', // TODO: Extract from authenticated context
         timestamp: Date.now(),
+        source: 'local' as const,
+        connectionQuality: 'excellent' as const,
       };
 
       // Detect conflicts using the conflict engine
@@ -420,40 +431,42 @@ export class WebSocketGateway {
         return;
       }
 
-      // Process each conflict
-      const resolutions = [];
-      for (const conflict of conflictResult.conflicts) {
-        if (conflict.autoResolvable) {
-          const resolution =
-            await this.conflictEngine.resolveConflict(conflict);
-          resolutions.push({
-            conflictId: conflict.id,
-            type: conflict.type,
-            resolution,
-          });
-        } else {
-          // Manual resolution required
-          resolutions.push({
-            conflictId: conflict.id,
-            type: conflict.type,
-            requiresManualResolution: true,
-            localValue: conflict.localValue,
-            remoteValue: conflict.remoteValue,
-          });
-        }
-      }
+      // Process conflicts in parallel for better performance
+      const resolutions = await Promise.all(
+        conflictResult.conflicts.map(async conflict => {
+          if (conflict.autoResolvable) {
+            const resolution =
+              await this.conflictEngine.resolveConflict(conflict);
+            return {
+              conflictId: conflict.id,
+              type: conflict.type,
+              autoResolved: true,
+              resolution,
+            };
+          } else {
+            // Manual resolution required
+            return {
+              conflictId: conflict.id,
+              type: conflict.type,
+              autoResolved: false,
+              requiresManualResolution: true,
+              localValue: conflict.localValue,
+              remoteValue: conflict.remoteValue,
+            };
+          }
+        })
+      );
 
       // Send conflict resolution response
       this.sendMessage(ws, {
         type: 'conflict_resolved',
         data: {
           hasConflict: true,
+          canAutoResolve: conflictResult.canAutoResolve,
           conflicts: conflictResult.conflicts.length,
-          autoResolved: resolutions.filter(r => !r.requiresManualResolution)
+          autoResolved: resolutions.filter(r => r.autoResolved).length,
+          manualResolutionRequired: resolutions.filter(r => !r.autoResolved)
             .length,
-          manualResolutionRequired: resolutions.filter(
-            r => r.requiresManualResolution
-          ).length,
           resolutions,
         },
       });
@@ -465,7 +478,7 @@ export class WebSocketGateway {
         conflictsDetected: conflictResult.conflicts.length,
         autoResolved: resolutions.filter(r => !r.requiresManualResolution)
           .length,
-        workOrderId: metadata.workOrderId,
+        workOrderId: enhancedMetadata.workOrderId,
       });
     } catch (error) {
       const gatewayError = ErrorHandler.normalize(

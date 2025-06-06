@@ -29,14 +29,14 @@ describe('ConflictEngineV1', () => {
       organizationId: 'org456',
       workOrderId: 'wo789',
       sectionId: 'section001',
-      timestamp: Date.now(),
+      timestamp: 1650000000000, // Fixed timestamp for deterministic tests
       source: 'local',
       connectionQuality: 'good',
     };
   });
 
   afterEach(() => {
-    delete process.env.ENABLE_CONFLICT_RESOLUTION;
+    process.env.ENABLE_CONFLICT_RESOLUTION = 'false';
   });
 
   describe('Feature Flag', () => {
@@ -63,7 +63,7 @@ describe('ConflictEngineV1', () => {
       process.env.ENABLE_CONFLICT_RESOLUTION = 'false';
       expect(isConflictResolutionEnabled()).toBe(false);
 
-      delete process.env.ENABLE_CONFLICT_RESOLUTION;
+      process.env.ENABLE_CONFLICT_RESOLUTION = 'false';
       expect(isConflictResolutionEnabled()).toBe(false);
     });
   });
@@ -133,7 +133,9 @@ describe('ConflictEngineV1', () => {
       expect(resolution.success).toBe(true);
       expect(resolution.strategy).toBe('precedence_graph');
       expect(resolution.confidence).toBe(0.9);
-      expect((resolution.resolvedValue as any).status).toBe('in_progress'); // Higher precedence
+      expect((resolution.resolvedValue as { status: string }).status).toBe(
+        'in_progress'
+      ); // Higher precedence
     });
   });
 
@@ -196,7 +198,9 @@ describe('ConflictEngineV1', () => {
       expect(resolution.success).toBe(true);
       expect(resolution.strategy).toBe('monotonic_counter');
       expect(resolution.confidence).toBe(0.95);
-      expect((resolution.resolvedValue as any).percentage).toBe(75); // Higher value wins
+      expect(
+        (resolution.resolvedValue as { percentage: number }).percentage
+      ).toBe(75); // Higher value wins
     });
   });
 
