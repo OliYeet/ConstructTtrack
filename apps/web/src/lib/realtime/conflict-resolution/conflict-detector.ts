@@ -75,16 +75,18 @@ export class RealtimeConflictDetector implements ConflictDetector {
       const elapsed = Date.now() - startTime;
       if (elapsed > this.config.conflictDetectionTimeout) {
         logger.warn('Conflict detection timeout exceeded', {
-          elapsed,
-          threshold: this.config.conflictDetectionTimeout,
+          performance: {
+            elapsed,
+            threshold: this.config.conflictDetectionTimeout,
+          },
           conflictsFound: conflicts.length,
         });
       }
 
       logger.debug('Conflict detection completed', {
         conflictsFound: conflicts.length,
-        elapsed,
-        metadata,
+        performance: { elapsed },
+        metadata: metadata as Record<string, unknown>,
       });
 
       return conflicts;
@@ -353,8 +355,25 @@ export class RealtimeConflictDetector implements ConflictDetector {
     event: RealtimeEvent
   ): Partial<FiberSectionState> | null {
     const payload = event.payload as Record<string, unknown>;
+    const status = payload?.status;
+    const validStatuses = [
+      'planned',
+      'in_progress',
+      'completed',
+      'failed',
+      'started',
+    ];
+
     return {
-      status: typeof payload?.status === 'string' ? payload.status : undefined,
+      status:
+        typeof status === 'string' && validStatuses.includes(status)
+          ? (status as
+              | 'planned'
+              | 'in_progress'
+              | 'completed'
+              | 'failed'
+              | 'started')
+          : undefined,
       lastModified: event.timestamp,
       modifiedBy: event.userId,
     };

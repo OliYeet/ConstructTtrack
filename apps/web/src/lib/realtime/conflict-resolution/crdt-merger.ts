@@ -34,7 +34,11 @@ export class RealtimeCRDTMerger implements CRDTMerger {
     metadata: ConflictMetadata
   ): Promise<CRDTMergeResult> {
     try {
-      logger.debug('Merging geo coordinates', { local, remote, metadata });
+      logger.debug('Merging geo coordinates', {
+        local,
+        remote,
+        metadata: metadata as Record<string, unknown>,
+      });
 
       // Strategy 1: Accuracy-based merge (higher accuracy wins)
       if (local.accuracy && remote.accuracy) {
@@ -86,7 +90,11 @@ export class RealtimeCRDTMerger implements CRDTMerger {
     metadata: ConflictMetadata
   ): Promise<CRDTMergeResult> {
     try {
-      logger.debug('Merging progress percentages', { local, remote, metadata });
+      logger.debug('Merging progress percentages', {
+        local,
+        remote,
+        metadata: metadata as Record<string, unknown>,
+      });
 
       // Strategy 1: Maximum value wins (progress can only increase)
       if (local.percentage !== remote.percentage) {
@@ -132,7 +140,11 @@ export class RealtimeCRDTMerger implements CRDTMerger {
     metadata: ConflictMetadata
   ): Promise<CRDTMergeResult> {
     try {
-      logger.debug('Merging fiber section state', { local, remote, metadata });
+      logger.debug('Merging fiber section state', {
+        local,
+        remote,
+        metadata: metadata as Record<string, unknown>,
+      });
 
       // Strategy 1: State machine validation
       const localStateOrder = this.getStateOrder(local.status);

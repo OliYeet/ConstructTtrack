@@ -20,6 +20,7 @@ function resolvePackagePath(packageName, subPath = '') {
 
   // Check if the path exists to provide better error messages
   if (!fs.existsSync(packagePath)) {
+    // eslint-disable-next-line no-console
     console.warn(`Warning: Package directory not found: ${packagePath}`);
   }
 

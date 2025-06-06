@@ -39,8 +39,7 @@ export class RealtimeOptimisticReconciler implements OptimisticReconciler {
   async applyOptimisticUpdate(update: OptimisticUpdate): Promise<void> {
     try {
       logger.debug('Applying optimistic update', {
-        updateId: update.id,
-        type: update.type,
+        update: { id: update.id, type: update.type },
       });
 
       // Validate the update
@@ -59,7 +58,7 @@ export class RealtimeOptimisticReconciler implements OptimisticReconciler {
       await this.applyUpdateToLocalState(update);
 
       logger.debug('Optimistic update applied successfully', {
-        updateId: update.id,
+        update: { id: update.id },
       });
     } catch (error) {
       logger.error('Failed to apply optimistic update', { error, update });

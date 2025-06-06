@@ -12,7 +12,8 @@ import { extractApiVersion } from '@/lib/api/versioning';
 export const GET = withApiMiddleware({
   GET: async (request: NextRequest) => {
     const versionInfo = extractApiVersion(request);
-    const apiVersion = (request as any).apiVersion;
+    const apiVersion = (request as NextRequest & { apiVersion?: unknown })
+      .apiVersion;
 
     return createSuccessResponse({
       message: 'API Versioning Demo - v1',
@@ -40,10 +41,11 @@ export const GET = withApiMiddleware({
 export const POST = withApiMiddleware({
   POST: async (request: NextRequest) => {
     const body = await request.json();
-    const apiVersion = (request as any).apiVersion;
+    const apiVersion = (request as NextRequest & { apiVersion?: unknown })
+      .apiVersion;
 
     // Version-specific behavior
-    const responseData: any = {
+    const responseData: Record<string, unknown> = {
       message: 'Version-specific behavior demo',
       version: apiVersion?.version || 'unknown',
       receivedData: body,

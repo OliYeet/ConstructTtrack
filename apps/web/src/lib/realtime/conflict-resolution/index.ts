@@ -91,7 +91,7 @@ export class ConflictResolutionManager {
   async initialize(): Promise<void> {
     try {
       logger.info('Initializing conflict resolution system', {
-        config: this.config,
+        configuration: this.config,
       });
 
       // Perform any necessary setup
@@ -178,7 +178,7 @@ export class ConflictResolutionManager {
     this.reconciler = new RealtimeOptimisticReconciler(this.config);
 
     logger.info('Conflict resolution configuration updated', {
-      config: this.config,
+      configuration: this.config,
     });
   }
 

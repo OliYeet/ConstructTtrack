@@ -171,7 +171,8 @@ export const PATCH = withApiMiddleware(
 export const DELETE = withApiMiddleware(
   {
     DELETE: async (request: NextRequest) => {
-      const user = (request as any).context?.user;
+      const user = (request as NextRequest & { context?: { user?: unknown } })
+        .context?.user;
 
       return createSuccessResponse({
         message: 'Authenticated metrics demo',

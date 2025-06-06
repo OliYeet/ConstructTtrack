@@ -111,7 +111,9 @@ export const DELETE = withApiMiddleware(
 
       if (action === 'clear') {
         // Clear all cache
-        await (cacheManager as any).store.clear();
+        await (
+          cacheManager as { store: { clear: () => Promise<void> } }
+        ).store.clear();
 
         return createSuccessResponse({
           message: 'All cache entries cleared',

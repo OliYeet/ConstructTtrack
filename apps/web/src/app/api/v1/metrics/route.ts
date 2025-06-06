@@ -101,6 +101,7 @@ export async function POST(request: NextRequest) {
   }
 
   // Record the metric (placeholder implementation)
+  // eslint-disable-next-line no-console
   console.log('Recording metric:', { name, value, unit, tags, metadata });
 
   return createSuccessResponse({

@@ -73,7 +73,8 @@ export const PATCH = withApiMiddleware(
 
       return createSuccessResponse({
         message: 'Authenticated detailed logging demo',
-        user: (request as any).context?.user,
+        user: (request as NextRequest & { context?: { user?: unknown } })
+          .context?.user,
         receivedData: body,
         timestamp: new Date().toISOString(),
         note: 'This endpoint requires authentication and logs detailed information',
