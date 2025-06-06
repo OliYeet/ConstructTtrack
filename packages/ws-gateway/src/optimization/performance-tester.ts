@@ -44,6 +44,7 @@ export interface ConnectionResult {
   messagesReceived: number;
   latencies: number[];
   errors: string[];
+  pendingMessages: Map<string, number>;
 }
 
 export class PerformanceTester {
@@ -252,6 +253,7 @@ export class PerformanceTester {
         messagesReceived: 0,
         latencies: [],
         errors: [],
+        pendingMessages: new Map<string, number>(),
       };
 
       ws.on('open', () => {
@@ -259,6 +261,24 @@ export class PerformanceTester {
         result.connectionTime = Date.now() - startTime;
         this.connections.push(ws);
         resolve();
+      });
+
+      ws.on('message', data => {
+        try {
+          const response = JSON.parse(data.toString());
+          if (response.type === 'pong' && response.data?.messageId) {
+            const messageId = response.data.messageId;
+            const sentTime = result.pendingMessages.get(messageId);
+            if (sentTime) {
+              const latency = Date.now() - sentTime;
+              result.latencies.push(latency);
+              result.messagesReceived++;
+              result.pendingMessages.delete(messageId);
+            }
+          }
+        } catch {
+          // Ignore parsing errors for non-JSON responses
+        }
       });
 
       ws.on('error', error => {
@@ -311,9 +331,11 @@ export class PerformanceTester {
       }
 
       const messageStart = Date.now();
+      const messageId = `${connectionIndex}_${i}_${messageStart}`;
       const message = {
         action: 'ping',
         data: {
+          messageId,
           index: i,
           payload: 'x'.repeat(_config.messageSize),
           timestamp: messageStart,
@@ -321,16 +343,10 @@ export class PerformanceTester {
       };
 
       try {
+        // Track message for latency measurement
+        result.pendingMessages.set(messageId, messageStart);
         ws.send(JSON.stringify(message));
         result.messagesSent++;
-
-        // Track message for response (proper latency measurement)
-        // In a real implementation, we would track actual responses
-        // For now, simulate realistic latency without hard-coded delays
-        const simulatedLatency = Math.random() * 50 + 10; // 10-60ms realistic range
-        const latency = simulatedLatency;
-        result.latencies.push(latency);
-        result.messagesReceived++;
       } catch (error) {
         result.errors.push(
           error instanceof Error ? error.message : 'Unknown error'
@@ -342,6 +358,22 @@ export class PerformanceTester {
           globalThis.setTimeout(resolve, _config.messageInterval)
         );
       }
+    }
+
+    // Wait for remaining responses with timeout
+    const maxWaitTime = 5000; // 5 seconds
+    const waitStart = Date.now();
+    while (
+      result.pendingMessages.size > 0 &&
+      Date.now() - waitStart < maxWaitTime
+    ) {
+      await new Promise(resolve => globalThis.setTimeout(resolve, 100));
+    }
+
+    // Mark remaining messages as timed out
+    if (result.pendingMessages.size > 0) {
+      result.errors.push(`${result.pendingMessages.size} messages timed out`);
+      result.pendingMessages.clear();
     }
   }
 

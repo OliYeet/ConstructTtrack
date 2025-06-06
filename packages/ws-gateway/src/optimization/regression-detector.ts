@@ -195,8 +195,8 @@ export class RegressionDetector {
 
     // Check throughput regression (inverse - lower is worse)
     const throughputDegradation = this.calculateDegradation(
-      current.throughput,
-      baseline.throughput
+      baseline.throughput,
+      current.throughput
     );
     if (throughputDegradation > this.config.warningThreshold) {
       newAlerts.push({
