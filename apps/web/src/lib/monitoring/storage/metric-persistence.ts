@@ -299,7 +299,8 @@ export class MetricPersistenceManager {
   }
 
   private startPeriodicFlush(): void {
-    if (this.config.storage.flushInterval > 0) {
+    // Only start periodic flush if storage is enabled and flush interval is configured
+    if (this.config.storage.enabled && this.config.storage.flushInterval > 0) {
       this.flushTimer = setInterval(() => {
         this.flush();
       }, this.config.storage.flushInterval);
