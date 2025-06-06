@@ -365,7 +365,7 @@ export default [
 
   // Configuration files
   {
-    files: ['*.config.{js,ts,mjs}', 'eslint.config.js'],
+    files: ['*.config.{js,ts,mjs}', 'eslint.config.js', '**/jest.config.js'],
     languageOptions: {
       globals: {
         process: 'readonly',

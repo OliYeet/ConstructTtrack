@@ -5,6 +5,12 @@
  */
 
 import {
+  createEventSourcingService,
+  createDefaultConfig,
+  type EventSourcingService,
+} from '@constructtrack/event-sourcing';
+import type { RealtimeEvent } from '@constructtrack/realtime-protocol';
+import {
   createClient,
   SupabaseClient,
   RealtimeChannel,
@@ -41,6 +47,7 @@ export class SupabaseBridge {
   private supabase: SupabaseClient;
   private gateway: WebSocketGateway;
   private channels: RealtimeChannel[] = [];
+  private eventSourcingService: EventSourcingService;
 
   constructor(gateway: WebSocketGateway) {
     this.gateway = gateway;
@@ -48,6 +55,13 @@ export class SupabaseBridge {
       config.supabase.url,
       config.supabase.serviceRoleKey
     );
+
+    // Initialize event sourcing service
+    const eventSourcingConfig = createDefaultConfig(
+      config.supabase.url,
+      config.supabase.serviceRoleKey
+    );
+    this.eventSourcingService = createEventSourcingService(eventSourcingConfig);
   }
 
   public async start(): Promise<void> {
@@ -63,8 +77,8 @@ export class SupabaseBridge {
           schema: 'public',
           table: 'work_orders',
         },
-        payload =>
-          this.handleWorkOrderEvent(
+        async payload =>
+          await this.handleWorkOrderEvent(
             payload as RealtimePostgresChangesPayload<WorkOrder>
           )
       )
@@ -80,8 +94,8 @@ export class SupabaseBridge {
           schema: 'public',
           table: 'fiber_sections',
         },
-        payload =>
-          this.handleFiberSectionEvent(
+        async payload =>
+          await this.handleFiberSectionEvent(
             payload as RealtimePostgresChangesPayload<FiberSection>
           )
       )
@@ -94,9 +108,9 @@ export class SupabaseBridge {
     });
   }
 
-  private handleWorkOrderEvent(
+  private async handleWorkOrderEvent(
     payload: RealtimePostgresChangesPayload<WorkOrder>
-  ): void {
+  ): Promise<void> {
     logger.debug('Work order event received', {
       eventType: payload.eventType,
       table: payload.table,
@@ -119,6 +133,45 @@ export class SupabaseBridge {
       },
     };
 
+    // Create RealtimeEvent for event sourcing
+    const realtimeEvent: RealtimeEvent = {
+      id: `work_order_${workOrder.id}_${Date.now()}`,
+      type: 'WorkOrderUpdated',
+      version: 'v1.alpha',
+      timestamp: new Date().toISOString(),
+      workOrderId: workOrder.id,
+      userId: workOrder.assigned_to || 'system',
+      metadata: {
+        eventType: payload.eventType,
+        table: payload.table,
+        rooms,
+      },
+      payload: {
+        workOrder,
+        oldWorkOrder: payload.eventType === 'UPDATE' ? oldWorkOrder : undefined,
+        eventType: payload.eventType.toLowerCase(),
+      },
+    };
+
+    try {
+      // Store event in event sourcing system
+      await this.eventSourcingService.processEvents(
+        [realtimeEvent],
+        workOrder.id,
+        'work_order'
+      );
+    } catch (error) {
+      logger.error(
+        'Failed to store work order event in event sourcing system',
+        {
+          error,
+          eventId: realtimeEvent.id,
+          workOrderId: workOrder.id,
+        }
+      );
+      // Continue with broadcast even if event sourcing fails
+    }
+
     // Broadcast to relevant rooms
     rooms.forEach(room => {
       this.gateway.broadcastToRoom(room, protocolEvent);
@@ -129,9 +182,9 @@ export class SupabaseBridge {
     });
   }
 
-  private handleFiberSectionEvent(
+  private async handleFiberSectionEvent(
     payload: RealtimePostgresChangesPayload<FiberSection>
-  ): void {
+  ): Promise<void> {
     logger.debug('Fiber section event received', {
       eventType: payload.eventType,
       table: payload.table,
@@ -157,6 +210,49 @@ export class SupabaseBridge {
         timestamp: new Date().toISOString(),
       },
     };
+
+    // Create RealtimeEvent for event sourcing
+    const realtimeEvent: RealtimeEvent = {
+      id: `fiber_section_${fiberSection.id}_${Date.now()}`,
+      type: 'FiberSectionProgress',
+      version: 'v1.alpha',
+      timestamp: new Date().toISOString(),
+      workOrderId: fiberSection.work_order_id || fiberSection.project_id,
+      userId: fiberSection.assigned_to || 'system',
+      metadata: {
+        eventType: payload.eventType,
+        table: payload.table,
+        rooms,
+      },
+      payload: {
+        sectionId: fiberSection.id,
+        status: fiberSection.status,
+        progress: fiberSection.progress || 0,
+        location: fiberSection.location,
+        eventType: payload.eventType.toLowerCase(),
+        oldFiberSection:
+          payload.eventType === 'UPDATE' ? oldFiberSection : undefined,
+      },
+    };
+
+    try {
+      // Store event in event sourcing system
+      await this.eventSourcingService.processEvents(
+        [realtimeEvent],
+        fiberSection.id,
+        'fiber_section'
+      );
+    } catch (error) {
+      logger.error(
+        'Failed to store fiber section event in event sourcing system',
+        {
+          error,
+          eventId: realtimeEvent.id,
+          fiberSectionId: fiberSection.id,
+        }
+      );
+      // Continue with broadcast even if event sourcing fails
+    }
 
     // Broadcast to relevant rooms
     rooms.forEach(room => {
