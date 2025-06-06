@@ -315,16 +315,30 @@ export class RegressionDetector {
    * Calculate performance degradation percentage
    */
   private calculateDegradation(baseline: number, current: number): number {
-    if (baseline === 0) return 0;
+    // Prevent division by zero and handle edge cases
+    if (baseline === 0 || !isFinite(baseline) || !isFinite(current)) {
+      return 0;
+    }
+
+    // For very small baselines, use absolute difference instead of percentage
+    if (Math.abs(baseline) < 0.001) {
+      return Math.abs(current - baseline) > 0.001 ? 100 : 0;
+    }
+
     return Math.abs((current - baseline) / baseline) * 100;
   }
 
   /**
-   * Calculate average of array
+   * Calculate average of array with safety checks
    */
   private average(values: number[]): number {
     if (values.length === 0) return 0;
-    return values.reduce((sum, val) => sum + val, 0) / values.length;
+
+    // Filter out invalid values
+    const validValues = values.filter(val => isFinite(val) && !isNaN(val));
+    if (validValues.length === 0) return 0;
+
+    return validValues.reduce((sum, val) => sum + val, 0) / validValues.length;
   }
 
   /**
