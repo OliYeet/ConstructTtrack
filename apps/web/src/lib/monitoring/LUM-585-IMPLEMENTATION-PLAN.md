@@ -51,7 +51,7 @@ WebSocket Infrastructure
 
 ## 🏗️ Proposed File Structure
 
-```
+```text
 apps/web/src/lib/monitoring/
 ├── realtime-config.ts              # Enhanced configuration management
 ├── metric-collectors/
@@ -75,6 +75,8 @@ apps/web/src/lib/monitoring/
 - **Performance Monitor:** Continue integration with existing performance monitoring
 - **Supabase:** Leverage existing database for metric persistence
 - **Environment Config:** Use existing `.env` pattern for configuration
+- **Test Environment:** Use `.env.test` for testing with dummy/test values (following `.env.example`
+  pattern)
 
 ## 🚨 AWAITING STRATEGIC APPROVAL
 
