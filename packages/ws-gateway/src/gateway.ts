@@ -11,6 +11,7 @@ import { verifyToken, generateConnectionId } from './auth';
 import { config } from './config';
 import { ErrorFactory, ErrorHandler, type GatewayError } from './errors';
 import { cacheManager } from './optimization/cache-manager';
+import { connectionOptimizer } from './optimization/connection-optimizer';
 import { messageOptimizer } from './optimization/message-optimizer';
 import { performanceProfiler } from './optimization/performance-profiler';
 import type {
@@ -55,14 +56,17 @@ export class WebSocketGateway {
   >();
 
   constructor() {
-    // Start performance profiler
+    // Start optimization components
     performanceProfiler.start();
+    connectionOptimizer.start();
 
     // Create HTTP server for health checks
     this.server = createServer((req, res) => {
       if (req.url === '/healthz') {
         const stats = performanceProfiler.getPerformanceSummary();
         const cacheStats = cacheManager.getStats();
+        const connectionStats = connectionOptimizer.getPoolStats();
+        const optimizationStats = messageOptimizer.getOptimizationStats();
 
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(
@@ -73,6 +77,8 @@ export class WebSocketGateway {
             timestamp: new Date().toISOString(),
             performance: stats,
             cache: cacheStats,
+            connectionPool: connectionStats,
+            messageOptimization: optimizationStats,
           })
         );
         return;
@@ -188,6 +194,9 @@ export class WebSocketGateway {
         ipAddress,
       });
 
+      // Track connection in optimizer
+      connectionOptimizer.trackConnection(ws.connectionId);
+
       // Update connection counters
       this.connectionLimiter.set(ipAddress, ipConnections + 1);
     } catch (error) {
@@ -257,6 +266,12 @@ export class WebSocketGateway {
             metadata.lastActivity = Date.now();
             metadata.messageCount++;
           }
+
+          // Track activity in connection optimizer
+          connectionOptimizer.updateActivity(
+            ws.connectionId,
+            dataString.length
+          );
 
           // Parse and validate message
           const dataString = performanceProfiler.timeOperation(
@@ -394,6 +409,9 @@ export class WebSocketGateway {
     ws.rooms.forEach(room => this.removeFromRoom(ws, room));
     this.connections.delete(ws.connectionId);
 
+    // Remove from connection optimizer tracking
+    connectionOptimizer.removeConnection(ws.connectionId);
+
     // Update IP connection counter
     const currentConnections = this.connectionLimiter.get(ipAddress) || 0;
     if (currentConnections > 1) {
@@ -520,6 +538,7 @@ export class WebSocketGateway {
   public async stop(): Promise<void> {
     // Stop optimization components first
     performanceProfiler.stop();
+    connectionOptimizer.stop();
     messageOptimizer.clearCaches();
     await cacheManager.close();
 
