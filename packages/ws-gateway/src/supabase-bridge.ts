@@ -4,6 +4,10 @@
  * Focus on work_orders and fiber_sections per Charlie's guidance
  */
 
+// ⚠️ SECURITY WARNING: This file contains service role key access
+// NEVER bundle this file for browser/client-side use - server-only!
+// The service role key provides root-level database access
+
 // Temporarily disable event sourcing integration to fix CI
 // TODO: Re-enable after workspace module resolution is fixed
 // import {
@@ -32,6 +36,8 @@ interface RealtimeEvent {
   metadata?: Record<string, unknown>;
   payload: Record<string, unknown>;
 }
+import { randomUUID } from 'crypto';
+
 import {
   createClient,
   SupabaseClient,
@@ -99,10 +105,15 @@ export class SupabaseBridge {
           schema: 'public',
           table: 'work_orders',
         },
-        async payload =>
-          await this.handleWorkOrderEvent(
-            payload as RealtimePostgresChangesPayload<WorkOrder>
-          )
+        async payload => {
+          try {
+            await this.handleWorkOrderEvent(
+              payload as RealtimePostgresChangesPayload<WorkOrder>
+            );
+          } catch (error) {
+            logger.error('Work order event handler failed', { error, payload });
+          }
+        }
       )
       .subscribe();
 
@@ -116,10 +127,18 @@ export class SupabaseBridge {
           schema: 'public',
           table: 'fiber_sections',
         },
-        async payload =>
-          await this.handleFiberSectionEvent(
-            payload as RealtimePostgresChangesPayload<FiberSection>
-          )
+        async payload => {
+          try {
+            await this.handleFiberSectionEvent(
+              payload as RealtimePostgresChangesPayload<FiberSection>
+            );
+          } catch (error) {
+            logger.error('Fiber section event handler failed', {
+              error,
+              payload,
+            });
+          }
+        }
       )
       .subscribe();
 
@@ -157,7 +176,7 @@ export class SupabaseBridge {
 
     // Create RealtimeEvent for event sourcing
     const realtimeEvent: RealtimeEvent = {
-      id: `work_order_${workOrder.id}_${Date.now()}`,
+      id: `work_order_${workOrder.id}_${randomUUID()}`,
       type: 'WorkOrderUpdated',
       version: 'v1.alpha',
       timestamp: new Date().toISOString(),
@@ -238,7 +257,7 @@ export class SupabaseBridge {
 
     // Create RealtimeEvent for event sourcing
     const realtimeEvent: RealtimeEvent = {
-      id: `fiber_section_${fiberSection.id}_${Date.now()}`,
+      id: `fiber_section_${fiberSection.id}_${randomUUID()}`,
       type: 'FiberSectionProgress',
       version: 'v1.alpha',
       timestamp: new Date().toISOString(),

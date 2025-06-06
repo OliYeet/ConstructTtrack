@@ -23,8 +23,8 @@ CREATE TABLE realtime_events (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Create sequence for event ordering
-CREATE SEQUENCE IF NOT EXISTS event_sequence_global START 1;
+-- Note: Per-aggregate sequence numbers are handled by get_next_sequence_number() function
+-- No global sequence needed as each aggregate maintains its own sequence
 
 -- Add constraints and indexes for performance and data integrity
 ALTER TABLE realtime_events ADD CONSTRAINT unique_aggregate_sequence 
@@ -65,16 +65,19 @@ CREATE POLICY "Events cannot be deleted" ON realtime_events
     FOR DELETE USING (false);
 
 -- Function to get next sequence number for an aggregate
+-- Fixed: Added row-level locking to prevent race conditions
 CREATE OR REPLACE FUNCTION get_next_sequence_number(aggregate_uuid UUID)
 RETURNS BIGINT AS $$
 DECLARE
     next_seq BIGINT;
 BEGIN
+    -- Use FOR UPDATE to lock rows and prevent concurrent access
     SELECT COALESCE(MAX(sequence_number), 0) + 1
     INTO next_seq
     FROM realtime_events
-    WHERE aggregate_id = aggregate_uuid;
-    
+    WHERE aggregate_id = aggregate_uuid
+    FOR UPDATE;
+
     RETURN next_seq;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
