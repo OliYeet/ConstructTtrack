@@ -10,7 +10,8 @@ import {
   PerformanceThreshold,
   defaultPerformanceThresholds,
 } from '../performance-monitoring';
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
+import { createMockRequest } from '../../../tests/setup';
 
 describe('API Performance Monitoring System', () => {
   let performanceStore: MemoryPerformanceStore;
@@ -290,8 +291,12 @@ describe('API Performance Monitoring System', () => {
     it('should create middleware that records performance metrics', async () => {
       const middleware = performanceMonitor.createMiddleware();
 
-      const request = new NextRequest('http://localhost:3000/api/v1/test', {
+      const request = createMockRequest({
         method: 'GET',
+        url: 'http://localhost:3000/api/v1/test',
+        headers: {
+          'content-length': '0',
+        },
       });
 
       const mockHandler = jest.fn(async () => {
@@ -319,8 +324,12 @@ describe('API Performance Monitoring System', () => {
     it('should handle errors in middleware', async () => {
       const middleware = performanceMonitor.createMiddleware();
 
-      const request = new NextRequest('http://localhost:3000/api/v1/error', {
+      const request = createMockRequest({
         method: 'POST',
+        url: 'http://localhost:3000/api/v1/error',
+        headers: {
+          'content-length': '100',
+        },
       });
 
       const mockHandler = jest.fn(async () => {

@@ -11,7 +11,8 @@ import {
   AlertRule,
   defaultAlertRules,
 } from '../monitoring';
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
+import { createMockRequest } from '../../../tests/setup';
 
 describe('API Monitoring System', () => {
   let metricsStore: MemoryMetricsStore;
@@ -329,8 +330,12 @@ describe('API Monitoring System', () => {
     it('should create middleware that records metrics', async () => {
       const middleware = metricsCollector.createMiddleware();
 
-      const request = new NextRequest('http://localhost:3000/api/test', {
+      const request = createMockRequest({
         method: 'GET',
+        url: 'http://localhost:3000/api/test',
+        headers: {
+          'content-length': '0',
+        },
       });
 
       const mockHandler = jest.fn(async () => {
@@ -355,8 +360,12 @@ describe('API Monitoring System', () => {
     it('should handle errors in middleware', async () => {
       const middleware = metricsCollector.createMiddleware();
 
-      const request = new NextRequest('http://localhost:3000/api/error', {
+      const request = createMockRequest({
         method: 'POST',
+        url: 'http://localhost:3000/api/error',
+        headers: {
+          'content-length': '100',
+        },
       });
 
       const mockHandler = jest.fn(async () => {
