@@ -27,6 +27,11 @@ export const EVENT_TYPES = [
   'FiberSectionFailed',
   'SpliceFailed',
   'InspectionFailed',
+  // Notification events for LUM-590
+  'NotificationSent',
+  'NotificationDelivered',
+  'NotificationFailed',
+  'NotificationAcknowledged',
 ] as const;
 
 /** Union of every event `type` literal. */
@@ -197,6 +202,56 @@ export interface InspectionFailedEvent extends BaseEvent {
   };
 }
 
+// Notification Events for LUM-590
+export interface NotificationSentEvent extends BaseEvent {
+  type: 'NotificationSent';
+  payload: {
+    notificationId: string;
+    recipientId: string;
+    channel: 'websocket' | 'email' | 'sms' | 'slack' | 'discord' | 'webhook';
+    priority: 'low' | 'normal' | 'high' | 'critical';
+    title: string;
+    message: string;
+    relatedEventId?: string;
+    relatedEventType?: EventType;
+  };
+}
+
+export interface NotificationDeliveredEvent extends BaseEvent {
+  type: 'NotificationDelivered';
+  payload: {
+    notificationId: string;
+    recipientId: string;
+    channel: 'websocket' | 'email' | 'sms' | 'slack' | 'discord' | 'webhook';
+    deliveryTime: string; // ISO 8601
+    latency: number; // milliseconds from sent to delivered
+  };
+}
+
+export interface NotificationFailedEvent extends BaseEvent {
+  type: 'NotificationFailed';
+  payload: {
+    notificationId: string;
+    recipientId: string;
+    channel: 'websocket' | 'email' | 'sms' | 'slack' | 'discord' | 'webhook';
+    errorCode: string;
+    errorMessage: string;
+    retryAttempt: number;
+    willRetry: boolean;
+  };
+}
+
+export interface NotificationAcknowledgedEvent extends BaseEvent {
+  type: 'NotificationAcknowledged';
+  payload: {
+    notificationId: string;
+    recipientId: string;
+    acknowledgedAt: string; // ISO 8601
+    responseTime: number; // milliseconds from delivered to acknowledged
+    action?: 'viewed' | 'clicked' | 'dismissed' | 'escalated';
+  };
+}
+
 // Union type for all events
 export type RealtimeEvent =
   | FiberSectionStartedEvent
@@ -208,7 +263,11 @@ export type RealtimeEvent =
   | FiberSectionProgressEvent
   | FiberSectionFailedEvent
   | SpliceFailedEvent
-  | InspectionFailedEvent;
+  | InspectionFailedEvent
+  | NotificationSentEvent
+  | NotificationDeliveredEvent
+  | NotificationFailedEvent
+  | NotificationAcknowledgedEvent;
 
 // WebSocket Message Envelope - Discriminated Union for Type Safety
 export type WebSocketMessage =
