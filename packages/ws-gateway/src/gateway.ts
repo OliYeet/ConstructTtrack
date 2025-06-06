@@ -10,6 +10,9 @@ import { WebSocketServer, WebSocket } from 'ws';
 import { verifyToken, generateConnectionId } from './auth';
 import { config } from './config';
 import { ErrorFactory, ErrorHandler, type GatewayError } from './errors';
+import { cacheManager } from './optimization/cache-manager';
+import { messageOptimizer } from './optimization/message-optimizer';
+import { performanceProfiler } from './optimization/performance-profiler';
 import type {
   AuthenticatedWebSocket,
   ClientMessage,
@@ -52,9 +55,15 @@ export class WebSocketGateway {
   >();
 
   constructor() {
+    // Start performance profiler
+    performanceProfiler.start();
+
     // Create HTTP server for health checks
     this.server = createServer((req, res) => {
       if (req.url === '/healthz') {
+        const stats = performanceProfiler.getPerformanceSummary();
+        const cacheStats = cacheManager.getStats();
+
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(
           JSON.stringify({
@@ -62,6 +71,8 @@ export class WebSocketGateway {
             connections: this.connections.size,
             rooms: this.rooms.size,
             timestamp: new Date().toISOString(),
+            performance: stats,
+            cache: cacheStats,
           })
         );
         return;
@@ -229,78 +240,88 @@ export class WebSocketGateway {
     ws: AuthenticatedWebSocket,
     data: Buffer | ArrayBuffer | Buffer[]
   ): void {
-    try {
-      // Rate limiting check - CodeRabbit security recommendation
-      if (!this.rateLimiter.isAllowed(ws.connectionId)) {
-        const error = ErrorFactory.rateLimit('Message rate limit exceeded');
-        this.sendErrorMessage(ws, error);
-        return;
-      }
+    performanceProfiler.timeOperation(
+      'handle_message',
+      () => {
+        try {
+          // Rate limiting check - CodeRabbit security recommendation
+          if (!this.rateLimiter.isAllowed(ws.connectionId)) {
+            const error = ErrorFactory.rateLimit('Message rate limit exceeded');
+            this.sendErrorMessage(ws, error);
+            return;
+          }
 
-      // Update activity tracking
-      const metadata = this.connectionMetadata.get(ws);
-      if (metadata) {
-        metadata.lastActivity = Date.now();
-        metadata.messageCount++;
-      }
+          // Update activity tracking
+          const metadata = this.connectionMetadata.get(ws);
+          if (metadata) {
+            metadata.lastActivity = Date.now();
+            metadata.messageCount++;
+          }
 
-      // Parse and validate message
-      const dataString =
-        data instanceof ArrayBuffer
-          ? new globalThis.TextDecoder().decode(data)
-          : Array.isArray(data)
-            ? Buffer.concat(data).toString()
-            : data.toString();
-
-      // Prevent DoS attacks with overly large messages
-      if (dataString.length > 10000) {
-        const error = ErrorFactory.validation('Message too large');
-        this.sendErrorMessage(ws, error);
-        return;
-      }
-
-      const rawMessage = JSON.parse(dataString);
-
-      // Comprehensive message validation - CodeRabbit recommendation
-      if (!validateClientMessage(rawMessage)) {
-        const error = ErrorFactory.validation('Invalid message format');
-        this.sendErrorMessage(ws, error);
-        return;
-      }
-
-      const message = rawMessage as ClientMessage;
-
-      switch (message.action) {
-        case 'subscribe': {
-          this.handleSubscribe(ws, message);
-          break;
-        }
-        case 'unsubscribe': {
-          this.handleUnsubscribe(ws, message);
-          break;
-        }
-        case 'ping': {
-          this.handlePing(ws, message);
-          break;
-        }
-        default: {
-          const error = ErrorFactory.validation(
-            `Unknown action: ${(message as { action: string }).action}`
+          // Parse and validate message
+          const dataString = performanceProfiler.timeOperation(
+            'message_parse',
+            () => {
+              return data instanceof ArrayBuffer
+                ? new globalThis.TextDecoder().decode(data)
+                : Array.isArray(data)
+                  ? Buffer.concat(data).toString()
+                  : data.toString();
+            }
           );
-          this.sendErrorMessage(ws, error);
+
+          // Prevent DoS attacks with overly large messages
+          if (dataString.length > 10000) {
+            const error = ErrorFactory.validation('Message too large');
+            this.sendErrorMessage(ws, error);
+            return;
+          }
+
+          const rawMessage = JSON.parse(dataString);
+
+          // Comprehensive message validation - CodeRabbit recommendation
+          if (!validateClientMessage(rawMessage)) {
+            const error = ErrorFactory.validation('Invalid message format');
+            this.sendErrorMessage(ws, error);
+            return;
+          }
+
+          const message = rawMessage as ClientMessage;
+
+          switch (message.action) {
+            case 'subscribe': {
+              this.handleSubscribe(ws, message);
+              break;
+            }
+            case 'unsubscribe': {
+              this.handleUnsubscribe(ws, message);
+              break;
+            }
+            case 'ping': {
+              this.handlePing(ws, message);
+              break;
+            }
+            default: {
+              const error = ErrorFactory.validation(
+                `Unknown action: ${(message as { action: string }).action}`
+              );
+              this.sendErrorMessage(ws, error);
+            }
+          }
+        } catch (error) {
+          const gatewayError = ErrorHandler.normalize(
+            error,
+            'Message handling failed'
+          );
+          logger.error(
+            gatewayError.message,
+            ErrorHandler.toLogEntry(gatewayError, ws.connectionId)
+          );
+          this.sendErrorMessage(ws, gatewayError);
         }
-      }
-    } catch (error) {
-      const gatewayError = ErrorHandler.normalize(
-        error,
-        'Message handling failed'
-      );
-      logger.error(
-        gatewayError.message,
-        ErrorHandler.toLogEntry(gatewayError, ws.connectionId)
-      );
-      this.sendErrorMessage(ws, gatewayError);
-    }
+      },
+      { connectionId: ws.connectionId }
+    );
   }
 
   private handleSubscribe(
@@ -430,19 +451,60 @@ export class WebSocketGateway {
     ws.rooms.delete(room);
   }
 
-  private sendMessage(
+  private async sendMessage(
     ws: AuthenticatedWebSocket,
     message: Record<string, unknown>
-  ): void {
-    if (ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify(message));
+  ): Promise<void> {
+    if (ws.readyState !== WebSocket.OPEN) {
+      return;
     }
+
+    await performanceProfiler.timeAsyncOperation(
+      'send_message',
+      async () => {
+        try {
+          // Create optimized message
+          const optimizedMessage = {
+            id: `msg_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
+            type: (message.type as string) || 'unknown',
+            data: message,
+            timestamp: Date.now(),
+            priority: 'normal' as const,
+          };
+
+          // Optimize message (compression, batching, etc.)
+          const result = await messageOptimizer.optimizeMessage(
+            optimizedMessage,
+            ws.connectionId
+          );
+
+          // Send the optimized message
+          const messageStr = JSON.stringify(result);
+          ws.send(messageStr);
+        } catch (error) {
+          // Fallback to simple send if optimization fails
+          logger.warn('Message optimization failed, using fallback', {
+            connectionId: ws.connectionId,
+            error: error instanceof Error ? error.message : 'Unknown error',
+          });
+          ws.send(JSON.stringify(message));
+        }
+      },
+      { connectionId: ws.connectionId, messageType: message.type as string }
+    );
   }
 
-  public broadcastToRoom(room: string, message: Record<string, unknown>): void {
+  public async broadcastToRoom(
+    room: string,
+    message: Record<string, unknown>
+  ): Promise<void> {
     const roomConnections = this.rooms.get(room);
     if (roomConnections) {
-      roomConnections.forEach(ws => this.sendMessage(ws, message));
+      // Send messages in parallel for better performance
+      const sendPromises = Array.from(roomConnections).map(ws =>
+        this.sendMessage(ws, message)
+      );
+      await Promise.allSettled(sendPromises);
     }
   }
 
@@ -455,7 +517,12 @@ export class WebSocketGateway {
     });
   }
 
-  public stop(): Promise<void> {
+  public async stop(): Promise<void> {
+    // Stop optimization components first
+    performanceProfiler.stop();
+    messageOptimizer.clearCaches();
+    await cacheManager.close();
+
     return new Promise(resolve => {
       // Clean up intervals
       if (this.heartbeatInterval) {
