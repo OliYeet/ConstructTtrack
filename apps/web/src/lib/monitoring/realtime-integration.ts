@@ -340,8 +340,24 @@ export class RealtimeMonitoringIntegration {
           ...defaultExportCollectorConfig,
           enabled: true,
           exporters: {
-            prometheus: this.enhancedConfig.collectors.export.prometheus,
-            openTelemetry: this.enhancedConfig.collectors.export.openTelemetry,
+            prometheus: {
+              enabled: this.enhancedConfig.collectors.export.prometheus.enabled,
+              endpoint:
+                this.enhancedConfig.collectors.export.prometheus.endpoint,
+              format: 'text',
+              includeTimestamp: false,
+              includeHelp: true,
+            },
+            openTelemetry: {
+              enabled:
+                this.enhancedConfig.collectors.export.openTelemetry.enabled,
+              endpoint:
+                this.enhancedConfig.collectors.export.openTelemetry.endpoint,
+              protocol: 'http',
+              headers:
+                this.enhancedConfig.collectors.export.openTelemetry.headers,
+              compression: 'none',
+            },
             json: { enabled: true, format: 'structured' },
           },
         });
@@ -531,7 +547,12 @@ export class SupabaseRealtimeIntegration {
   ): void {
     const now = Date.now();
 
-    const timestamps: Record<string, number> = {
+    const timestamps: {
+      connectionStart: number;
+      connectionEstablished?: number;
+      lastActivity: number;
+      disconnected?: number;
+    } = {
       connectionStart: now,
       lastActivity: now,
     };
@@ -624,7 +645,12 @@ export class WebSocketGatewayIntegration {
   ): void {
     const now = Date.now();
 
-    const timestamps: Record<string, number> = {
+    const timestamps: {
+      connectionStart: number;
+      connectionEstablished?: number;
+      lastActivity: number;
+      disconnected?: number;
+    } = {
       connectionStart: now,
       lastActivity: now,
     };

@@ -441,7 +441,7 @@ export class ExportCollector extends BaseMetricCollector {
       return {
         name,
         description: `ConstructTrack ${metricGroup[0].type} metric`,
-        unit: metric.type === 'resource' ? 'percent' : 'count',
+        unit: metricGroup[0].type === 'resource' ? 'percent' : 'count',
         type: 'gauge' as const,
         dataPoints,
       };
@@ -486,13 +486,17 @@ export class ExportCollector extends BaseMetricCollector {
       // In production, you'd use fetch or a proper HTTP client
       const logger = getLogger();
       logger.debug(`Sending to ${endpoint}`, {
-        payloadLength: payload.length,
-        headers,
+        metadata: {
+          payloadLength: payload.length,
+          headers,
+        },
       });
       return true;
     } catch (error) {
       const logger = getLogger();
-      logger.error(`Failed to send to ${endpoint}`, { error });
+      logger.error(`Failed to send to ${endpoint}`, {
+        error: error instanceof Error ? error.message : String(error),
+      });
       return false;
     }
   }

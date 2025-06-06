@@ -203,7 +203,7 @@ export class AggregateCollector extends BaseMetricCollector {
     for (const [metricKey, values] of this.metricBuffer.entries()) {
       if (values.length === 0) continue;
 
-      const filteredValues = this.filterValuesByTimeWindow(values, window);
+      const filteredValues = this.filterValuesByTimeWindow(values);
       if (filteredValues.length === 0) continue;
 
       const stats = this.calculateStatistics(filteredValues);
@@ -282,10 +282,7 @@ export class AggregateCollector extends BaseMetricCollector {
     return key.split(':')[0];
   }
 
-  private filterValuesByTimeWindow(
-    values: number[],
-    _window: AggregationWindow
-  ): number[] {
+  private filterValuesByTimeWindow(values: number[]): number[] {
     // For now, return all values since we don't have timestamps per value
     // In a more sophisticated implementation, you'd filter by timestamp
     return values;
