@@ -500,16 +500,11 @@ export class RealtimePerformanceMonitor {
           try {
             listener(data);
           } catch (error) {
-            // Record error through monitoring system
-            this.recordErrorMetric({
-              type: 'processing',
-              severity: 'error',
-              code: 'LISTENER_ERROR',
-              message: `Event listener failed for ${event}`,
-              context: {
-                event,
-                error: error instanceof Error ? error.message : String(error),
-              },
+            // Log error directly to avoid circular dependency
+            const logger = getLogger();
+            logger.error('Event listener failed in real-time monitor', {
+              event,
+              error: error instanceof Error ? error.message : String(error),
             });
           }
         });
