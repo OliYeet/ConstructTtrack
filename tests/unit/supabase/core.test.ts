@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access */
 describe('supabase client core utilities', () => {
   const SUPABASE_URL = 'https://example.supabase.co';
   const SUPABASE_ANON_KEY = 'anon-key';
@@ -10,11 +9,17 @@ describe('supabase client core utilities', () => {
   beforeEach(() => {
     jest.resetModules();
 
-    // Ensure a clean env for every test
-    process.env.SUPABASE_URL = SUPABASE_URL;
-    process.env.SUPABASE_ANON_KEY = SUPABASE_ANON_KEY;
+    // Ensure a clean env for every test - clear ALL possible env vars
+    delete process.env.SUPABASE_URL;
+    delete process.env.SUPABASE_ANON_KEY;
     delete process.env.NEXT_PUBLIC_SUPABASE_URL;
     delete process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    delete process.env.EXPO_PUBLIC_SUPABASE_URL;
+    delete process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+
+    // Set test values
+    process.env.SUPABASE_URL = SUPABASE_URL;
+    process.env.SUPABASE_ANON_KEY = SUPABASE_ANON_KEY;
 
     jest.mock('@supabase/supabase-js', () => {
       const createClient = jest.fn(() => mockClient);
@@ -46,8 +51,13 @@ describe('supabase client core utilities', () => {
   });
 
   it('throws a helpful error when env vars are missing', async () => {
+    // Clear ALL possible Supabase environment variables
     delete process.env.SUPABASE_URL;
     delete process.env.SUPABASE_ANON_KEY;
+    delete process.env.NEXT_PUBLIC_SUPABASE_URL;
+    delete process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    delete process.env.EXPO_PUBLIC_SUPABASE_URL;
+    delete process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
 
     await jest.isolateModulesAsync(async () => {
       const { getSupabaseClient } = await import(
