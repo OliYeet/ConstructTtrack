@@ -169,7 +169,7 @@ async function getOptimizationRecommendations(_request: NextRequest) {
 
   // Group metrics by endpoint
   const endpointGroups = groupMetricsByEndpoint(metrics);
-  const recommendations: any[] = [];
+  const recommendations: Record<string, unknown>[] = [];
 
   for (const [endpoint] of Object.entries(endpointGroups)) {
     const analysis = await performanceStore.getAnalysis(endpoint);
@@ -276,7 +276,7 @@ function buildPerformanceFilters(
   return filters;
 }
 
-function calculateSummaryStats(metrics: any[]) {
+function calculateSummaryStats(metrics: Record<string, unknown>[]) {
   if (metrics.length === 0) {
     return {
       requestCount: 0,
@@ -287,11 +287,15 @@ function calculateSummaryStats(metrics: any[]) {
     };
   }
 
-  const responseTimes = metrics.map(m => m.responseTime).sort((a, b) => a - b);
-  const errorCount = metrics.filter(m => m.statusCode >= 400).length;
+  const responseTimes = metrics
+    .map(m => m.responseTime as number)
+    .sort((a, b) => a - b);
+  const errorCount = metrics.filter(
+    m => (m.statusCode as number) >= 400
+  ).length;
   const timeSpan =
-    Math.max(...metrics.map(m => m.timestamp)) -
-    Math.min(...metrics.map(m => m.timestamp));
+    Math.max(...metrics.map(m => m.timestamp as number)) -
+    Math.min(...metrics.map(m => m.timestamp as number));
   const throughput = timeSpan > 0 ? metrics.length / (timeSpan / 1000) : 0;
 
   return {
@@ -305,35 +309,44 @@ function calculateSummaryStats(metrics: any[]) {
   };
 }
 
-function getTopSlowEndpoints(metrics: any[], limit: number) {
+function getTopSlowEndpoints(
+  metrics: Record<string, unknown>[],
+  limit: number
+) {
   const endpointStats = groupMetricsByEndpoint(metrics);
 
   return Object.entries(endpointStats)
     .map(([endpoint, endpointMetrics]) => ({
       endpoint,
       averageResponseTime:
-        (endpointMetrics as any[]).reduce(
-          (sum: number, m: any) => sum + m.responseTime,
+        (endpointMetrics as Record<string, unknown>[]).reduce(
+          (sum: number, m: Record<string, unknown>) =>
+            sum + (m.responseTime as number),
           0
-        ) / (endpointMetrics as any[]).length,
-      requestCount: (endpointMetrics as any[]).length,
+        ) / (endpointMetrics as Record<string, unknown>[]).length,
+      requestCount: (endpointMetrics as Record<string, unknown>[]).length,
     }))
     .sort((a, b) => b.averageResponseTime - a.averageResponseTime)
     .slice(0, limit);
 }
 
-function getHighErrorRateEndpoints(metrics: any[], limit: number) {
+function getHighErrorRateEndpoints(
+  metrics: Record<string, unknown>[],
+  limit: number
+) {
   const endpointStats = groupMetricsByEndpoint(metrics);
 
   return Object.entries(endpointStats)
     .map(([endpoint, endpointMetrics]) => {
-      const errorCount = (endpointMetrics as any[]).filter(
-        (m: any) => m.statusCode >= 400
+      const errorCount = (endpointMetrics as Record<string, unknown>[]).filter(
+        (m: Record<string, unknown>) => (m.statusCode as number) >= 400
       ).length;
       return {
         endpoint,
-        errorRate: (errorCount / (endpointMetrics as any[]).length) * 100,
-        requestCount: (endpointMetrics as any[]).length,
+        errorRate:
+          (errorCount / (endpointMetrics as Record<string, unknown>[]).length) *
+          100,
+        requestCount: (endpointMetrics as Record<string, unknown>[]).length,
         errorCount,
       };
     })
@@ -342,39 +355,49 @@ function getHighErrorRateEndpoints(metrics: any[], limit: number) {
     .slice(0, limit);
 }
 
-function getResourceIntensiveEndpoints(metrics: any[], limit: number) {
+function getResourceIntensiveEndpoints(
+  metrics: Record<string, unknown>[],
+  limit: number
+) {
   const endpointStats = groupMetricsByEndpoint(metrics);
 
   return Object.entries(endpointStats)
     .map(([endpoint, endpointMetrics]) => ({
       endpoint,
       averageMemoryUsage:
-        (endpointMetrics as any[])
-          .filter((m: any) => m.memoryUsage !== undefined)
-          .reduce((sum: number, m: any) => sum + (m.memoryUsage || 0), 0) /
-        (endpointMetrics as any[]).length,
+        (endpointMetrics as Record<string, unknown>[])
+          .filter((m: Record<string, unknown>) => m.memoryUsage !== undefined)
+          .reduce(
+            (sum: number, m: Record<string, unknown>) =>
+              sum + ((m.memoryUsage as number) || 0),
+            0
+          ) / (endpointMetrics as Record<string, unknown>[]).length,
       averageResponseSize:
-        (endpointMetrics as any[]).reduce(
-          (sum: number, m: any) => sum + m.responseSize,
+        (endpointMetrics as Record<string, unknown>[]).reduce(
+          (sum: number, m: Record<string, unknown>) =>
+            sum + (m.responseSize as number),
           0
-        ) / (endpointMetrics as any[]).length,
-      requestCount: (endpointMetrics as any[]).length,
+        ) / (endpointMetrics as Record<string, unknown>[]).length,
+      requestCount: (endpointMetrics as Record<string, unknown>[]).length,
     }))
     .sort((a, b) => b.averageMemoryUsage - a.averageMemoryUsage)
     .slice(0, limit);
 }
 
-function identifySystemBottlenecks(metrics: any[]) {
+function identifySystemBottlenecks(metrics: Record<string, unknown>[]) {
   const bottlenecks: string[] = [];
 
   const avgResponseTime =
-    metrics.reduce((sum, m) => sum + m.responseTime, 0) / metrics.length;
+    metrics.reduce((sum, m) => sum + (m.responseTime as number), 0) /
+    metrics.length;
   if (avgResponseTime > 2000) {
     bottlenecks.push('High system-wide response times');
   }
 
   const errorRate =
-    (metrics.filter(m => m.statusCode >= 400).length / metrics.length) * 100;
+    (metrics.filter(m => (m.statusCode as number) >= 400).length /
+      metrics.length) *
+    100;
   if (errorRate > 5) {
     bottlenecks.push('High system-wide error rate');
   }
@@ -382,27 +405,30 @@ function identifySystemBottlenecks(metrics: any[]) {
   return bottlenecks;
 }
 
-function groupMetricsByEndpoint(metrics: any[]) {
+function groupMetricsByEndpoint(metrics: Record<string, unknown>[]) {
   return metrics.reduce(
     (groups, metric) => {
-      const key = `${metric.method} ${metric.endpoint}`;
+      const key = `${metric.method as string} ${metric.endpoint as string}`;
       if (!groups[key]) {
         groups[key] = [];
       }
       groups[key].push(metric);
       return groups;
     },
-    {} as Record<string, any[]>
+    {} as Record<string, Record<string, unknown>[]>
   );
 }
 
-function calculatePerformanceScore(metrics: any[]): number {
+function calculatePerformanceScore(metrics: Record<string, unknown>[]): number {
   if (metrics.length === 0) return 100;
 
   const avgResponseTime =
-    metrics.reduce((sum, m) => sum + m.responseTime, 0) / metrics.length;
+    metrics.reduce((sum, m) => sum + (m.responseTime as number), 0) /
+    metrics.length;
   const errorRate =
-    (metrics.filter(m => m.statusCode >= 400).length / metrics.length) * 100;
+    (metrics.filter(m => (m.statusCode as number) >= 400).length /
+      metrics.length) *
+    100;
 
   let score = 100;
 
@@ -417,16 +443,22 @@ function calculatePerformanceScore(metrics: any[]): number {
   return Math.max(0, Math.min(100, score));
 }
 
-function determinePriority(analysis: any): 'high' | 'medium' | 'low' {
+function determinePriority(
+  analysis: Record<string, unknown>
+): 'high' | 'medium' | 'low' {
+  const metrics = analysis.metrics as {
+    averageResponseTime?: number;
+    errorRate?: number;
+  };
   if (
-    analysis.metrics.averageResponseTime > 3000 ||
-    analysis.metrics.errorRate > 10
+    (metrics.averageResponseTime || 0) > 3000 ||
+    (metrics.errorRate || 0) > 10
   ) {
     return 'high';
   }
   if (
-    analysis.metrics.averageResponseTime > 1500 ||
-    analysis.metrics.errorRate > 5
+    (metrics.averageResponseTime || 0) > 1500 ||
+    (metrics.errorRate || 0) > 5
   ) {
     return 'medium';
   }

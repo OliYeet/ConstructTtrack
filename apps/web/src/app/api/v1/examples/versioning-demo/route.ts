@@ -47,13 +47,13 @@ export const POST = withApiMiddleware({
     // Version-specific behavior
     const responseData: Record<string, unknown> = {
       message: 'Version-specific behavior demo',
-      version: apiVersion?.version || 'unknown',
+      version: (apiVersion as { version?: string })?.version || 'unknown',
       receivedData: body,
       timestamp: new Date().toISOString(),
     };
 
     // Add version-specific features
-    switch (apiVersion?.version) {
+    switch ((apiVersion as { version?: string })?.version) {
       case 'v1':
         responseData.features = [
           'Basic CRUD operations',

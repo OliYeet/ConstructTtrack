@@ -177,8 +177,8 @@ export const DELETE = withApiMiddleware(
       return createSuccessResponse({
         message: 'Authenticated metrics demo',
         user: {
-          id: user?.id,
-          role: user?.role,
+          id: (user as { id?: unknown })?.id,
+          role: (user as { role?: unknown })?.role,
         },
         timestamp: new Date().toISOString(),
         note: 'This endpoint requires authentication and collects user activity metrics',

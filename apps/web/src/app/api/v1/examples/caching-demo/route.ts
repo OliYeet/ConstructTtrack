@@ -118,8 +118,8 @@ export const DELETE = withApiMiddleware(
       return createSuccessResponse({
         message: 'User-specific caching demo',
         user: {
-          id: user?.id || 'anonymous',
-          role: user?.role || 'guest',
+          id: (user as { id?: unknown })?.id || 'anonymous',
+          role: (user as { role?: unknown })?.role || 'guest',
         },
         timestamp: new Date().toISOString(),
         note: 'This response is cached per user for 5 minutes',

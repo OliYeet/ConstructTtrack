@@ -75,7 +75,7 @@ export class RealtimeConflictDetector implements ConflictDetector {
       const elapsed = Date.now() - startTime;
       if (elapsed > this.config.conflictDetectionTimeout) {
         logger.warn('Conflict detection timeout exceeded', {
-          performance: {
+          timing: {
             elapsed,
             threshold: this.config.conflictDetectionTimeout,
           },
@@ -85,8 +85,8 @@ export class RealtimeConflictDetector implements ConflictDetector {
 
       logger.debug('Conflict detection completed', {
         conflictsFound: conflicts.length,
-        performance: { elapsed },
-        metadata: metadata as Record<string, unknown>,
+        timing: { elapsed },
+        metadata: metadata as unknown as Record<string, unknown>,
       });
 
       return conflicts;
