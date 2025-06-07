@@ -8,35 +8,11 @@
 // NEVER bundle this file for browser/client-side use - server-only!
 // The service role key provides root-level database access
 
-// Improved type safety approach per Charlie's feedback
-// Attempt to import real types to prevent drift, fall back to minimal interfaces
-
-// TODO: Replace with proper imports once module resolution is fixed
-// Using minimal interfaces to prevent type drift
-
-// Fallback interfaces for CI compatibility - these match the real types above
-interface EventSourcingService {
-  processEvents(
-    events: RealtimeEvent[],
-    aggregateId: string,
-    aggregateType: string
-  ): Promise<void>;
-  healthCheck(): Promise<{
-    healthy: boolean;
-    details: Record<string, unknown>;
-  }>;
-}
-
-interface RealtimeEvent {
-  id: string;
-  type: string;
-  version: string;
-  timestamp: string;
-  workOrderId: string;
-  userId: string;
-  metadata?: Record<string, unknown>;
-  payload: Record<string, unknown>;
-}
+// Use the canonical event-sourcing types
+import type {
+  EventSourcingService,
+  RealtimeEvent,
+} from '@constructtrack/event-sourcing';
 
 import { randomUUID } from 'crypto';
 

@@ -27,7 +27,9 @@
       "@constructtrack/ui": ["./packages/ui"],
       "@constructtrack/ui/*": ["./packages/ui/*"],
       "@constructtrack/supabase": ["./packages/supabase"],
-      "@constructtrack/supabase/*": ["./packages/supabase/*"]
+      "@constructtrack/supabase/*": ["./packages/supabase/*"],
+      "@constructtrack/event-sourcing": ["./packages/event-sourcing"],
+      "@constructtrack/event-sourcing/*": ["./packages/event-sourcing/*"]
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "apps/**/*", "packages/**/*"],
