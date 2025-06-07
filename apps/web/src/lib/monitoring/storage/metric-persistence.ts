@@ -1,9 +1,7 @@
-/**
- * Metric Persistence Layer
- *
- * Handles long-term storage of metrics to Supabase for historical analysis,
- * trend monitoring, and capacity planning.
- */
+// Metric Persistence Layer
+//
+// Handles long-term storage of metrics to Supabase for historical analysis,
+// trend monitoring, and capacity planning.
 
 import { getLogger } from '../../logging';
 import {
@@ -270,17 +268,13 @@ export class MetricPersistenceManager {
   private config = getMonitoringConfig();
   private flushTimer: NodeJS.Timeout | null = null;
 
-  /**
-   * Indicates whether a flush operation is currently in progress.
-   * Used to prevent overlapping / concurrent flush executions.
-   */
+  // Indicates whether a flush operation is currently in progress.
+  // Used to prevent overlapping / concurrent flush executions.
   private isFlushing = false;
 
-  /**
-   * Promise representing the currently active flush (if any).  Subsequent
-   * callers of `flush()` will receive this promise, ensuring they can
-   * await completion without starting a new flush.
-   */
+  // Promise representing the currently active flush (if any). Subsequent
+  // callers of `flush()` will receive this promise, ensuring they can
+  // await completion without starting a new flush.
   private ongoingFlushPromise: Promise<void> | null = null;
 
   constructor(storage?: MetricStorageProvider) {
