@@ -63,11 +63,7 @@ export class SupabaseMetricStorage implements MetricStorageProvider {
         metadata: { count: storageMetrics.length, table: this.tableName },
       });
 
-      // ---------------------------------------------------------------------
-      // Obtain Supabase client (throws if environment variables are missing).
-      // We wrap this in try / catch to surface a clearer error message to the
-      // caller and *avoid* silent fallback behaviour.
-      // ---------------------------------------------------------------------
+      // Initialise Supabase client (throws if required env vars are missing)
       let client;
       try {
         client = getSupabaseClient();
