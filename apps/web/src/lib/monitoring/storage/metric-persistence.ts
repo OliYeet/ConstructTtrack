@@ -172,7 +172,10 @@ export class SupabaseMetricStorage implements MetricStorageProvider {
       default: {
         // Exhaustive check - this should never happen with proper typing
         const _exhaustiveCheck: never = metric;
-        console.warn('Unknown metric type in extractValue:', _exhaustiveCheck);
+        const logger = getLogger();
+        logger.warn('Unknown metric type in extractValue', {
+          metadata: { metric: _exhaustiveCheck },
+        });
         return 0;
       }
     }

@@ -286,10 +286,7 @@ export const isValidISO8601 = (timestamp: string): boolean => {
 
   // Additional validation: ensure the date is actually valid
   const date = new Date(timestamp);
-  return (
-    !isNaN(date.getTime()) &&
-    date.toISOString().startsWith(timestamp.substring(0, 19))
-  );
+  return !isNaN(date.getTime());
 };
 
 export const validateEventPayload = (event: RealtimeEvent): boolean => {
