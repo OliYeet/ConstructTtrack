@@ -92,6 +92,14 @@ export class SupabaseBridge {
     //   config.supabase.serviceRoleKey
     // );
     // this.eventSourcingService = createEventSourcingService(eventSourcingConfig);
+
+    // Runtime safety: surface warning when event sourcing is disabled
+    if (!this.eventSourcingService) {
+      logger.warn(
+        'SupabaseBridge initialised without an EventSourcingService. ' +
+          'Realtime events will be broadcast but NOT persisted for replay or audit.'
+      );
+    }
   }
 
   public async start(): Promise<void> {
