@@ -16,6 +16,8 @@ import type {
   EventType,
 } from '../../../../../src/types/realtime-protocol';
 
+import type { DeliveryResult } from './websocket-integration';
+
 import { AlertSeverity } from '@/lib/alerts/alert-manager';
 import {
   notificationService,
@@ -23,6 +25,8 @@ import {
 } from '@/lib/alerts/notification-service';
 import { getLogger } from '@/lib/logging';
 import { RealtimeMonitoring } from '@/lib/monitoring/realtime-index';
+
+// Import DeliveryResult type
 
 // Constants
 const DEFAULT_BATCH_WINDOW_MS = 5000; // 5 seconds
@@ -155,7 +159,7 @@ export class RealtimeNotificationManager {
     sendToUser: (
       userId: string,
       notification: WebSocketNotification
-    ) => Promise<void>;
+    ) => Promise<DeliveryResult[]>;
   } | null = null;
 
   constructor(config: Partial<RealtimeNotificationConfig> = {}) {
@@ -179,7 +183,7 @@ export class RealtimeNotificationManager {
     sendToUser: (
       userId: string,
       notification: WebSocketNotification
-    ) => Promise<void>;
+    ) => Promise<DeliveryResult[]>;
   }): void {
     this.webSocketGateway = gateway;
     this.logger.info('WebSocket gateway connected to notification manager');
@@ -385,19 +389,19 @@ export class RealtimeNotificationManager {
       n => n.rule.priority !== 'critical'
     );
 
-    // Send critical notifications immediately
-    for (const notification of criticalNotifications) {
-      await this.deliverNotification(notification);
-    }
+    // Send critical notifications immediately (concurrent)
+    await Promise.allSettled(
+      criticalNotifications.map(n => this.deliverNotification(n))
+    );
 
     // Handle regular notifications with batching
     if (this.config.enableBatching && regularNotifications.length > 0) {
       this.addToBatch(regularNotifications);
     } else {
-      // Send immediately if batching is disabled
-      for (const notification of regularNotifications) {
-        await this.deliverNotification(notification);
-      }
+      // Send immediately if batching is disabled (concurrent)
+      await Promise.allSettled(
+        regularNotifications.map(n => this.deliverNotification(n))
+      );
     }
   }
 
@@ -426,7 +430,11 @@ export class RealtimeNotificationManager {
 
       // Send batch immediately if it reaches max size
       if (batch.notifications.length >= this.config.maxBatchSize) {
-        this.processBatch(batch);
+        void this.processBatch(batch).catch(err =>
+          this.logger.error('Batch processing failed', {
+            metadata: { batchId: batch.id, error: err?.message ?? err },
+          })
+        );
         this.batches.delete(batchKey);
       }
     }
@@ -453,7 +461,11 @@ export class RealtimeNotificationManager {
 
     for (const [batchKey, batch] of this.batches.entries()) {
       if (now >= batch.scheduledAt) {
-        this.processBatch(batch);
+        void this.processBatch(batch).catch(err =>
+          this.logger.error('Batch processing failed', {
+            metadata: { batchId: batch.id, error: err?.message ?? err },
+          })
+        );
         this.batches.delete(batchKey);
       }
     }
@@ -488,10 +500,12 @@ export class RealtimeNotificationManager {
       }
     }
 
-    // Send batched notifications to each recipient
-    for (const [userId, notifications] of recipientGroups.entries()) {
-      await this.deliverBatchedNotifications(userId, notifications);
-    }
+    // Send batched notifications to each recipient (concurrent)
+    await Promise.allSettled(
+      Array.from(recipientGroups.entries()).map(([userId, notifications]) =>
+        this.deliverBatchedNotifications(userId, notifications)
+      )
+    );
   }
 
   /**
@@ -590,7 +604,7 @@ export class RealtimeNotificationManager {
       type: 'notification',
       event: notification.event,
       notification: {
-        title: notification.rule.template.title,
+        title: this.renderNotificationTitle(notification),
         message,
         priority: notification.rule.priority,
         timestamp: new Date().toISOString(),
@@ -599,13 +613,17 @@ export class RealtimeNotificationManager {
 
     try {
       // Send to user's WebSocket channel
-      await this.webSocketGateway.sendToUser(recipient.userId, wsNotification);
+      const results = await this.webSocketGateway.sendToUser(
+        recipient.userId,
+        wsNotification
+      );
 
       this.logger.info('Notification delivered via WebSocket', {
         metadata: {
           notificationId: notification.id,
           recipientId: recipient.userId,
           eventType: notification.event.type,
+          deliveryResults: results.length,
         },
       });
     } catch (error) {
@@ -631,7 +649,7 @@ export class RealtimeNotificationManager {
     const severity = this.mapPriorityToSeverity(notification.rule.priority);
 
     const notificationMessage: NotificationMessage = {
-      title: notification.rule.template.title,
+      title: this.renderNotificationTitle(notification),
       message,
       severity,
       metadata: {
@@ -662,15 +680,32 @@ export class RealtimeNotificationManager {
   }
 
   /**
+   * Render notification title from template
+   */
+  private renderNotificationTitle(notification: PendingNotification): string {
+    let title = notification.rule.template.title;
+
+    // Replace template variables (global replacement)
+    for (const variable of notification.rule.template.variables) {
+      const value = this.getEventFieldValue(notification.event, variable);
+      const regex = new RegExp(`\\{${variable}\\}`, 'g');
+      title = title.replace(regex, String(value ?? ''));
+    }
+
+    return title;
+  }
+
+  /**
    * Render notification message from template
    */
   private renderNotificationMessage(notification: PendingNotification): string {
     let message = notification.rule.template.message;
 
-    // Replace template variables
+    // Replace template variables (global replacement)
     for (const variable of notification.rule.template.variables) {
       const value = this.getEventFieldValue(notification.event, variable);
-      message = message.replace(`{${variable}}`, String(value || ''));
+      const regex = new RegExp(`\\{${variable}\\}`, 'g');
+      message = message.replace(regex, String(value ?? ''));
     }
 
     return message;

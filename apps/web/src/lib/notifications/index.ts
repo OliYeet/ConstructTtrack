@@ -20,7 +20,10 @@ import {
   type NotificationRecipient,
   type NotificationRule,
 } from './realtime-notification-manager';
-import { webSocketNotificationBridge } from './websocket-integration';
+import {
+  webSocketNotificationBridge,
+  type WebSocketNotificationGateway,
+} from './websocket-integration';
 
 import { notificationService } from '@/lib/alerts/notification-service';
 import { getLogger } from '@/lib/logging';
@@ -160,9 +163,7 @@ export class NotificationSystem {
   /**
    * Connect WebSocket gateway for real-time delivery
    */
-  connectWebSocketGateway(gateway: {
-    sendMessage: (connectionId: string, message: unknown) => Promise<void>;
-  }): void {
+  connectWebSocketGateway(gateway: WebSocketNotificationGateway): void {
     webSocketNotificationBridge.setWebSocketGateway(gateway);
     this.logger.info('WebSocket gateway connected to notification system');
   }
@@ -254,11 +255,9 @@ export class NotificationSystem {
       workOrderId: 'direct',
       userId: 'system',
       payload: {
-        status: 'notification',
-        progressPercentage: 0,
-        updatedFields: ['notification'],
-        previousValues: {},
-        newValues: { title, message },
+        status: 'in_progress',
+        priority: 'medium',
+        notes: `Direct notification: ${title}`,
       },
     };
 
@@ -417,9 +416,7 @@ export const NotificationAPI = {
   /**
    * Connect WebSocket gateway
    */
-  connectWebSocket: (gateway: {
-    sendMessage: (connectionId: string, message: unknown) => Promise<void>;
-  }) => {
+  connectWebSocket: (gateway: WebSocketNotificationGateway) => {
     return globalNotificationSystem.connectWebSocketGateway(gateway);
   },
 };

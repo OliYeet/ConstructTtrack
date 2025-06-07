@@ -109,30 +109,30 @@ export const FIBER_NOTIFICATION_TEMPLATES: Record<
     foreman: {
       title: 'Splice Complete - {payload.sectionId}',
       message:
-        'Splice completed for section {payload.sectionId}. Loss: {payload.spliceLoss}dB, Quality: {payload.spliceQuality}.',
+        'Splice completed for section {payload.sectionId}. Loss: {payload.testResults.loss}dB, Reflectance: {payload.testResults.reflectance}dB.',
       variables: [
         ...SECTION_VARIABLES,
-        'payload.spliceLoss',
-        'payload.spliceQuality',
+        'payload.testResults.loss',
+        'payload.testResults.reflectance',
       ],
     },
     technician: {
       title: 'Splice Success - {payload.sectionId}',
       message:
-        'Splice completed with {payload.spliceLoss}dB loss. Please proceed with optical testing for section {payload.sectionId}.',
-      variables: [...SECTION_VARIABLES, 'payload.spliceLoss'],
+        'Splice completed with {payload.testResults.loss}dB loss. Please proceed with optical testing for section {payload.sectionId}.',
+      variables: [...SECTION_VARIABLES, 'payload.testResults.loss'],
     },
     supervisor: {
       title: 'Quality Update - Splice Complete',
       message:
-        'High-quality splice completed for section {payload.sectionId}. Loss: {payload.spliceLoss}dB.',
-      variables: [...SECTION_VARIABLES, 'payload.spliceLoss'],
+        'High-quality splice completed for section {payload.sectionId}. Loss: {payload.testResults.loss}dB.',
+      variables: [...SECTION_VARIABLES, 'payload.testResults.loss'],
     },
     admin: {
       title: 'System Update - Splice Complete',
       message:
-        'Splice event recorded for section {payload.sectionId}, loss {payload.spliceLoss}dB.',
-      variables: [...SECTION_VARIABLES, 'payload.spliceLoss'],
+        'Splice event recorded for section {payload.sectionId}, loss {payload.testResults.loss}dB.',
+      variables: [...SECTION_VARIABLES, 'payload.testResults.loss'],
     },
     customer: {
       title: 'Installation Progress - Connection Complete',
@@ -313,26 +313,26 @@ export const FIBER_NOTIFICATION_TEMPLATES: Record<
     foreman: {
       title: 'Splice Failure - {payload.sectionId}',
       message:
-        'Splice failed for section {payload.sectionId}. Loss: {payload.actualLoss}dB. Retry required.',
-      variables: [...SECTION_VARIABLES, 'payload.actualLoss'],
+        'Splice failed for section {payload.sectionId}. Loss: {payload.testResults.loss}dB. Retry required.',
+      variables: [...SECTION_VARIABLES, 'payload.testResults.loss'],
     },
     technician: {
       title: 'Splice Retry Required - {payload.sectionId}',
       message:
-        'Splice for section {payload.sectionId} needs retry. Current loss {payload.actualLoss}dB exceeds target.',
-      variables: [...SECTION_VARIABLES, 'payload.actualLoss'],
+        'Splice for section {payload.sectionId} needs retry. Current loss {payload.testResults.loss}dB exceeds target.',
+      variables: [...SECTION_VARIABLES, 'payload.testResults.loss'],
     },
     supervisor: {
       title: 'Quality Issue - Splice Failed',
       message:
-        'Splice failure in section {payload.sectionId}. Loss {payload.actualLoss}dB exceeds specification.',
-      variables: [...SECTION_VARIABLES, 'payload.actualLoss'],
+        'Splice failure in section {payload.sectionId}. Loss {payload.testResults.loss}dB exceeds specification.',
+      variables: [...SECTION_VARIABLES, 'payload.testResults.loss'],
     },
     admin: {
       title: 'System Alert - Splice Failure',
       message:
-        'Splice failure recorded for section {payload.sectionId}. Loss: {payload.actualLoss}dB.',
-      variables: [...SECTION_VARIABLES, 'payload.actualLoss'],
+        'Splice failure recorded for section {payload.sectionId}. Loss: {payload.testResults.loss}dB.',
+      variables: [...SECTION_VARIABLES, 'payload.testResults.loss'],
     },
     customer: {
       title: 'Installation Update - Quality Check',
