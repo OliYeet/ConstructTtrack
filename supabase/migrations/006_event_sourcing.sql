@@ -30,17 +30,15 @@ CREATE TABLE realtime_events (
 ALTER TABLE realtime_events ADD CONSTRAINT unique_aggregate_sequence 
     UNIQUE (aggregate_id, sequence_number);
 
--- Indexes for efficient querying
-CREATE INDEX idx_realtime_events_aggregate_id ON realtime_events(aggregate_id);
+-- Indexes for efficient querying (optimized to avoid redundancy)
 CREATE INDEX idx_realtime_events_aggregate_type ON realtime_events(aggregate_type);
 CREATE INDEX idx_realtime_events_event_type ON realtime_events(event_type);
 CREATE INDEX idx_realtime_events_timestamp ON realtime_events(timestamp);
 CREATE INDEX idx_realtime_events_organization_id ON realtime_events(organization_id);
 CREATE INDEX idx_realtime_events_user_id ON realtime_events(user_id);
-CREATE INDEX idx_realtime_events_sequence ON realtime_events(sequence_number);
 
 -- Composite indexes for common query patterns
-CREATE INDEX idx_realtime_events_aggregate_sequence ON realtime_events(aggregate_id, sequence_number);
+-- Note: unique_aggregate_sequence constraint already covers (aggregate_id, sequence_number)
 CREATE INDEX idx_realtime_events_type_timestamp ON realtime_events(event_type, timestamp);
 CREATE INDEX idx_realtime_events_org_timestamp ON realtime_events(organization_id, timestamp);
 
@@ -72,9 +70,8 @@ DECLARE
     next_seq BIGINT;
     lock_key BIGINT;
 BEGIN
-    -- Create a deterministic lock key from the aggregate UUID
-    -- Use first 8 bytes of UUID as lock key to ensure uniqueness
-    lock_key := ('x' || substr(aggregate_uuid::text, 1, 16))::bit(64)::bigint;
+    -- Create a deterministic lock key from the aggregate UUID using hashtext()
+    lock_key := hashtext(aggregate_uuid::text);
 
     -- Take advisory lock on this aggregate to prevent concurrent sequence generation
     PERFORM pg_advisory_xact_lock(lock_key);
@@ -263,7 +260,7 @@ WHERE re.organization_id = auth.user_organization_id()
 GROUP BY re.event_type, re.aggregate_type
 ORDER BY total_events DESC;
 
--- Add trigger to update migration tracking
+-- Add trigger to update migration tracking (idempotent)
 INSERT INTO schema_migrations (
     filename,
     checksum,
@@ -278,4 +275,4 @@ INSERT INTO schema_migrations (
     current_user,
     true,
     '{"description": "Event sourcing system for real-time infrastructure", "task": "LUM-588"}'
-);
+) ON CONFLICT (filename) DO NOTHING;
