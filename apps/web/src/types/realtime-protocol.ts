@@ -275,9 +275,10 @@ export const CHANNEL_PATTERNS = {
 
 // Enhanced Validation Utilities
 export const isValidISO8601 = (timestamp: string): boolean => {
-  // Use strict RFC 3339 regex to prevent false positives from Date.parse
-  // Date.parse accepts many non-ISO formats like "April 5 2025"
-  const iso8601Regex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z?$/;
+  // Use strict RFC 3339 regex that accepts timezone offsets and fractional seconds
+  // Supports: 2025-03-10T12:34:56Z, 2025-03-10T12:34:56+02:00, 2025-03-10T12:34:56.123Z
+  const iso8601Regex =
+    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,9})?(Z|[+-]\d{2}:\d{2})$/;
 
   if (!iso8601Regex.test(timestamp)) {
     return false;

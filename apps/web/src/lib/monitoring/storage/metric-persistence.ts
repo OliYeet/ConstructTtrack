@@ -6,7 +6,11 @@
  */
 
 import { getLogger } from '../../logging';
-import { CollectorMetric } from '../metric-collectors/base-collector';
+import {
+  CollectorMetric,
+  ExportMetric,
+  HealthMetric,
+} from '../metric-collectors/base-collector';
 import { getMonitoringConfig } from '../realtime-config';
 
 // Module-level singleton for memory storage fallback
@@ -151,9 +155,26 @@ export class SupabaseMetricStorage implements MetricStorageProvider {
         return metric.value;
       case 'aggregate':
         return metric.metrics.avg;
-      default:
-        // Most metric variants expose `.value`; fall back gracefully
-        return (metric as any).value ?? 0;
+      case 'export': {
+        // Export metrics have payload size or status as numeric value
+        const exportMetric = metric as ExportMetric;
+        // Use payload size if it's a string, or 1 for successful exports, 0 for failed
+        if (typeof exportMetric.payload === 'string') {
+          return exportMetric.payload.length;
+        }
+        return exportMetric.status === 'sent' ? 1 : 0;
+      }
+      case 'health': {
+        // Health metrics have a numeric score (0-100)
+        const healthMetric = metric as HealthMetric;
+        return healthMetric.score;
+      }
+      default: {
+        // Exhaustive check - this should never happen with proper typing
+        const _exhaustiveCheck: never = metric;
+        console.warn('Unknown metric type in extractValue:', _exhaustiveCheck);
+        return 0;
+      }
     }
   }
 
@@ -342,5 +363,18 @@ export class MetricPersistenceManager {
   }
 }
 
-// Export singleton instance
-export const metricPersistence = new MetricPersistenceManager();
+// Factory function to create metric persistence instance
+// Avoids side effects on module import (timers, network connections)
+export const createMetricPersistence = (): MetricPersistenceManager => {
+  return new MetricPersistenceManager();
+};
+
+// Lazy singleton for backward compatibility
+let _metricPersistenceInstance: MetricPersistenceManager | null = null;
+
+export const getMetricPersistence = (): MetricPersistenceManager => {
+  if (!_metricPersistenceInstance) {
+    _metricPersistenceInstance = createMetricPersistence();
+  }
+  return _metricPersistenceInstance;
+};
