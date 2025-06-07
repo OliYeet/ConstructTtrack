@@ -71,8 +71,13 @@ interface NetworkIOMetrics {
 
 export class ResourceCollector extends BaseMetricCollector {
   private resourceConfig: ResourceCollectorConfig;
-  private lastCPUTimes: { user: number; system: number; idle: number } | null =
-    null;
+  private lastCPUTimes: {
+    user: number;
+    nice: number;
+    sys: number;
+    irq: number;
+    idle: number;
+  } | null = null;
   private lastNetworkStats: NetworkIOMetrics | null = null;
   private lastDiskStats: DiskIOMetrics | null = null;
 
@@ -341,23 +346,39 @@ export class ResourceCollector extends BaseMetricCollector {
         idleDelta += cpu.times.idle;
       }
 
+      // Calculate previous total using the same five fields for consistency
       const prevTotal =
         this.lastCPUTimes.user +
-        this.lastCPUTimes.system +
+        this.lastCPUTimes.nice +
+        this.lastCPUTimes.sys +
+        this.lastCPUTimes.irq +
         this.lastCPUTimes.idle;
 
       const deltaTotal = totalDelta - prevTotal;
       const deltaIdle = idleDelta - this.lastCPUTimes.idle;
 
-      usage = Math.max(0, Math.min(100, (1 - deltaIdle / deltaTotal) * 100));
+      // Guard against division by zero to prevent Infinity/NaN
+      if (deltaTotal > 0) {
+        usage = Math.max(0, Math.min(100, (1 - deltaIdle / deltaTotal) * 100));
+      }
     }
 
-    // Store snapshot for next iteration
-    this.lastCPUTimes = {
-      user: cpus.reduce((s, c) => s + c.times.user, 0),
-      system: cpus.reduce((s, c) => s + c.times.sys, 0),
-      idle: cpus.reduce((s, c) => s + c.times.idle, 0),
+    // Store snapshot for next iteration with all five CPU time fields
+    const snapshot = {
+      user: 0,
+      nice: 0,
+      sys: 0,
+      irq: 0,
+      idle: 0,
     };
+    cpus.forEach(cpu => {
+      snapshot.user += cpu.times.user;
+      snapshot.nice += cpu.times.nice;
+      snapshot.sys += cpu.times.sys;
+      snapshot.irq += cpu.times.irq;
+      snapshot.idle += cpu.times.idle;
+    });
+    this.lastCPUTimes = snapshot;
 
     let processes: Array<{ pid: number; name: string; usage: number }> = [];
 

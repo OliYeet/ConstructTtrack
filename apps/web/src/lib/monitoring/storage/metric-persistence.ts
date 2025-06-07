@@ -66,18 +66,11 @@ export class SupabaseMetricStorage implements MetricStorageProvider {
         memoryFallbackInstance = new MemoryMetricStorage();
       }
 
-      if (process.env.NODE_ENV !== 'development') {
-        logger.warn(
-          'Supabase metric storage not yet implemented – switching to in-memory provider'
-        );
-        return memoryFallbackInstance.store(metrics);
-      }
-
-      // In development, don't crash – just warn loudly so metrics keep flowing
+      // In all envs, fall back to in-memory until Supabase is wired
       logger.warn(
-        'Supabase metric storage not yet implemented – metrics will be lost'
+        'Supabase metric storage not yet implemented – switching to in-memory provider'
       );
-      return;
+      return memoryFallbackInstance.store(metrics);
     } catch (error) {
       logger.error('Failed to store metrics to Supabase', {
         error: error instanceof Error ? error.message : String(error),
@@ -159,7 +152,8 @@ export class SupabaseMetricStorage implements MetricStorageProvider {
       case 'aggregate':
         return metric.metrics.avg;
       default:
-        return 0;
+        // Most metric variants expose `.value`; fall back gracefully
+        return (metric as any).value ?? 0;
     }
   }
 
