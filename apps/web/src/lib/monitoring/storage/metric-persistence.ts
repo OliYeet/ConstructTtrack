@@ -76,7 +76,7 @@ export class SupabaseMetricStorage implements MetricStorageProvider {
           err instanceof Error ? err.message : 'Unknown Supabase init error';
         logger.error('Supabase client not initialised', { error: msg });
         throw new Error(
-          'Supabase client not initialised – ensure SUPABASE_URL and ' +
+          'Supabase client not initialised - ensure SUPABASE_URL and ' +
             'SUPABASE_ANON_KEY environment variables are set'
         );
       }
@@ -125,7 +125,7 @@ export class SupabaseMetricStorage implements MetricStorageProvider {
       //   .lte('timestamp', new Date(query.endTime).toISOString())
       //   .limit(query.limit || 1000);
 
-      logger.warn('Supabase retrieval not implemented – returning empty array');
+      logger.warn('Supabase retrieval not implemented - returning empty array');
 
       // Delegate to memory fallback if it exists to maintain functional symmetry
       if (memoryFallbackInstance) {
@@ -157,7 +157,7 @@ export class SupabaseMetricStorage implements MetricStorageProvider {
       //   .delete()
       //   .lt('timestamp', cutoffTime);
 
-      logger.warn('Supabase cleanup not implemented – skipping');
+      logger.warn('Supabase cleanup not implemented - skipping');
 
       // Delegate to memory fallback if it exists to prevent unbounded growth
       if (memoryFallbackInstance) {
