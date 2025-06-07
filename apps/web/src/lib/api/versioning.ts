@@ -442,7 +442,7 @@ export function withEnhancedVersioning() {
     //   source,
     //   timestamp: Date.now(),
     //   userAgent: request.headers.get('user-agent'),
-    //   endpoint: new URL(request.url).pathname,
+    //   endpoint: new URL(request.url, 'http://localhost').pathname,
     // };
 
     // If version is invalid, return error

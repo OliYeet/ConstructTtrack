@@ -3,7 +3,6 @@
  * Tests the API versioning strategy and version detection
  */
 
-import { NextRequest } from 'next/server';
 import {
   extractApiVersion,
   validateVersion,
@@ -16,11 +15,14 @@ import {
   ApiVersion,
 } from '../versioning';
 import { NextResponse } from 'next/server';
+import { createMockRequest } from '../../../tests/setup';
 
 describe('API Versioning', () => {
   describe('extractApiVersion', () => {
     it('should extract version from URL path', () => {
-      const request = new NextRequest('http://localhost:3000/api/v1/projects');
+      const request = createMockRequest({
+        url: 'http://localhost:3000/api/v1/projects',
+      });
       const result = extractApiVersion(request);
 
       expect(result.version).toBe('v1');
@@ -28,7 +30,8 @@ describe('API Versioning', () => {
     });
 
     it('should extract version from Accept header', () => {
-      const request = new NextRequest('http://localhost:3000/api/projects', {
+      const request = createMockRequest({
+        url: 'http://localhost:3000/api/projects',
         headers: {
           accept: 'application/vnd.constructtrack.v2+json',
         },
@@ -40,7 +43,8 @@ describe('API Versioning', () => {
     });
 
     it('should extract version from API-Version header', () => {
-      const request = new NextRequest('http://localhost:3000/api/projects', {
+      const request = createMockRequest({
+        url: 'http://localhost:3000/api/projects',
         headers: {
           'api-version': 'v1',
         },
@@ -52,9 +56,9 @@ describe('API Versioning', () => {
     });
 
     it('should extract version from query parameter', () => {
-      const request = new NextRequest(
-        'http://localhost:3000/api/projects?version=v2'
-      );
+      const request = createMockRequest({
+        url: 'http://localhost:3000/api/projects?version=v2',
+      });
       const result = extractApiVersion(request);
 
       expect(result.version).toBe('v2');
@@ -62,7 +66,9 @@ describe('API Versioning', () => {
     });
 
     it('should default to v1 when no version specified', () => {
-      const request = new NextRequest('http://localhost:3000/api/projects');
+      const request = createMockRequest({
+        url: 'http://localhost:3000/api/projects',
+      });
       const result = extractApiVersion(request);
 
       expect(result.version).toBe('v1');
@@ -70,15 +76,13 @@ describe('API Versioning', () => {
     });
 
     it('should prioritize URL path over other methods', () => {
-      const request = new NextRequest(
-        'http://localhost:3000/api/v1/projects?version=v2',
-        {
-          headers: {
-            'api-version': 'v2',
-            accept: 'application/vnd.constructtrack.v2+json',
-          },
-        }
-      );
+      const request = createMockRequest({
+        url: 'http://localhost:3000/api/v1/projects?version=v2',
+        headers: {
+          'api-version': 'v2',
+          accept: 'application/vnd.constructtrack.v2+json',
+        },
+      });
       const result = extractApiVersion(request);
 
       expect(result.version).toBe('v1');
@@ -155,7 +159,9 @@ describe('API Versioning', () => {
   describe('withVersioning middleware', () => {
     it('should add version context to request', async () => {
       const middleware = withVersioning();
-      const request = new NextRequest('http://localhost:3000/api/v1/projects');
+      const request = createMockRequest({
+        url: 'http://localhost:3000/api/v1/projects',
+      });
 
       const mockNext = jest.fn().mockResolvedValue(new NextResponse());
 
@@ -168,7 +174,8 @@ describe('API Versioning', () => {
 
     it('should return error for unsupported version', async () => {
       const middleware = withVersioning();
-      const request = new NextRequest('http://localhost:3000/api/projects', {
+      const request = createMockRequest({
+        url: 'http://localhost:3000/api/projects',
         headers: {
           'api-version': 'v99',
         },
@@ -184,7 +191,9 @@ describe('API Versioning', () => {
 
     it('should add version headers to response', async () => {
       const middleware = withVersioning();
-      const request = new NextRequest('http://localhost:3000/api/v1/projects');
+      const request = createMockRequest({
+        url: 'http://localhost:3000/api/v1/projects',
+      });
 
       const mockResponse = new NextResponse();
       const mockNext = jest.fn().mockResolvedValue(mockResponse);
@@ -197,7 +206,9 @@ describe('API Versioning', () => {
 
     it('should add warnings for beta versions', async () => {
       const middleware = withVersioning();
-      const request = new NextRequest('http://localhost:3000/api/v2/projects');
+      const request = createMockRequest({
+        url: 'http://localhost:3000/api/v2/projects',
+      });
 
       const mockResponse = new NextResponse();
       const mockNext = jest.fn().mockResolvedValue(mockResponse);

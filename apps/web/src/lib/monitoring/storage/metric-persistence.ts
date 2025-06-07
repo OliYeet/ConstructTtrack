@@ -124,11 +124,10 @@ export class SupabaseMetricStorage implements MetricStorageProvider {
       logger.warn('Supabase retrieval not implemented - returning empty array');
 
       // Delegate to memory fallback if it exists to maintain functional symmetry
-      if (memoryFallbackInstance) {
-        return memoryFallbackInstance.retrieve(query);
+      if (!memoryFallbackInstance) {
+        memoryFallbackInstance = new MemoryMetricStorage();
       }
-
-      return [];
+      return memoryFallbackInstance.retrieve(query);
     } catch (error) {
       logger.error('Failed to retrieve metrics from Supabase', {
         error: error instanceof Error ? error.message : String(error),

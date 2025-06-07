@@ -11,6 +11,7 @@ import {
   cacheConfigs,
   withCaching,
 } from '../caching';
+import { createMockRequest } from '../../../tests/setup';
 
 // Mock the logger
 jest.mock('@/lib/logging', () => ({
@@ -52,8 +53,12 @@ describe('API Caching', () => {
     });
 
     it('should generate different keys for different requests', () => {
-      const request1 = new NextRequest('http://localhost:3000/api/projects');
-      const request2 = new NextRequest('http://localhost:3000/api/users');
+      const request1 = createMockRequest({
+        url: 'http://localhost:3000/api/projects',
+      });
+      const request2 = createMockRequest({
+        url: 'http://localhost:3000/api/users',
+      });
 
       const key1 = cacheManager.generateKey(request1);
       const key2 = cacheManager.generateKey(request2);
