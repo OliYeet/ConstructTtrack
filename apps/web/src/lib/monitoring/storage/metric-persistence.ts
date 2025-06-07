@@ -9,6 +9,7 @@ import {
   ExportMetric,
   HealthMetric,
 } from '../metric-collectors/base-collector';
+import { getSupabaseClient } from '@constructtrack/supabase/client';
 import { getMonitoringConfig } from '../realtime-config';
 
 // Module-level singleton for memory storage fallback
@@ -62,17 +63,43 @@ export class SupabaseMetricStorage implements MetricStorageProvider {
         metadata: { count: storageMetrics.length, table: this.tableName },
       });
 
-      // TODO: Implement actual Supabase storage
-      // Temporary safeguard - use memory storage fallback
-      if (!memoryFallbackInstance) {
-        memoryFallbackInstance = new MemoryMetricStorage();
+      // ---------------------------------------------------------------------
+      // Obtain Supabase client (throws if environment variables are missing).
+      // We wrap this in try / catch to surface a clearer error message to the
+      // caller and *avoid* silent fallback behaviour.
+      // ---------------------------------------------------------------------
+      let client;
+      try {
+        client = getSupabaseClient();
+      } catch (err) {
+        const msg =
+          err instanceof Error ? err.message : 'Unknown Supabase init error';
+        logger.error('Supabase client not initialised', { error: msg });
+        throw new Error(
+          'Supabase client not initialised – ensure SUPABASE_URL and ' +
+            'SUPABASE_ANON_KEY environment variables are set'
+        );
       }
 
-      // In all envs, fall back to in-memory until Supabase is wired
-      logger.warn(
-        'Supabase metric storage not yet implemented – switching to in-memory provider'
-      );
-      return memoryFallbackInstance.store(metrics);
+      // Perform the insert.  We request `minimal` to avoid unnecessary network
+      // traffic (we only care about success/failure, not the inserted rows).
+      const { error } = await client
+        .from(this.tableName)
+        .insert(storageMetrics, { returning: 'minimal' });
+
+      if (error) {
+        logger.error('Supabase insert failed', {
+          error: error.message,
+          count: storageMetrics.length,
+          table: this.tableName,
+        });
+        throw new Error(`Failed to store metrics to Supabase: ${error.message}`);
+      }
+
+      logger.debug('Metrics successfully stored to Supabase', {
+        metadata: { count: storageMetrics.length },
+      });
+      return;
     } catch (error) {
       logger.error('Failed to store metrics to Supabase', {
         error: error instanceof Error ? error.message : String(error),
