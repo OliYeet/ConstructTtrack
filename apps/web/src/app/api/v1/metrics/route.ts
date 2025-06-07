@@ -72,6 +72,7 @@ export const GET = withApiMiddleware(
 export async function POST(request: NextRequest) {
   const body = await request.json();
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { name, value, unit, tags, metadata } = body;
 
   // Validate required fields
@@ -101,7 +102,8 @@ export async function POST(request: NextRequest) {
   }
 
   // Record the metric (placeholder implementation)
-  console.log('Recording metric:', { name, value, unit, tags, metadata });
+  // TODO: Implement actual metric recording
+  // console.log('Recording metric:', { name, value, unit, tags, metadata });
 
   return createSuccessResponse({
     message: 'Metric recorded successfully',

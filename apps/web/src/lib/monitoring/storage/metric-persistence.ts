@@ -3,13 +3,14 @@
 // Handles long-term storage of metrics to Supabase for historical analysis,
 // trend monitoring, and capacity planning.
 
+import { getSupabaseClient } from '@constructtrack/supabase/client';
+
 import { getLogger } from '../../logging';
 import {
   CollectorMetric,
   ExportMetric,
   HealthMetric,
 } from '../metric-collectors/base-collector';
-import { getSupabaseClient } from '@constructtrack/supabase/client';
 import { getMonitoringConfig } from '../realtime-config';
 
 // Module-level singleton for memory storage fallback
@@ -89,7 +90,9 @@ export class SupabaseMetricStorage implements MetricStorageProvider {
           count: storageMetrics.length,
           table: this.tableName,
         });
-        throw new Error(`Failed to store metrics to Supabase: ${error.message}`);
+        throw new Error(
+          `Failed to store metrics to Supabase: ${error.message}`
+        );
       }
 
       logger.debug('Metrics successfully stored to Supabase', {
