@@ -4,11 +4,8 @@
  * Tests the complete notification flow from event processing to delivery
  */
 
-import type {
-  RealtimeEvent,
-  NotificationRecipient,
-  NotificationSystem,
-} from '../index';
+import type { NotificationRecipient, NotificationSystem } from '../index';
+import type { RealtimeEvent } from '../../../../../../src/types/realtime-protocol';
 import { createFiberNotificationRule } from '../fiber-notification-templates';
 
 // Mock dependencies

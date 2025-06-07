@@ -11,6 +11,11 @@
  * - Integration with performance monitoring
  */
 
+import type {
+  RealtimeEvent,
+  EventType,
+} from '../../../../../src/types/realtime-protocol';
+
 import { AlertSeverity } from '@/lib/alerts/alert-manager';
 import {
   notificationService,
@@ -18,7 +23,6 @@ import {
 } from '@/lib/alerts/notification-service';
 import { getLogger } from '@/lib/logging';
 import { RealtimeMonitoring } from '@/lib/monitoring/realtime-index';
-import type { RealtimeEvent, EventType } from '@/types/realtime-protocol';
 
 // Real-time notification configuration
 export interface RealtimeNotificationConfig {
@@ -603,7 +607,7 @@ export class RealtimeNotificationManager {
       case 'normal':
         return AlertSeverity.WARNING;
       case 'high':
-        return AlertSeverity.ERROR;
+        return AlertSeverity.WARNING;
       case 'critical':
         return AlertSeverity.CRITICAL;
       default:

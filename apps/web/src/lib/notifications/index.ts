@@ -5,6 +5,11 @@
  * Integrates WebSocket real-time delivery with traditional notification channels.
  */
 
+import type {
+  RealtimeEvent,
+  EventType,
+} from '../../../../../src/types/realtime-protocol';
+
 import {
   FIBER_NOTIFICATION_TEMPLATES,
   FIBER_NOTIFICATION_PRIORITIES,
@@ -19,7 +24,6 @@ import { webSocketNotificationBridge } from './websocket-integration';
 
 import { notificationService } from '@/lib/alerts/notification-service';
 import { getLogger } from '@/lib/logging';
-import type { RealtimeEvent, EventType } from '@/types/realtime-protocol';
 
 // Re-export types for convenience
 export type {
@@ -330,7 +334,7 @@ export class NotificationSystem {
 }
 
 // Global notification system instance
-export const notificationSystem = new NotificationSystem();
+const globalNotificationSystem = new NotificationSystem();
 
 // Convenience functions for common operations
 export const NotificationAPI = {
@@ -341,7 +345,7 @@ export const NotificationAPI = {
     if (config) {
       return new NotificationSystem(config).initialize();
     }
-    return notificationSystem.initialize();
+    return globalNotificationSystem.initialize();
   },
 
   /**
@@ -351,7 +355,7 @@ export const NotificationAPI = {
     event: RealtimeEvent,
     recipients: NotificationRecipient[]
   ) => {
-    return notificationSystem.processEvent(event, recipients);
+    return globalNotificationSystem.processEvent(event, recipients);
   },
 
   /**
@@ -363,7 +367,7 @@ export const NotificationAPI = {
     recipients: NotificationRecipient[],
     priority?: 'low' | 'normal' | 'high' | 'critical'
   ) => {
-    return notificationSystem.sendDirectNotification(
+    return globalNotificationSystem.sendDirectNotification(
       title,
       message,
       recipients,
@@ -381,41 +385,41 @@ export const NotificationAPI = {
     isConnected: boolean;
     subscriptions?: string[];
   }) => {
-    return notificationSystem.registerWebSocketClient(client);
+    return globalNotificationSystem.registerWebSocketClient(client);
   },
 
   /**
    * Unregister WebSocket client
    */
   unregisterClient: (connectionId: string) => {
-    return notificationSystem.unregisterWebSocketClient(connectionId);
+    return globalNotificationSystem.unregisterWebSocketClient(connectionId);
   },
 
   /**
    * Check if user is online
    */
   isUserOnline: (userId: string) => {
-    return notificationSystem.isUserOnline(userId);
+    return globalNotificationSystem.isUserOnline(userId);
   },
 
   /**
    * Get system statistics
    */
   getStats: () => {
-    return notificationSystem.getStats();
+    return globalNotificationSystem.getStats();
   },
 
   /**
    * Connect WebSocket gateway
    */
   connectWebSocket: (gateway: unknown) => {
-    return notificationSystem.connectWebSocketGateway(gateway);
+    return globalNotificationSystem.connectWebSocketGateway(gateway);
   },
 };
 
 // Export the global instance and API
 export {
-  notificationSystem,
+  globalNotificationSystem as notificationSystem,
   FIBER_NOTIFICATION_TEMPLATES,
   FIBER_NOTIFICATION_PRIORITIES,
   createFiberNotificationRule,

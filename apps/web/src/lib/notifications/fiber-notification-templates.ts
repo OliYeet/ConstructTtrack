@@ -5,14 +5,14 @@
  * Templates support variable substitution and role-based customization.
  */
 
+import type { EventType } from '../../../../../src/types/realtime-protocol';
+
 import type {
   NotificationRule,
   NotificationTemplate,
   UserRole,
   NotificationPriority,
 } from './realtime-notification-manager';
-
-import type { EventType } from '@/types/realtime-protocol';
 
 // Template variable helpers
 const COMMON_VARIABLES = [
