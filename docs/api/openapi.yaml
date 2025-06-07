@@ -212,6 +212,485 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  # Internal/Demo Endpoints
+  /v1/cache:
+    get:
+      tags:
+        - Internal
+      summary: Cache inspection (internal)
+      description: Inspect cached values for debugging and monitoring
+      security: []
+      responses:
+        '200':
+          description: Cache data retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+    post:
+      tags:
+        - Internal
+      summary: Cache management operations
+      description: Perform cache operations like clearing or setting values
+      security: []
+      responses:
+        '200':
+          description: Cache operation completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+    delete:
+      tags:
+        - Internal
+      summary: Clear cache
+      description: Clear all cached values
+      security: []
+      responses:
+        '200':
+          description: Cache cleared
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /v1/errors:
+    get:
+      tags:
+        - Internal
+      summary: Error tracking (internal)
+      description: Retrieve error logs and tracking information
+      security: []
+      responses:
+        '200':
+          description: Error data retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+    post:
+      tags:
+        - Internal
+      summary: Log error
+      description: Log an error for tracking and monitoring
+      security: []
+      responses:
+        '200':
+          description: Error logged
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+    patch:
+      tags:
+        - Internal
+      summary: Update error status
+      description: Update error tracking status or resolution
+      security: []
+      responses:
+        '200':
+          description: Error status updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /v1/metrics:
+    get:
+      tags:
+        - Monitoring
+      summary: System metrics
+      description: Retrieve system performance and usage metrics
+      security: []
+      responses:
+        '200':
+          description: Metrics retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+    post:
+      tags:
+        - Monitoring
+      summary: Record metric
+      description: Record a custom metric for monitoring
+      security: []
+      responses:
+        '200':
+          description: Metric recorded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /v1/monitoring:
+    get:
+      tags:
+        - Monitoring
+      summary: System monitoring
+      description: Retrieve system monitoring data and health status
+      security: []
+      responses:
+        '200':
+          description: Monitoring data retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+    post:
+      tags:
+        - Monitoring
+      summary: Monitoring operations
+      description: Perform monitoring operations and configuration
+      security: []
+      responses:
+        '200':
+          description: Monitoring operation completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /v1/performance:
+    get:
+      tags:
+        - Monitoring
+      summary: Performance metrics
+      description: Retrieve detailed performance metrics and analysis
+      security: []
+      responses:
+        '200':
+          description: Performance data retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+    post:
+      tags:
+        - Monitoring
+      summary: Performance operations
+      description: Perform performance analysis and optimization operations
+      security: []
+      responses:
+        '200':
+          description: Performance operation completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /v1/security:
+    get:
+      tags:
+        - Security
+      summary: Security status
+      description: Retrieve security status and audit information
+      security: []
+      responses:
+        '200':
+          description: Security data retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+    post:
+      tags:
+        - Security
+      summary: Security operations
+      description: Perform security operations and audits
+      security: []
+      responses:
+        '200':
+          description: Security operation completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  # Example/Demo Endpoints
+  /v1/examples/caching-demo:
+    get:
+      tags:
+        - Examples
+      summary: Caching demo (example)
+      description: Demonstrate caching functionality and patterns
+      security: []
+      responses:
+        '200':
+          description: Caching demo data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+    post:
+      tags:
+        - Examples
+      summary: Caching demo operations
+      description: Demonstrate cache operations and management
+      security: []
+      responses:
+        '200':
+          description: Caching operation completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+    put:
+      tags:
+        - Examples
+      summary: Update caching demo
+      description: Update caching demo configuration or data
+      security: []
+      responses:
+        '200':
+          description: Caching demo updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+    patch:
+      tags:
+        - Examples
+      summary: Partial caching demo update
+      description: Partially update caching demo settings
+      security: []
+      responses:
+        '200':
+          description: Caching demo partially updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+    delete:
+      tags:
+        - Examples
+      summary: Reset caching demo
+      description: Reset caching demo to initial state
+      security: []
+      responses:
+        '200':
+          description: Caching demo reset
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /v1/examples/logging-demo:
+    get:
+      tags:
+        - Examples
+      summary: Logging demo (example)
+      description: Demonstrate logging functionality and patterns
+      security: []
+      responses:
+        '200':
+          description: Logging demo data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+    post:
+      tags:
+        - Examples
+      summary: Logging demo operations
+      description: Demonstrate logging operations and levels
+      security: []
+      responses:
+        '200':
+          description: Logging operation completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+    put:
+      tags:
+        - Examples
+      summary: Update logging demo
+      description: Update logging demo configuration
+      security: []
+      responses:
+        '200':
+          description: Logging demo updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+    patch:
+      tags:
+        - Examples
+      summary: Partial logging demo update
+      description: Partially update logging demo settings
+      security: []
+      responses:
+        '200':
+          description: Logging demo partially updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+    delete:
+      tags:
+        - Examples
+      summary: Reset logging demo
+      description: Reset logging demo to initial state
+      security: []
+      responses:
+        '200':
+          description: Logging demo reset
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /v1/examples/metrics-demo:
+    get:
+      tags:
+        - Examples
+      summary: Metrics demo (example)
+      description: Demonstrate metrics collection and reporting
+      security: []
+      responses:
+        '200':
+          description: Metrics demo data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+    post:
+      tags:
+        - Examples
+      summary: Metrics demo operations
+      description: Demonstrate metrics recording and analysis
+      security: []
+      responses:
+        '200':
+          description: Metrics operation completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+    put:
+      tags:
+        - Examples
+      summary: Update metrics demo
+      description: Update metrics demo configuration
+      security: []
+      responses:
+        '200':
+          description: Metrics demo updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+    patch:
+      tags:
+        - Examples
+      summary: Partial metrics demo update
+      description: Partially update metrics demo settings
+      security: []
+      responses:
+        '200':
+          description: Metrics demo partially updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+    delete:
+      tags:
+        - Examples
+      summary: Reset metrics demo
+      description: Reset metrics demo to initial state
+      security: []
+      responses:
+        '200':
+          description: Metrics demo reset
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /v1/examples/rate-limit-demo:
+    get:
+      tags:
+        - Examples
+      summary: Rate limiting demo (example)
+      description: Demonstrate rate limiting functionality and patterns
+      security: []
+      responses:
+        '200':
+          description: Rate limiting demo data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+    post:
+      tags:
+        - Examples
+      summary: Rate limiting demo operations
+      description: Demonstrate rate limiting enforcement and configuration
+      security: []
+      responses:
+        '200':
+          description: Rate limiting operation completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+    put:
+      tags:
+        - Examples
+      summary: Update rate limiting demo
+      description: Update rate limiting demo configuration
+      security: []
+      responses:
+        '200':
+          description: Rate limiting demo updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+    delete:
+      tags:
+        - Examples
+      summary: Reset rate limiting demo
+      description: Reset rate limiting demo to initial state
+      security: []
+      responses:
+        '200':
+          description: Rate limiting demo reset
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /v1/examples/versioning-demo:
+    get:
+      tags:
+        - Examples
+      summary: API versioning demo (example)
+      description: Demonstrate API versioning functionality and patterns
+      security: []
+      responses:
+        '200':
+          description: Versioning demo data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+    post:
+      tags:
+        - Examples
+      summary: Versioning demo operations
+      description: Demonstrate version-specific behavior and compatibility
+      security: []
+      responses:
+        '200':
+          description: Versioning operation completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
 components:
   securitySchemes:
     BearerAuth:
