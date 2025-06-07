@@ -5,14 +5,14 @@
  * This helps avoid CI failures due to existing warnings in the codebase
  */
 
-import { execSync } from 'child_process';
+import { execFileSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 
 function getChangedFiles() {
   try {
     // Get files changed compared to main branch
-    const output = execSync('git diff --name-only main...HEAD', {
+    const output = execFileSync('git', ['diff', '--name-only', 'main...HEAD'], {
       encoding: 'utf8',
       cwd: process.cwd(),
     });
@@ -49,9 +49,9 @@ function main() {
   console.log('');
 
   try {
-    // Run ESLint on changed files only
-    const command = `npx eslint ${changedFiles.join(' ')}`;
-    execSync(command, {
+    // Run ESLint on changed files only - using execFileSync for security
+    const args = ['eslint', ...changedFiles];
+    execFileSync('npx', args, {
       stdio: 'inherit',
       cwd: process.cwd(),
     });

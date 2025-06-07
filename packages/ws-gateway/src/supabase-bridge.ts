@@ -8,24 +8,23 @@
 // NEVER bundle this file for browser/client-side use - server-only!
 // The service role key provides root-level database access
 
-// Temporarily disable event sourcing integration to fix CI
-// TODO: Re-enable after workspace module resolution is fixed
-// import {
-//   createEventSourcingService,
-//   createDefaultConfig,
-//   type EventSourcingService,
-// } from '../event-sourcing/src/index';
-// import type { RealtimeEvent } from '../../src/types/realtime-protocol';
+// TODO: Replace with proper imports once module resolution is fixed
+// Using minimal type definitions to prevent drift from real implementations
 
-// Temporary types for CI fix
+// Minimal EventSourcingService interface - matches real implementation
 interface EventSourcingService {
   processEvents(
-    events: any[],
+    events: RealtimeEvent[],
     aggregateId: string,
     aggregateType: string
   ): Promise<void>;
+  healthCheck(): Promise<{
+    healthy: boolean;
+    details: Record<string, unknown>;
+  }>;
 }
 
+// Minimal RealtimeEvent interface - matches real protocol
 interface RealtimeEvent {
   id: string;
   type: string;
@@ -36,6 +35,9 @@ interface RealtimeEvent {
   metadata?: Record<string, unknown>;
   payload: Record<string, unknown>;
 }
+
+// Note: createEventSourcingService and createDefaultConfig will be imported
+// once module resolution is fixed - currently stubbed out in constructor
 import { randomUUID } from 'crypto';
 
 import {
