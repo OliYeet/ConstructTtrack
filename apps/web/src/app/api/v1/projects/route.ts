@@ -117,10 +117,15 @@ async function handleGet(
   const { supabase } = await import('@constructtrack/supabase/client');
 
   // Build query
+  // Ensure we have a valid organization context before querying
+  if (!context.organizationId) {
+    throw new Error('Organization context is required');
+  }
+
   let query = supabase
     .from('projects')
     .select('*', { count: 'exact' })
-    .eq('organization_id', context.organizationId || 'unknown');
+    .eq('organization_id', context.organizationId);
 
   // Apply filters
   if (queryParams.status) {
@@ -184,9 +189,14 @@ async function handlePost(
   // Dynamically import Supabase client
   const { supabase } = await import('@constructtrack/supabase/client');
 
+  // Ensure we have a valid organization context before inserting
+  if (!context.organizationId) {
+    throw new Error('Organization context is required for project creation');
+  }
+
   // Prepare data for insertion
   const insertData = {
-    organization_id: context.organizationId || 'unknown',
+    organization_id: context.organizationId,
     name: projectData.name,
     description: projectData.description || null,
     start_date: projectData.startDate || null,

@@ -41,10 +41,17 @@ export class RealtimeCRDTMerger implements CRDTMerger {
       });
 
       // Strategy 1: Accuracy-based merge (higher accuracy wins)
-      if (local.accuracy && remote.accuracy) {
-        if (local.accuracy < remote.accuracy) {
+      if (local.accuracy !== undefined || remote.accuracy !== undefined) {
+        // Prefer the coordinate with the *smaller existing* accuracy value.
+        if (
+          local.accuracy !== undefined &&
+          (remote.accuracy === undefined || local.accuracy < remote.accuracy)
+        ) {
           return this.createMergeResult(local, 'distance_validation', 0.9);
-        } else if (remote.accuracy < local.accuracy) {
+        } else if (
+          remote.accuracy !== undefined &&
+          (local.accuracy === undefined || remote.accuracy < local.accuracy)
+        ) {
           return this.createMergeResult(remote, 'distance_validation', 0.9);
         }
       }
@@ -58,13 +65,13 @@ export class RealtimeCRDTMerger implements CRDTMerger {
         const distance = this.calculateDistance(local, remote);
 
         // If coordinates are close, average them
-        if (distance < this.config.coordinateAccuracyThreshold) {
+        if (distance < this.config.maxDistanceThreshold) {
           const averaged = this.averageCoordinates(local, remote);
           return this.createMergeResult(averaged, 'crdt_merge', 0.95);
         }
 
         // If far apart, use role-based priority or last writer wins
-        if (this.hasHigherPriority(local.source, remote.source, metadata)) {
+        if (this.hasHigherPriority(metadata.userId, 'remote_user', metadata)) {
           return this.createMergeResult(local, 'role_based_priority', 0.8);
         } else {
           return this.createMergeResult(remote, 'role_based_priority', 0.8);
@@ -96,10 +103,21 @@ export class RealtimeCRDTMerger implements CRDTMerger {
         metadata: metadata as Record<string, unknown>,
       });
 
-      // Strategy 1: Maximum value wins (progress can only increase)
+      // Strategy 1: Progress merge with decrease policy
       if (local.percentage !== remote.percentage) {
-        const maxProgress =
-          local.percentage > remote.percentage ? local : remote;
+        // Check if decreases are allowed
+        if (
+          !this.config.allowProgressDecrease &&
+          ((local.percentage > remote.percentage &&
+            remote.timestamp > local.timestamp) ||
+            (remote.percentage > local.percentage &&
+              local.timestamp > remote.timestamp))
+        ) {
+          // Enforce monotonic increase - newer timestamp with lower value is rejected
+          const maxProgress =
+            local.percentage > remote.percentage ? local : remote;
+          return this.createMergeResult(maxProgress, 'max_value_wins', 0.9);
+        }
 
         // Validate the jump isn't too large
         const diff = Math.abs(local.percentage - remote.percentage);
@@ -112,7 +130,9 @@ export class RealtimeCRDTMerger implements CRDTMerger {
           }
         }
 
-        return this.createMergeResult(maxProgress, 'max_value_wins', 0.9);
+        // Either decreases are allowed, or this is an increase
+        const chosen = local.percentage > remote.percentage ? local : remote;
+        return this.createMergeResult(chosen, 'max_value_wins', 0.9);
       }
 
       // Strategy 2: Same percentage - merge metadata
@@ -170,6 +190,11 @@ export class RealtimeCRDTMerger implements CRDTMerger {
         metadata
       );
 
+      const aggregatedConflicts = [
+        ...mergedProgress.conflicts,
+        ...mergedLocation.conflicts,
+      ];
+
       const merged: FiberSectionState = {
         ...local,
         progress: mergedProgress.mergedValue as ProgressUpdate,
@@ -181,7 +206,10 @@ export class RealtimeCRDTMerger implements CRDTMerger {
             : remote.modifiedBy,
       };
 
-      return this.createMergeResult(merged, 'crdt_merge', 0.9);
+      return {
+        ...this.createMergeResult(merged, 'crdt_merge', 0.9),
+        conflicts: aggregatedConflicts,
+      };
     } catch (error) {
       logger.error('Fiber section state merge failed', {
         error,
@@ -226,7 +254,10 @@ export class RealtimeCRDTMerger implements CRDTMerger {
     return {
       latitude: (point1.latitude + point2.latitude) / 2,
       longitude: (point1.longitude + point2.longitude) / 2,
-      accuracy: Math.min(point1.accuracy || 10, point2.accuracy || 10),
+      accuracy: Math.min(
+        point1.accuracy ?? this.config.coordinateAccuracyThreshold,
+        point2.accuracy ?? this.config.coordinateAccuracyThreshold
+      ),
       timestamp: Math.max(point1.timestamp, point2.timestamp),
       source: `merged_${point1.source}_${point2.source}`,
     };
@@ -235,18 +266,16 @@ export class RealtimeCRDTMerger implements CRDTMerger {
   private hasHigherPriority(
     user1: string,
     user2: string,
-    metadata: ConflictMetadata
+    _metadata: ConflictMetadata
   ): boolean {
-    // In a real implementation, you'd look up user roles
-    // For now, use a simple heuristic based on user ID or metadata
+    const p1 = this.config.rolePriorities[user1] ?? 0;
+    const p2 = this.config.rolePriorities[user2] ?? 0;
 
-    // If we have role information in metadata
-    if (metadata.source === 'authoritative') {
-      return false; // Remote is authoritative
+    if (p1 === p2) {
+      // Stable tie-break to avoid oscillation
+      return user1 > user2;
     }
-
-    // Default to local having priority (optimistic updates)
-    return true;
+    return p1 > p2;
   }
 
   private getStateOrder(status: string): number {

@@ -160,14 +160,12 @@ export class ConflictEngineV1 implements ConflictEngine {
   }
 
   private resolveStateTransition(conflict: Conflict): ResolutionResult {
-    const local = conflict.localValue as {
-      status: string;
-      lastModified: number;
-    };
-    const remote = conflict.remoteValue as {
-      status: string;
-      lastModified: number;
-    };
+    const local = this.extractState(conflict.localValue);
+    const remote = this.extractState(conflict.remoteValue);
+
+    if (!local || !remote) {
+      throw new Error('Invalid state data in conflict resolution');
+    }
 
     // Precedence graph: PLANNED < IN_PROGRESS < DONE
     const precedence = {
@@ -219,7 +217,10 @@ export class ConflictEngineV1 implements ConflictEngine {
     // Check for invalid progress decrease (only if remote is newer)
     const isRemoteNewer = remote.timestamp > local.timestamp;
     const hasDecrease = isRemoteNewer && remote.percentage < local.percentage;
-    const largeDiff = Math.abs(local.percentage - remote.percentage) > 25; // >25% jump
+    const LARGE_PROGRESS_DIFF_THRESHOLD = 25; // TODO: Make configurable
+    const largeDiff =
+      Math.abs(local.percentage - remote.percentage) >
+      LARGE_PROGRESS_DIFF_THRESHOLD;
 
     if (!hasDecrease && !largeDiff) {
       return null; // Valid progress increase
@@ -238,14 +239,12 @@ export class ConflictEngineV1 implements ConflictEngine {
   }
 
   private resolveProgressPercentage(conflict: Conflict): ResolutionResult {
-    const local = conflict.localValue as {
-      percentage: number;
-      timestamp: number;
-    };
-    const remote = conflict.remoteValue as {
-      percentage: number;
-      timestamp: number;
-    };
+    const local = this.extractProgress(conflict.localValue);
+    const remote = this.extractProgress(conflict.remoteValue);
+
+    if (!local || !remote) {
+      throw new Error('Invalid progress data in conflict resolution');
+    }
 
     // Monotonic counter - higher value wins (progress can only increase)
     const resolvedValue = local.percentage > remote.percentage ? local : remote;

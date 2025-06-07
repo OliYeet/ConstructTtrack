@@ -476,8 +476,7 @@ export class WebSocketGateway {
         connectionId: ws.connectionId,
         userId: enhancedMetadata.userId,
         conflictsDetected: conflictResult.conflicts.length,
-        autoResolved: resolutions.filter(r => !r.requiresManualResolution)
-          .length,
+        autoResolved: resolutions.filter(r => r.autoResolved).length,
         workOrderId: enhancedMetadata.workOrderId,
       });
     } catch (error) {
