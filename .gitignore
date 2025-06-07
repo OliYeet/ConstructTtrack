@@ -55,6 +55,9 @@ coverage/
 .env.test.local
 .env.test
 
+# App-specific test env files
+apps/web/.env.test
+
 # Keep environment templates and examples
 !.env.example
 !.env.development
