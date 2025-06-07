@@ -691,6 +691,155 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiResponse'
 
+  # Additional Endpoints
+  /version:
+    get:
+      tags:
+        - System
+      summary: API version information
+      description: Get API version and build information
+      security: []
+      responses:
+        '200':
+          description: Version information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+    post:
+      tags:
+        - System
+      summary: Version operations
+      description: Perform version-related operations
+      security: []
+      responses:
+        '200':
+          description: Version operation completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /sentry-example-api:
+    get:
+      tags:
+        - Examples
+      summary: Sentry integration example
+      description: Demonstrate Sentry error tracking integration
+      security: []
+      responses:
+        '200':
+          description: Sentry example response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /test-sentry:
+    get:
+      tags:
+        - Examples
+      summary: Sentry test endpoint
+      description: Test Sentry error reporting functionality
+      security: []
+      responses:
+        '200':
+          description: Sentry test response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+    post:
+      tags:
+        - Examples
+      summary: Sentry test operations
+      description: Perform Sentry test operations and error simulation
+      security: []
+      responses:
+        '200':
+          description: Sentry test operation completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  # V2 API Endpoints
+  /v2/examples/versioning-demo:
+    get:
+      tags:
+        - Examples
+        - V2
+      summary: API versioning demo v2 (example)
+      description: Demonstrate API versioning functionality for v2
+      security: []
+      responses:
+        '200':
+          description: Versioning demo v2 data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+    post:
+      tags:
+        - Examples
+        - V2
+      summary: Versioning demo v2 operations
+      description: Demonstrate version-specific behavior for v2
+      security: []
+      responses:
+        '200':
+          description: Versioning v2 operation completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /v2/graphql:
+    get:
+      tags:
+        - GraphQL
+        - V2
+      summary: GraphQL endpoint v2 (GET)
+      description: GraphQL API endpoint for v2 (GET requests)
+      security: []
+      responses:
+        '200':
+          description: GraphQL response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+    post:
+      tags:
+        - GraphQL
+        - V2
+      summary: GraphQL endpoint v2 (POST)
+      description: GraphQL API endpoint for v2 (POST requests)
+      security: []
+      responses:
+        '200':
+          description: GraphQL response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /v2/graphql/schema:
+    get:
+      tags:
+        - GraphQL
+        - V2
+      summary: GraphQL schema v2
+      description: Get GraphQL schema definition for v2
+      security: []
+      responses:
+        '200':
+          description: GraphQL schema
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
 components:
   securitySchemes:
     BearerAuth:
