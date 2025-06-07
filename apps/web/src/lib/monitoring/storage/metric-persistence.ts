@@ -270,6 +270,19 @@ export class MetricPersistenceManager {
   private config = getMonitoringConfig();
   private flushTimer: NodeJS.Timeout | null = null;
 
+  /**
+   * Indicates whether a flush operation is currently in progress.
+   * Used to prevent overlapping / concurrent flush executions.
+   */
+  private isFlushing = false;
+
+  /**
+   * Promise representing the currently active flush (if any).  Subsequent
+   * callers of `flush()` will receive this promise, ensuring they can
+   * await completion without starting a new flush.
+   */
+  private ongoingFlushPromise: Promise<void> | null = null;
+
   constructor(storage?: MetricStorageProvider) {
     this.storage = storage || this.createStorageProvider();
     // Only start periodic flush if storage is enabled
@@ -294,24 +307,43 @@ export class MetricPersistenceManager {
 
   // Manually flush the buffer
   async flush(): Promise<void> {
+    // Short-circuit if a flush is already running
+    if (this.isFlushing) {
+      return this.ongoingFlushPromise ?? Promise.resolve();
+    }
+
+    // Nothing to flush
     if (this.buffer.length === 0) {
       return;
     }
 
+    this.isFlushing = true;
+
+    // Drain up to `batchSize` metrics for this flush operation
     const metricsToStore = this.buffer.splice(0, this.config.storage.batchSize);
 
-    try {
-      await this.storage.store(metricsToStore);
-    } catch (error) {
-      const logger = getLogger();
-      logger.error('Failed to flush metrics to storage', {
-        error: error instanceof Error ? error.message : String(error),
-        metricsCount: metricsToStore.length,
-      });
+    // Save a reference so that concurrent callers can await the same promise
+    this.ongoingFlushPromise = (async () => {
+      try {
+        await this.storage.store(metricsToStore);
+      } catch (error) {
+        const logger = getLogger();
+        logger.error('Failed to flush metrics to storage', {
+          error: error instanceof Error ? error.message : String(error),
+          metricsCount: metricsToStore.length,
+        });
 
-      // Re-add metrics to buffer for retry (at the beginning)
-      this.buffer.unshift(...metricsToStore);
-    }
+        // Re-add metrics to buffer for retry (prepend to maintain order)
+        this.buffer.unshift(...metricsToStore);
+        throw error;
+      } finally {
+        // Always release the lock
+        this.isFlushing = false;
+        this.ongoingFlushPromise = null;
+      }
+    })();
+
+    return this.ongoingFlushPromise;
   }
 
   // Retrieve metrics from storage
