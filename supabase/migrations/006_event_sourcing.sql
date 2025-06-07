@@ -65,18 +65,25 @@ CREATE POLICY "Events cannot be deleted" ON realtime_events
     FOR DELETE USING (false);
 
 -- Function to get next sequence number for an aggregate
--- Fixed: Added row-level locking to prevent race conditions
+-- Fixed: Added advisory locking to prevent race conditions even for new aggregates
 CREATE OR REPLACE FUNCTION get_next_sequence_number(aggregate_uuid UUID)
 RETURNS BIGINT AS $$
 DECLARE
     next_seq BIGINT;
+    lock_key BIGINT;
 BEGIN
-    -- Use FOR UPDATE to lock rows and prevent concurrent access
+    -- Create a deterministic lock key from the aggregate UUID
+    -- Use first 8 bytes of UUID as lock key to ensure uniqueness
+    lock_key := ('x' || substr(aggregate_uuid::text, 1, 16))::bit(64)::bigint;
+
+    -- Take advisory lock on this aggregate to prevent concurrent sequence generation
+    PERFORM pg_advisory_xact_lock(lock_key);
+
+    -- Now safely compute next sequence number
     SELECT COALESCE(MAX(sequence_number), 0) + 1
     INTO next_seq
     FROM realtime_events
-    WHERE aggregate_id = aggregate_uuid
-    FOR UPDATE;
+    WHERE aggregate_id = aggregate_uuid;
 
     RETURN next_seq;
 END;
