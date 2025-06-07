@@ -10,6 +10,9 @@ import type { WebSocketNotification } from './realtime-notification-manager';
 import { getLogger } from '@/lib/logging';
 import { RealtimeMonitoring } from '@/lib/monitoring/realtime-index';
 
+// Constants
+const DEFAULT_INACTIVE_CONNECTION_TIMEOUT_MS = 300000; // 5 minutes
+
 // WebSocket client interface for notifications
 export interface WebSocketClient {
   id: string;
@@ -66,7 +69,9 @@ export class WebSocketNotificationBridge
   private logger = getLogger();
 
   // External WebSocket gateway (injected)
-  private wsGateway: unknown = null;
+  private wsGateway: {
+    sendMessage: (connectionId: string, message: unknown) => Promise<void>;
+  } | null = null;
 
   constructor() {
     this.logger.info('WebSocket notification bridge initialized');
@@ -75,7 +80,9 @@ export class WebSocketNotificationBridge
   /**
    * Set the external WebSocket gateway instance
    */
-  setWebSocketGateway(gateway: unknown): void {
+  setWebSocketGateway(gateway: {
+    sendMessage: (connectionId: string, message: unknown) => Promise<void>;
+  }): void {
     this.wsGateway = gateway;
     this.logger.info('WebSocket gateway connected to notification bridge');
   }
@@ -308,10 +315,7 @@ export class WebSocketNotificationBridge
       }
 
       // Use the external WebSocket gateway to send the message
-      const gateway = this.wsGateway as {
-        sendMessage: (connectionId: string, message: unknown) => Promise<void>;
-      };
-      await gateway.sendMessage(client.connectionId, {
+      await this.wsGateway.sendMessage(client.connectionId, {
         type: 'notification',
         data: notification,
       });
@@ -357,8 +361,7 @@ export class WebSocketNotificationBridge
     return Array.from(connectionIds)
       .map(id => this.clients.get(id))
       .filter(
-        (client): client is WebSocketClient =>
-          client !== undefined && client.isConnected
+        (client): client is WebSocketClient => client?.isConnected ?? false
       );
   }
 
@@ -415,8 +418,9 @@ export class WebSocketNotificationBridge
   /**
    * Cleanup inactive connections
    */
-  cleanupInactiveConnections(maxInactiveTime: number = 300000): number {
-    // 5 minutes default
+  cleanupInactiveConnections(
+    maxInactiveTime: number = DEFAULT_INACTIVE_CONNECTION_TIMEOUT_MS
+  ): number {
     const now = Date.now();
     let cleanedCount = 0;
 

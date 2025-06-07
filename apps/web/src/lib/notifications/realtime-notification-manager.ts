@@ -24,6 +24,12 @@ import {
 import { getLogger } from '@/lib/logging';
 import { RealtimeMonitoring } from '@/lib/monitoring/realtime-index';
 
+// Constants
+const DEFAULT_BATCH_WINDOW_MS = 5000; // 5 seconds
+const DEFAULT_MAX_BATCH_SIZE = 10;
+const DEFAULT_ESCALATION_DELAY_MS = 300000; // 5 minutes
+const BATCH_PROCESSOR_INTERVAL_MS = 1000; // 1 second
+
 // Real-time notification configuration
 export interface RealtimeNotificationConfig {
   enableWebSocket: boolean;
@@ -121,16 +127,21 @@ export class RealtimeNotificationManager {
   private logger = getLogger();
 
   // WebSocket gateway integration (will be injected)
-  private webSocketGateway: unknown = null;
+  private webSocketGateway: {
+    sendToUser: (
+      userId: string,
+      notification: WebSocketNotification
+    ) => Promise<void>;
+  } | null = null;
 
   constructor(config: Partial<RealtimeNotificationConfig> = {}) {
     this.config = {
       enableWebSocket: true,
       enableBatching: true,
-      batchWindow: 5000, // 5 seconds
-      maxBatchSize: 10,
+      batchWindow: DEFAULT_BATCH_WINDOW_MS,
+      maxBatchSize: DEFAULT_MAX_BATCH_SIZE,
       enableEscalation: true,
-      escalationDelay: 300000, // 5 minutes
+      escalationDelay: DEFAULT_ESCALATION_DELAY_MS,
       ...config,
     };
 
@@ -140,7 +151,12 @@ export class RealtimeNotificationManager {
   /**
    * Set WebSocket gateway for real-time delivery
    */
-  setWebSocketGateway(gateway: unknown): void {
+  setWebSocketGateway(gateway: {
+    sendToUser: (
+      userId: string,
+      notification: WebSocketNotification
+    ) => Promise<void>;
+  }): void {
     this.webSocketGateway = gateway;
     this.logger.info('WebSocket gateway connected to notification manager');
   }
@@ -149,6 +165,22 @@ export class RealtimeNotificationManager {
    * Add notification rule for event-based routing
    */
   addRule(rule: NotificationRule): void {
+    // Input validation
+    if (
+      !rule.id ||
+      !rule.name ||
+      !rule.eventTypes.length ||
+      !rule.roles.length
+    ) {
+      throw new Error('Invalid notification rule: missing required fields');
+    }
+
+    if (!rule.template.title || !rule.template.message) {
+      throw new Error(
+        'Invalid notification rule: template must have title and message'
+      );
+    }
+
     this.rules.set(rule.id, rule);
     this.logger.info('Notification rule added', {
       metadata: {
@@ -175,6 +207,18 @@ export class RealtimeNotificationManager {
     event: RealtimeEvent,
     recipients: NotificationRecipient[]
   ): Promise<void> {
+    // Input validation
+    if (!event || !event.id || !event.type) {
+      throw new Error('Invalid event: missing required fields');
+    }
+
+    if (!recipients || recipients.length === 0) {
+      this.logger.debug('No recipients provided for event', {
+        metadata: { eventType: event.type, eventId: event.id },
+      });
+      return;
+    }
+
     const startTime = Date.now();
 
     try {
@@ -374,7 +418,7 @@ export class RealtimeNotificationManager {
 
     this.batchTimer = setInterval(() => {
       this.processPendingBatches();
-    }, 1000); // Check every second
+    }, BATCH_PROCESSOR_INTERVAL_MS);
   }
 
   /**
@@ -529,16 +573,27 @@ export class RealtimeNotificationManager {
       },
     };
 
-    // Send to user's WebSocket channel
-    await this.webSocketGateway.sendToUser(recipient.userId, wsNotification);
+    try {
+      // Send to user's WebSocket channel
+      await this.webSocketGateway.sendToUser(recipient.userId, wsNotification);
 
-    this.logger.info('Notification delivered via WebSocket', {
-      metadata: {
-        notificationId: notification.id,
-        recipientId: recipient.userId,
-        eventType: notification.event.type,
-      },
-    });
+      this.logger.info('Notification delivered via WebSocket', {
+        metadata: {
+          notificationId: notification.id,
+          recipientId: recipient.userId,
+          eventType: notification.event.type,
+        },
+      });
+    } catch (error) {
+      this.logger.error('Failed to deliver WebSocket notification', {
+        metadata: {
+          notificationId: notification.id,
+          recipientId: recipient.userId,
+          error: error instanceof Error ? error.message : String(error),
+        },
+      });
+      throw error;
+    }
   }
 
   /**

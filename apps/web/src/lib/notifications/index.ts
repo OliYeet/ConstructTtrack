@@ -160,7 +160,9 @@ export class NotificationSystem {
   /**
    * Connect WebSocket gateway for real-time delivery
    */
-  connectWebSocketGateway(gateway: unknown): void {
+  connectWebSocketGateway(gateway: {
+    sendMessage: (connectionId: string, message: unknown) => Promise<void>;
+  }): void {
     webSocketNotificationBridge.setWebSocketGateway(gateway);
     this.logger.info('WebSocket gateway connected to notification system');
   }
@@ -412,7 +414,9 @@ export const NotificationAPI = {
   /**
    * Connect WebSocket gateway
    */
-  connectWebSocket: (gateway: unknown) => {
+  connectWebSocket: (gateway: {
+    sendMessage: (connectionId: string, message: unknown) => Promise<void>;
+  }) => {
     return globalNotificationSystem.connectWebSocketGateway(gateway);
   },
 };
