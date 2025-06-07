@@ -83,7 +83,10 @@ export function extractApiVersion(request: NextRequest): {
   version: ApiVersion | string;
   source: 'url' | 'header' | 'query' | 'default';
 } {
-  const url = new URL(request.url);
+  // Provide a base so that relative paths used in tests (e.g. "/api/v1")
+  // are parsed correctly. If `request.url` is already absolute, the base
+  // is ignored by the WHATWG URL constructor.
+  const url = new URL(request.url, 'http://localhost');
 
   // 1. Check URL path (preferred method)
   const pathMatch = url.pathname.match(/^\/api\/(v\d+)/);

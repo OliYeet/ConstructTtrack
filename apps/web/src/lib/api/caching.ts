@@ -201,7 +201,9 @@ export class CacheManager {
 
   // Generate cache key
   generateKey(request: NextRequest, additionalKeys: string[] = []): string {
-    const url = new URL(request.url);
+    // Support relative URLs supplied by unit tests by falling back to a
+    // localhost origin. Absolute URLs continue to work unchanged.
+    const url = new URL(request.url, 'http://localhost');
     const baseKey = `${request.method}:${url.pathname}`;
 
     // Add query parameters (sorted for consistency)
