@@ -61,7 +61,11 @@ export class ConflictEngineV1 implements ConflictEngine {
   private enabled: boolean;
 
   constructor(
-    private config: { enableConflictResolution: boolean } = {
+    private config: {
+      enableConflictResolution: boolean;
+      largeProgressDiffThreshold?: number;
+      allowProgressDecrease?: boolean;
+    } = {
       enableConflictResolution: isConflictResolutionEnabled(),
     }
   ) {
@@ -147,15 +151,20 @@ export class ConflictEngineV1 implements ConflictEngine {
       remote.status
     );
 
+    // Return null for valid transitions - no conflict
+    if (isValidTransition) {
+      return null;
+    }
+
     return {
       id: randomUUID(),
       type: 'state_transition',
-      severity: isValidTransition ? 'low' : 'high',
+      severity: 'high',
       localValue: local,
       remoteValue: remote,
       metadata,
       detectedAt: Date.now(),
-      autoResolvable: isValidTransition,
+      autoResolvable: false,
     };
   }
 
@@ -217,7 +226,8 @@ export class ConflictEngineV1 implements ConflictEngine {
     // Check for invalid progress decrease (only if remote is newer)
     const isRemoteNewer = remote.timestamp > local.timestamp;
     const hasDecrease = isRemoteNewer && remote.percentage < local.percentage;
-    const LARGE_PROGRESS_DIFF_THRESHOLD = 25; // TODO: Make configurable
+    const LARGE_PROGRESS_DIFF_THRESHOLD =
+      this.config.largeProgressDiffThreshold ?? 25;
     const largeDiff =
       Math.abs(local.percentage - remote.percentage) >
       LARGE_PROGRESS_DIFF_THRESHOLD;
@@ -246,16 +256,31 @@ export class ConflictEngineV1 implements ConflictEngine {
       throw new Error('Invalid progress data in conflict resolution');
     }
 
-    // Monotonic counter - higher value wins (progress can only increase)
-    const resolvedValue = local.percentage > remote.percentage ? local : remote;
+    // Check if progress decreases are allowed
+    const allowProgressDecrease = this.config.allowProgressDecrease ?? false;
 
-    return {
-      success: true,
-      resolvedValue,
-      strategy: 'monotonic_counter',
-      confidence: 0.95,
-      appliedAt: Date.now(),
-    };
+    if (!allowProgressDecrease) {
+      // Enforce monotonic increase - higher percentage wins
+      const resolvedValue =
+        local.percentage > remote.percentage ? local : remote;
+      return {
+        success: true,
+        resolvedValue,
+        strategy: 'monotonic_counter',
+        confidence: 0.95,
+        appliedAt: Date.now(),
+      };
+    } else {
+      // Allow decreases - use timestamp to determine most recent
+      const resolvedValue = local.timestamp > remote.timestamp ? local : remote;
+      return {
+        success: true,
+        resolvedValue,
+        strategy: 'last_writer_wins',
+        confidence: 0.85,
+        appliedAt: Date.now(),
+      };
+    }
   }
 
   // Helper methods for extracting typed data
@@ -310,6 +335,8 @@ export class ConflictEngineV1 implements ConflictEngine {
 // Factory function for dependency injection compatibility
 export function createConflictEngine(config?: {
   enableConflictResolution: boolean;
+  largeProgressDiffThreshold?: number;
+  allowProgressDecrease?: boolean;
 }): ConflictEngine {
   return new ConflictEngineV1(config);
 }

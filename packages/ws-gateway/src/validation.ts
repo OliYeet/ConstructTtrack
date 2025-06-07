@@ -35,6 +35,14 @@ export function validateClientMessage(
     case 'ping':
       return true; // Ping messages don't require additional fields
 
+    case 'resolve_conflict':
+      return (
+        msg.localState !== undefined &&
+        msg.remoteState !== undefined &&
+        typeof msg.metadata === 'object' &&
+        msg.metadata !== null
+      );
+
     default:
       return false; // Unknown action
   }

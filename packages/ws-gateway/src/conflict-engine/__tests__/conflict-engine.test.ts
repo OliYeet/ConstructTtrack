@@ -17,8 +17,12 @@ import type { ConflictMetadata } from '../index';
 describe('ConflictEngineV1', () => {
   let engine: ConflictEngineV1;
   let mockMetadata: ConflictMetadata;
+  let originalEnvValue: string | undefined;
 
   beforeEach(() => {
+    // Store original value for restoration
+    originalEnvValue = process.env.ENABLE_CONFLICT_RESOLUTION;
+
     // Enable conflict resolution for tests
     process.env.ENABLE_CONFLICT_RESOLUTION = 'true';
 
@@ -36,7 +40,12 @@ describe('ConflictEngineV1', () => {
   });
 
   afterEach(() => {
-    process.env.ENABLE_CONFLICT_RESOLUTION = 'false';
+    // Restore original value
+    if (originalEnvValue === undefined) {
+      delete process.env.ENABLE_CONFLICT_RESOLUTION;
+    } else {
+      process.env.ENABLE_CONFLICT_RESOLUTION = originalEnvValue;
+    }
   });
 
   describe('Feature Flag', () => {
@@ -70,14 +79,15 @@ describe('ConflictEngineV1', () => {
 
   describe('State Transition Conflicts - Priority 1', () => {
     it('should detect invalid state transitions', async () => {
+      const baseTime = 1650000000000;
       const localState = {
         status: 'completed',
-        lastModified: Date.now() - 1000,
+        lastModified: baseTime - 1000,
       };
 
       const remoteState = {
         status: 'planned', // Invalid: completed -> planned
-        lastModified: Date.now(),
+        lastModified: baseTime,
       };
 
       const result = await engine.detectConflict(
@@ -93,15 +103,16 @@ describe('ConflictEngineV1', () => {
       expect(result.conflicts[0].autoResolvable).toBe(false);
     });
 
-    it('should allow valid state transitions', async () => {
+    it('should allow valid state transitions without conflict', async () => {
+      const baseTime = 1650000000000;
       const localState = {
         status: 'planned',
-        lastModified: Date.now() - 1000,
+        lastModified: baseTime - 1000,
       };
 
       const remoteState = {
         status: 'in_progress', // Valid: planned -> in_progress
-        lastModified: Date.now(),
+        lastModified: baseTime,
       };
 
       const result = await engine.detectConflict(
@@ -110,10 +121,9 @@ describe('ConflictEngineV1', () => {
         mockMetadata
       );
 
-      expect(result.hasConflict).toBe(true);
-      expect(result.conflicts).toHaveLength(1);
-      expect(result.conflicts[0].severity).toBe('low');
-      expect(result.conflicts[0].autoResolvable).toBe(true);
+      expect(result.hasConflict).toBe(false);
+      expect(result.conflicts).toHaveLength(0);
+      expect(result.canAutoResolve).toBe(true);
     });
 
     it('should resolve state conflicts using precedence graph', async () => {
