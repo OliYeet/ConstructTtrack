@@ -359,6 +359,37 @@ export const validateEventPayload = (event: RealtimeEvent): boolean => {
         event.payload.overallProgress <= 100 &&
         event.payload.estimatedTimeRemaining >= 0
       );
+    // Notification event validation
+    case 'NotificationSent':
+      return (
+        typeof event.payload.notificationId === 'string' &&
+        typeof event.payload.recipientId === 'string' &&
+        ['websocket', 'email', 'sms', 'slack', 'discord', 'webhook'].includes(
+          event.payload.channel
+        ) &&
+        ['low', 'normal', 'high', 'critical'].includes(event.payload.priority)
+      );
+    case 'NotificationDelivered':
+      return (
+        typeof event.payload.notificationId === 'string' &&
+        typeof event.payload.recipientId === 'string' &&
+        event.payload.latency >= 0
+      );
+    case 'NotificationFailed':
+      return (
+        typeof event.payload.notificationId === 'string' &&
+        typeof event.payload.recipientId === 'string' &&
+        event.payload.retryAttempt >= 0 &&
+        ['websocket', 'email', 'sms', 'slack', 'discord', 'webhook'].includes(
+          event.payload.channel
+        )
+      );
+    case 'NotificationAcknowledged':
+      return (
+        typeof event.payload.notificationId === 'string' &&
+        typeof event.payload.recipientId === 'string' &&
+        event.payload.responseTime >= 0
+      );
     default:
       return true; // Other events don't have specific validation rules yet
   }
@@ -451,4 +482,29 @@ export const isInspectionFailedEvent = (
   event: RealtimeEvent
 ): event is InspectionFailedEvent => {
   return event.type === 'InspectionFailed';
+};
+
+// Notification event type guards
+export const isNotificationSentEvent = (
+  event: RealtimeEvent
+): event is NotificationSentEvent => {
+  return event.type === 'NotificationSent';
+};
+
+export const isNotificationDeliveredEvent = (
+  event: RealtimeEvent
+): event is NotificationDeliveredEvent => {
+  return event.type === 'NotificationDelivered';
+};
+
+export const isNotificationFailedEvent = (
+  event: RealtimeEvent
+): event is NotificationFailedEvent => {
+  return event.type === 'NotificationFailed';
+};
+
+export const isNotificationAcknowledgedEvent = (
+  event: RealtimeEvent
+): event is NotificationAcknowledgedEvent => {
+  return event.type === 'NotificationAcknowledged';
 };

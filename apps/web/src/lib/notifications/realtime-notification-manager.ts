@@ -119,6 +119,30 @@ export interface WebSocketNotification {
   };
 }
 
+/**
+ * Real-time Notification Manager
+ *
+ * Core engine for processing and delivering real-time notifications in ConstructTrack.
+ * Handles event-driven notifications for fiber installation workflows with:
+ * - WebSocket-first delivery with traditional channel fallback
+ * - Smart batching to prevent notification spam
+ * - Role-based notification routing
+ * - Priority-based delivery (critical notifications bypass batching)
+ * - Comprehensive error handling and retry logic
+ *
+ * @example
+ * ```typescript
+ * const manager = new RealtimeNotificationManager({
+ *   enableWebSocket: true,
+ *   enableBatching: true,
+ *   batchWindow: 5000
+ * });
+ *
+ * manager.setWebSocketGateway(webSocketGateway);
+ * manager.addRule(notificationRule);
+ * await manager.processEvent(event, recipients);
+ * ```
+ */
 export class RealtimeNotificationManager {
   private config: RealtimeNotificationConfig;
   private rules: Map<string, NotificationRule> = new Map();

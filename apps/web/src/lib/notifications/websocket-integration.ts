@@ -320,6 +320,9 @@ export class WebSocketNotificationBridge
         data: notification,
       });
 
+      // Update client activity timestamp after successful send
+      client.lastActivity = Date.now();
+
       const latency = Date.now() - startTime;
 
       return {
