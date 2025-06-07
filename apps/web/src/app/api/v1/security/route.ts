@@ -138,7 +138,7 @@ export async function POST(request: NextRequest) {
 
     const { action, parameters } = validationResult.data;
 
-    let response: any = {};
+    let response: Record<string, unknown> = {};
 
     switch (action) {
       case 'scan':
@@ -219,7 +219,7 @@ async function getRateLimitStatus() {
   };
 }
 
-async function triggerSecurityScan(parameters: any) {
+async function triggerSecurityScan(parameters: Record<string, unknown>) {
   const { scanType } = parameters;
 
   switch (scanType) {
@@ -265,14 +265,16 @@ async function triggerSecurityScan(parameters: any) {
   }
 }
 
-async function handlePrivacyRequest(parameters: any) {
-  const { requestType, userId, details } = parameters;
+async function handlePrivacyRequest(parameters: Record<string, unknown>) {
+  const requestType = parameters.requestType as string;
+  const userId = parameters.userId as string;
+  const details = parameters.details as Record<string, unknown>;
 
   switch (requestType) {
     case 'data-export': {
       const requestId = await privacyManager.submitDataSubjectRequest(
         userId,
-        'access' as any,
+        'access' as 'access' | 'erasure',
         details
       );
 
@@ -294,7 +296,7 @@ async function handlePrivacyRequest(parameters: any) {
     case 'data-deletion': {
       const deletionRequestId = await privacyManager.submitDataSubjectRequest(
         userId,
-        'erasure' as any,
+        'erasure' as 'access' | 'erasure',
         details
       );
 
@@ -313,14 +315,14 @@ async function handlePrivacyRequest(parameters: any) {
     case 'consent-withdrawal': {
       const success = await privacyManager.withdrawConsent(
         userId,
-        details.consentId
+        details.consentId as string
       );
 
       return {
         requestType: 'consent-withdrawal',
         status: success ? 'completed' : 'failed',
         userId,
-        consentId: details.consentId,
+        consentId: details.consentId as string,
         processedAt: new Date().toISOString(),
       };
     }
@@ -330,7 +332,7 @@ async function handlePrivacyRequest(parameters: any) {
   }
 }
 
-async function resetRateLimits(parameters: any) {
+async function resetRateLimits(parameters: Record<string, unknown>) {
   const { target } = parameters;
 
   // In a real implementation, this would reset rate limits in the store
@@ -343,7 +345,7 @@ async function resetRateLimits(parameters: any) {
   };
 }
 
-async function generateSecurityReport(parameters: any) {
+async function generateSecurityReport(parameters: Record<string, unknown>) {
   const { format, includeDetails } = parameters;
 
   const vulnerabilityReport = securityScanner.generateSecurityReport();
@@ -369,7 +371,7 @@ async function generateSecurityReport(parameters: any) {
   };
 
   if (includeDetails) {
-    (report as any).details = {
+    (report as Record<string, unknown>).details = {
       vulnerabilities: vulnerabilityReport.findings,
       complianceIssues: complianceStatus.issues,
       recommendations: [

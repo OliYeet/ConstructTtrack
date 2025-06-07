@@ -80,15 +80,24 @@ async function getPerformanceSummary(_request: NextRequest) {
 
   // Calculate summary statistics
   const summary = {
-    last24Hours: calculateSummaryStats(last24HoursMetrics),
-    lastHour: calculateSummaryStats(lastHourMetrics),
+    last24Hours: calculateSummaryStats(
+      last24HoursMetrics as unknown as Record<string, unknown>[]
+    ),
+    lastHour: calculateSummaryStats(
+      lastHourMetrics as unknown as Record<string, unknown>[]
+    ),
     alerts: {
       active: activeAlerts.length,
       critical: activeAlerts.filter(a => a.severity === 'critical').length,
       warning: activeAlerts.filter(a => a.severity === 'warning').length,
     },
-    topSlowEndpoints: getTopSlowEndpoints(last24HoursMetrics, 5),
-    performanceScore: calculatePerformanceScore(last24HoursMetrics),
+    topSlowEndpoints: getTopSlowEndpoints(
+      last24HoursMetrics as unknown as Record<string, unknown>[],
+      5
+    ),
+    performanceScore: calculatePerformanceScore(
+      last24HoursMetrics as unknown as Record<string, unknown>[]
+    ),
   };
 
   return createSuccessResponse({
@@ -168,7 +177,9 @@ async function getOptimizationRecommendations(_request: NextRequest) {
   });
 
   // Group metrics by endpoint
-  const endpointGroups = groupMetricsByEndpoint(metrics);
+  const endpointGroups = groupMetricsByEndpoint(
+    metrics as unknown as Record<string, unknown>[]
+  );
   const recommendations: Record<string, unknown>[] = [];
 
   for (const [endpoint] of Object.entries(endpointGroups)) {
@@ -179,13 +190,17 @@ async function getOptimizationRecommendations(_request: NextRequest) {
       metrics: analysis.metrics,
       bottlenecks: analysis.bottlenecks,
       recommendations: analysis.recommendations,
-      priority: determinePriority(analysis),
+      priority: determinePriority(
+        analysis as unknown as Record<string, unknown>
+      ),
     });
   }
 
   // Sort by priority
   recommendations.sort(
-    (a, b) => getPriorityScore(b.priority) - getPriorityScore(a.priority)
+    (a, b) =>
+      getPriorityScore(b.priority as string) -
+      getPriorityScore(a.priority as string)
   );
 
   return createSuccessResponse({
@@ -214,10 +229,21 @@ async function getBottleneckAnalysis(_request: NextRequest) {
   });
 
   const bottlenecks = {
-    slowEndpoints: getTopSlowEndpoints(metrics, 10),
-    highErrorRateEndpoints: getHighErrorRateEndpoints(metrics, 10),
-    resourceIntensiveEndpoints: getResourceIntensiveEndpoints(metrics, 10),
-    systemBottlenecks: identifySystemBottlenecks(metrics),
+    slowEndpoints: getTopSlowEndpoints(
+      metrics as unknown as Record<string, unknown>[],
+      10
+    ),
+    highErrorRateEndpoints: getHighErrorRateEndpoints(
+      metrics as unknown as Record<string, unknown>[],
+      10
+    ),
+    resourceIntensiveEndpoints: getResourceIntensiveEndpoints(
+      metrics as unknown as Record<string, unknown>[],
+      10
+    ),
+    systemBottlenecks: identifySystemBottlenecks(
+      metrics as unknown as Record<string, unknown>[]
+    ),
   };
 
   return createSuccessResponse({

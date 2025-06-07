@@ -120,7 +120,7 @@ async function handleGet(
   let query = supabase
     .from('projects')
     .select('*', { count: 'exact' })
-    .eq('organization_id', context.organizationId!);
+    .eq('organization_id', context.organizationId || 'unknown');
 
   // Apply filters
   if (queryParams.status) {
@@ -186,7 +186,7 @@ async function handlePost(
 
   // Prepare data for insertion
   const insertData = {
-    organization_id: context.organizationId!,
+    organization_id: context.organizationId || 'unknown',
     name: projectData.name,
     description: projectData.description || null,
     start_date: projectData.startDate || null,
