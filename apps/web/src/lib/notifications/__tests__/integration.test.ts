@@ -76,6 +76,7 @@ describe('Real-time Notification System Integration', () => {
     if (testNotificationSystem) {
       testNotificationSystem.shutdown();
     }
+    jest.clearAllMocks();
   });
 
   describe('Fiber Installation Workflow', () => {

@@ -203,12 +203,15 @@ export class NotificationSystem {
     userId: string;
     connectionId: string;
     isConnected: boolean;
-    subscriptions?: string[];
+    subscriptions?: string[] | Set<string>;
   }): void {
     webSocketNotificationBridge.registerClient({
       ...client,
       lastActivity: Date.now(),
-      subscriptions: new Set(client.subscriptions || []),
+      subscriptions:
+        client.subscriptions instanceof Set
+          ? client.subscriptions
+          : new Set(client.subscriptions || []),
     });
   }
 
@@ -385,7 +388,7 @@ export const NotificationAPI = {
     userId: string;
     connectionId: string;
     isConnected: boolean;
-    subscriptions?: string[];
+    subscriptions?: string[] | Set<string>;
   }) => {
     return globalNotificationSystem.registerWebSocketClient(client);
   },
