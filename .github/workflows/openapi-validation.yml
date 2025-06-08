@@ -107,8 +107,19 @@ jobs:
           cache: 'npm'
           cache-dependency-path: 'package-lock.json'
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Install dependencies (excluding mobile)
+        run: |
+          # Install dependencies for all workspaces except mobile to avoid Expo web dependencies
+          echo "📦 Installing root dependencies..."
+          npm ci --ignore-scripts
+
+          echo "📦 Installing workspace dependencies (excluding mobile)..."
+          npm install --workspace=@constructtrack/shared
+          npm install --workspace=@constructtrack/supabase
+          npm install --workspace=@constructtrack/ui
+          npm install --workspace=apps/web
+
+          echo "✅ Dependencies installed (mobile workspace skipped)"
 
       - name: Setup test environment
         run: |
@@ -117,10 +128,19 @@ jobs:
           echo "NODE_ENV=test" >> .env.test
           echo "API_BASE_URL=http://localhost:3001/api/v1" >> .env.test
 
-      - name: Build application
+      - name: Build application (excluding mobile)
         run: |
-          npm run packages:build
+          # Build only the packages needed for API validation
+          # Skip mobile workspace to avoid Expo dependencies that require additional web setup
+          echo "🔨 Building shared packages..."
+          npm run build --workspace=@constructtrack/shared
+          npm run build --workspace=@constructtrack/supabase
+          npm run build --workspace=@constructtrack/ui
+
+          echo "🔨 Building web application..."
           npm run build --workspace=apps/web
+
+          echo "✅ Build completed (mobile workspace skipped)"
 
       - name: Start API server
         run: |
