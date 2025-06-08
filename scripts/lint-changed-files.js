@@ -57,8 +57,12 @@ function main() {
     });
 
     console.log('✅ All changed files pass linting');
-  } catch {
-    console.error('❌ Linting failed for changed files');
+  } catch (err) {
+    // Log the underlying error to aid debugging
+    console.error(
+      '❌ Linting failed for changed files:',
+      err instanceof Error ? err.stack ?? err.message : err
+    );
     process.exit(1);
   }
 }
