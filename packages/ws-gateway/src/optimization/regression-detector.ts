@@ -324,7 +324,7 @@ export class RegressionDetector {
       averageLatency: profilerSummary.averageLatency || 0,
       p95Latency: 0, // Not available in current profiler summary
       p99Latency: 0, // Not available in current profiler summary
-      throughput: connectionStats.messagesPerSecond || 0,
+      throughput: connectionStats.throughput || 0,
       errorRate: connectionStats.errorRate || 0,
       memoryUsage: process.memoryUsage().heapUsed / 1024 / 1024, // MB
       cpuUsage: 0, // Not available in current profiler summary
