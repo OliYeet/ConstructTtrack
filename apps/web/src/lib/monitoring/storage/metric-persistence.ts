@@ -82,7 +82,7 @@ export class SupabaseMetricStorage implements MetricStorageProvider {
       // traffic (we only care about success/failure, not the inserted rows).
       const { error } = await client
         .from(this.tableName)
-        .insert(storageMetrics, { returning: 'minimal' });
+        .insert(storageMetrics);
 
       if (error) {
         logger.error('Supabase insert failed', {
