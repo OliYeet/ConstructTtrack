@@ -200,8 +200,9 @@ export class PerformanceTester {
    * Ramp up connections gradually
    */
   private async rampUpConnections(config: LoadTestConfig): Promise<void> {
-    const connectionsPerSecond =
-      config.concurrentConnections / (config.rampUpTime / 1000);
+    // Guard against zero rampUpTime to avoid division by zero
+    const ramp = Math.max(config.rampUpTime, 1); // at least 1 ms
+    const connectionsPerSecond = config.concurrentConnections / (ramp / 1000);
     const interval = 1000 / connectionsPerSecond;
 
     for (let i = 0; i < config.concurrentConnections; i++) {
@@ -292,14 +293,8 @@ export class PerformanceTester {
       this.resultMap.set(connectionId, result);
 
       ws.on('close', () => {
-        // Update final connection metrics on close
-        const existingResult = this.results.find(
-          r => r.connectionId === connectionId
-        );
-        if (existingResult) {
-          existingResult.connectionTime = result.connectionTime;
-          existingResult.connected = result.connected;
-        }
+        // Connection metrics are already tracked in real-time
+        // No need to update here as result is already in arrays
       });
 
       // Timeout after 10 seconds

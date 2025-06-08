@@ -109,7 +109,7 @@ export class RegressionDetector {
       throughput: connectionStats.throughput,
       errorRate: connectionStats.errorRate,
       connectionCount: connectionStats.totalConnections,
-      memoryUsage: memUsage.heapUsed,
+      memoryUsage: memUsage.heapUsed / 1024 / 1024, // MB
       cpuUsage: cpuUsage.user + cpuUsage.system,
     };
 
@@ -337,7 +337,11 @@ export class RegressionDetector {
    */
   private calculateDegradation(baseline: number, current: number): number {
     // Prevent division by zero and handle edge cases
-    if (baseline === 0 || !isFinite(baseline) || !isFinite(current)) {
+    if (
+      baseline === 0 ||
+      !Number.isFinite(baseline) ||
+      !Number.isFinite(current)
+    ) {
       return 0;
     }
 
@@ -359,7 +363,11 @@ export class RegressionDetector {
     current: number
   ): number {
     // Prevent division by zero and handle edge cases
-    if (baseline === 0 || !isFinite(baseline) || !isFinite(current)) {
+    if (
+      baseline === 0 ||
+      !Number.isFinite(baseline) ||
+      !Number.isFinite(current)
+    ) {
       return 0;
     }
 
@@ -380,7 +388,9 @@ export class RegressionDetector {
     if (values.length === 0) return 0;
 
     // Filter out invalid values
-    const validValues = values.filter(val => isFinite(val) && !isNaN(val));
+    const validValues = values.filter(
+      val => Number.isFinite(val) && !isNaN(val)
+    );
     if (validValues.length === 0) return 0;
 
     return validValues.reduce((sum, val) => sum + val, 0) / validValues.length;
