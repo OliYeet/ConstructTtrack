@@ -12,7 +12,7 @@ import type {
 // Re-export RealtimeEvent so that it is available to consumers of this package
 export type { RealtimeEvent };
 
-// CodeRabbit fix: Add UUID type alias for clarity
+// Type alias representing a UUID string (for stronger type safety)
 export type UUID = string;
 
 // Event Store Core Types
