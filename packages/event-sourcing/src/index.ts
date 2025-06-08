@@ -24,6 +24,7 @@ export type {
   ConflictDetectionResult,
   ConflictResolution,
   EventStoreMetrics,
+  RealtimeEvent,
 } from './types';
 
 // Error types
