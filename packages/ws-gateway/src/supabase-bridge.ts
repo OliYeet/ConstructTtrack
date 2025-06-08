@@ -161,7 +161,7 @@ export class SupabaseBridge {
     };
 
     // Create RealtimeEvent for event sourcing
-    const realtimeEvent: RealtimeEvent = {
+    const realtimeEvent = {
       id: `work_order_${workOrder.id}_${randomUUID()}`,
       type: 'WorkOrderUpdated',
       version: 'v1.alpha',
@@ -178,7 +178,7 @@ export class SupabaseBridge {
         oldWorkOrder: payload.eventType === 'UPDATE' ? oldWorkOrder : undefined,
         eventType: payload.eventType.toLowerCase(),
       },
-    };
+    } as unknown as RealtimeEvent;
 
     // TODO: Re-enable event sourcing after module resolution is fixed
     if (this.eventSourcingService) {
@@ -242,7 +242,7 @@ export class SupabaseBridge {
     };
 
     // Create RealtimeEvent for event sourcing
-    const realtimeEvent: RealtimeEvent = {
+    const realtimeEvent = {
       id: `fiber_section_${fiberSection.id}_${randomUUID()}`,
       type: 'FiberSectionProgress',
       version: 'v1.alpha',
@@ -264,7 +264,7 @@ export class SupabaseBridge {
         },
         estimatedTimeRemaining: 0, // Default time
       },
-    };
+    } as unknown as RealtimeEvent;
 
     // TODO: Re-enable event sourcing after module resolution is fixed
     if (this.eventSourcingService) {
