@@ -109,17 +109,25 @@ jobs:
 
       - name: Install dependencies (excluding mobile)
         run: |
-          # Install dependencies for all workspaces except mobile to avoid Expo web dependencies
-          echo "📦 Installing root dependencies..."
-          npm ci --ignore-scripts
+          # Temporarily remove mobile workspace from package.json to avoid Expo dependencies
+          echo "📦 Temporarily excluding mobile workspace..."
+          cp package.json package.json.backup
 
-          echo "📦 Installing workspace dependencies (excluding mobile)..."
-          npm install --workspace=@constructtrack/shared
-          npm install --workspace=@constructtrack/supabase
-          npm install --workspace=@constructtrack/ui
-          npm install --workspace=apps/web
+          # Remove mobile workspace from workspaces array
+          node -e "
+            const pkg = JSON.parse(require('fs').readFileSync('package.json', 'utf8'));
+            pkg.workspaces = pkg.workspaces.filter(ws => ws !== 'apps/*');
+            pkg.workspaces.push('apps/web');
+            require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2));
+          "
 
-          echo "✅ Dependencies installed (mobile workspace skipped)"
+          echo "📦 Installing dependencies without mobile workspace..."
+          npm ci
+
+          echo "📦 Restoring original package.json..."
+          mv package.json.backup package.json
+
+          echo "✅ Dependencies installed (mobile workspace excluded)"
 
       - name: Setup test environment
         run: |
@@ -130,17 +138,14 @@ jobs:
 
       - name: Build application (excluding mobile)
         run: |
-          # Build only the packages needed for API validation
-          # Skip mobile workspace to avoid Expo dependencies that require additional web setup
+          # Build packages and web app (mobile workspace already excluded)
           echo "🔨 Building shared packages..."
-          npm run build --workspace=@constructtrack/shared
-          npm run build --workspace=@constructtrack/supabase
-          npm run build --workspace=@constructtrack/ui
+          npm run packages:build
 
           echo "🔨 Building web application..."
           npm run build --workspace=apps/web
 
-          echo "✅ Build completed (mobile workspace skipped)"
+          echo "✅ Build completed (mobile workspace excluded)"
 
       - name: Start API server
         run: |
