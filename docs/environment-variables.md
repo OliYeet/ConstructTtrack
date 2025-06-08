@@ -73,6 +73,27 @@ The application loads environment variables in this order:
 | `JWT_SECRET`     | Secret for JWT token signing | ✅       |
 | `ENCRYPTION_KEY` | 32-character encryption key  | ✅       |
 
+### Real-time Monitoring
+
+| Variable                                  | Description                               | Default         |
+| ----------------------------------------- | ----------------------------------------- | --------------- |
+| `NEXT_PUBLIC_REALTIME_MONITORING_ENABLED` | Enable/disable real-time monitoring       | `true`          |
+| `REALTIME_MONITORING_RETENTION_DAYS`      | Data retention period in days             | `7`             |
+| `REALTIME_MONITORING_SAMPLING_RATE`       | Sampling rate 0.0-1.0                     | `1.0`           |
+| `REALTIME_MONITORING_STORE`               | Storage backend: supabase/inmemory/custom | `supabase`      |
+| `REALTIME_LATENCY_P99_WARN`               | P99 latency warning threshold (ms)        | `250`           |
+| `REALTIME_LATENCY_P99_CRIT`               | P99 latency critical threshold (ms)       | `500`           |
+| `REALTIME_CONNECTION_MAX`                 | Maximum concurrent connections            | `1000`          |
+| `REALTIME_HEARTBEAT_INTERVAL`             | Heartbeat interval (ms)                   | `30000`         |
+| `REALTIME_TIMEOUT_MS`                     | Connection timeout (ms)                   | `60000`         |
+| `REALTIME_BUFFER_SIZE`                    | Metrics buffer size                       | `1000`          |
+| `REALTIME_FLUSH_INTERVAL`                 | Metrics flush interval (ms)               | `60000`         |
+| `REALTIME_BATCH_SIZE`                     | Storage batch size                        | `100`           |
+| `REALTIME_MAX_RETRIES`                    | Maximum retry attempts                    | `3`             |
+| `REALTIME_ALERTS_ENABLED`                 | Enable/disable alerts                     | `true`          |
+| `REALTIME_ALERTS_COOLDOWN`                | Alert cooldown period (ms)                | `300000`        |
+| `REALTIME_ALERTS_CHANNELS`                | Alert channels (comma-separated)          | `email,webhook` |
+
 ## Optional Variables
 
 ### Email Service (SMTP)

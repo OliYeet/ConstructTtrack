@@ -504,6 +504,33 @@ export type Database = {
           },
         ];
       };
+      realtime_metrics: {
+        Row: {
+          time: string;
+          metric_name: string;
+          tags: Json;
+          value: number;
+          unit: string;
+          metadata: Json;
+        };
+        Insert: {
+          time: string;
+          metric_name: string;
+          tags?: Json;
+          value: number;
+          unit: string;
+          metadata?: Json;
+        };
+        Update: {
+          time?: string;
+          metric_name?: string;
+          tags?: Json;
+          value?: number;
+          unit?: string;
+          metadata?: Json;
+        };
+        Relationships: [];
+      };
     };
     Views: {
       [_ in never]: never;
