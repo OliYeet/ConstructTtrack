@@ -174,28 +174,32 @@ export class TimescaleAdapter implements MetricPersistenceAdapter {
 
   // Process pending batches
   private async processPendingBatches(): Promise<void> {
-    if (this.isProcessing || this.pendingBatches.length === 0) {
+    if (this.isProcessing) {
       return;
     }
 
     this.isProcessing = true;
 
     try {
-      const batchesToProcess = this.pendingBatches.splice(0, 10); // Process up to 10 batches at once
+      // Use a loop instead of recursion to prevent stack overflow
+      while (this.pendingBatches.length > 0) {
+        const batchesToProcess = this.pendingBatches.splice(0, 10); // Process up to 10 batches at once
 
-      for (const batch of batchesToProcess) {
-        try {
-          await this.processBatch(batch);
-        } catch (error) {
-          await this.handleBatchError(batch, error);
+        for (const batch of batchesToProcess) {
+          try {
+            await this.processBatch(batch);
+          } catch (error) {
+            await this.handleBatchError(batch, error);
+          }
+        }
+
+        // Add a small delay to prevent CPU starvation under extreme load
+        if (this.pendingBatches.length > 0) {
+          await new Promise(resolve => setTimeout(resolve, 1));
         }
       }
     } finally {
       this.isProcessing = false;
-      if (this.pendingBatches.length > 0) {
-        // Process newly-queued batches without delay
-        await this.processPendingBatches();
-      }
     }
   }
 
