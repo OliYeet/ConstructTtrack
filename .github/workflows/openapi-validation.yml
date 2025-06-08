@@ -107,27 +107,8 @@ jobs:
           cache: 'npm'
           cache-dependency-path: 'package-lock.json'
 
-      - name: Install dependencies (excluding mobile)
-        run: |
-          # Temporarily remove mobile workspace from package.json to avoid Expo dependencies
-          echo "📦 Temporarily excluding mobile workspace..."
-          cp package.json package.json.backup
-
-          # Remove mobile workspace from workspaces array
-          node -e "
-            const pkg = JSON.parse(require('fs').readFileSync('package.json', 'utf8'));
-            pkg.workspaces = pkg.workspaces.filter(ws => ws !== 'apps/*');
-            pkg.workspaces.push('apps/web');
-            require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2));
-          "
-
-          echo "📦 Installing dependencies without mobile workspace..."
-          npm ci
-
-          echo "📦 Restoring original package.json..."
-          mv package.json.backup package.json
-
-          echo "✅ Dependencies installed (mobile workspace excluded)"
+      - name: Install dependencies
+        run: npm ci
 
       - name: Setup test environment
         run: |
@@ -136,16 +117,10 @@ jobs:
           echo "NODE_ENV=test" >> .env.test
           echo "API_BASE_URL=http://localhost:3001/api/v1" >> .env.test
 
-      - name: Build application (excluding mobile)
+      - name: Build application
         run: |
-          # Build packages and web app (mobile workspace already excluded)
-          echo "🔨 Building shared packages..."
           npm run packages:build
-
-          echo "🔨 Building web application..."
           npm run build --workspace=apps/web
-
-          echo "✅ Build completed (mobile workspace excluded)"
 
       - name: Start API server
         run: |
