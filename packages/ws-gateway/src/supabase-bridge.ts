@@ -10,7 +10,6 @@
 
 // Built-in modules
 import { randomUUID } from 'crypto';
-
 // Type-only imports
 import type {
   EventSourcingService,
