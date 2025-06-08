@@ -10,11 +10,6 @@
 
 // Built-in modules must be imported first
 import { randomUUID } from 'crypto';
-// Use the canonical event-sourcing types
-import type {
-  EventSourcingService,
-  RealtimeEvent,
-} from '@constructtrack/event-sourcing';
 
 // External libraries
 import {
@@ -23,6 +18,12 @@ import {
   RealtimeChannel,
   RealtimePostgresChangesPayload,
 } from '@supabase/supabase-js';
+
+// Type-only imports
+import type {
+  EventSourcingService,
+  RealtimeEvent,
+} from '@constructtrack/event-sourcing';
 
 // Internal imports
 import { config } from './config';
