@@ -10,7 +10,6 @@
 
 // Built-in modules must be imported first
 import { randomUUID } from 'crypto';
-
 // Use the canonical event-sourcing types
 import type {
   EventSourcingService,
