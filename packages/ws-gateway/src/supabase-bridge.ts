@@ -8,8 +8,15 @@
 // NEVER bundle this file for browser/client-side use - server-only!
 // The service role key provides root-level database access
 
-// Built-in modules must be imported first
+// Built-in modules
 import { randomUUID } from 'crypto';
+
+// Type-only imports
+import type {
+  EventSourcingService,
+  RealtimeEvent,
+} from '@constructtrack/event-sourcing';
+import type { WebSocketGateway } from './gateway';
 
 // External libraries
 import {
@@ -19,15 +26,8 @@ import {
   RealtimePostgresChangesPayload,
 } from '@supabase/supabase-js';
 
-// Type-only imports
-import type {
-  EventSourcingService,
-  RealtimeEvent,
-} from '@constructtrack/event-sourcing';
-
 // Internal imports
 import { config } from './config';
-import type { WebSocketGateway } from './gateway';
 import { logger } from './utils/logger';
 
 // Database row types - following Charlie's guidance for proper typing
