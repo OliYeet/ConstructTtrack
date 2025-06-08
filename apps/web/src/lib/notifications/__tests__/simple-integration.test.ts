@@ -95,7 +95,6 @@ describe('Real-time Notification Manager', () => {
         startLocation: {
           latitude: 40.7128,
           longitude: -74.006,
-          address: '123 Test Street, New York, NY',
         },
         estimatedLength: 1000,
         assignedTechnician: 'tech-1',
@@ -164,10 +163,9 @@ describe('Real-time Notification Manager', () => {
         failureLocation: {
           latitude: 40.7589,
           longitude: -73.9851,
-          address: '456 Emergency Lane, New York, NY',
         },
-        reportedBy: 'tech-1',
-        severity: 'high',
+        errorCode: 'CABLE_DAMAGE',
+        recoveryActions: ['Replace damaged section', 'Re-route cable'],
       },
     };
 
@@ -221,14 +219,18 @@ describe('Real-time Notification Manager', () => {
       userId: 'tech-1',
       payload: {
         sectionId: 'SEC-SPLICE',
+        spliceId: 'SPLICE-001',
         spliceLocation: {
           latitude: 40.7505,
           longitude: -73.9934,
-          address: '789 Splice Point, New York, NY',
         },
-        spliceLoss: 0.12,
-        spliceQuality: 'excellent',
-        completedBy: 'tech-1',
+        spliceType: 'fusion',
+        fiberCount: 12,
+        testResults: {
+          loss: 0.12,
+          reflectance: -45,
+          passed: true,
+        },
       },
     };
 
@@ -286,11 +288,10 @@ describe('Real-time Notification Manager', () => {
         sectionId: 'SEC-OFFLINE',
         inspectionType: 'optical',
         inspector: 'inspector-1',
-        qualityScore: 95,
-        testResults: {
-          powerLoss: 0.08,
-          reflectance: -45,
-          continuity: true,
+        results: {
+          passed: true,
+          notes: 'Inspection passed with excellent quality',
+          photos: [],
         },
       },
     };
@@ -346,10 +347,13 @@ describe('Real-time Notification Manager', () => {
       userId: 'tech-1',
       payload: {
         sectionId: 'SEC-PROGRESS',
-        progressPercentage: 75,
+        overallProgress: 75,
         currentPhase: 'testing',
-        estimatedCompletion: new Date(Date.now() + 1800000).toISOString(),
-        lastUpdatedBy: 'tech-1',
+        location: {
+          latitude: 40.7128,
+          longitude: -74.006,
+        },
+        estimatedTimeRemaining: 30,
       },
     };
 
@@ -407,10 +411,8 @@ describe('Real-time Notification Manager', () => {
       userId: 'admin-1',
       payload: {
         status: 'in_progress',
-        progressPercentage: 50,
-        updatedFields: ['status'],
-        previousValues: { status: 'pending' },
-        newValues: { status: 'in_progress' },
+        priority: 'medium',
+        notes: 'Test error handling scenario',
       },
     };
 

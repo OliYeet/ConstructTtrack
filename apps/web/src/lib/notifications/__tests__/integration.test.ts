@@ -36,6 +36,7 @@ describe('Real-time Notification System Integration', () => {
   let mockWebSocketGateway: {
     sendToUser: jest.Mock;
     sendToChannel: jest.Mock;
+    sendMessage: jest.Mock;
     isUserOnline: jest.Mock;
     getOnlineUsers: jest.Mock;
     getUserConnections: jest.Mock;
@@ -53,6 +54,7 @@ describe('Real-time Notification System Integration', () => {
       sendToChannel: jest
         .fn()
         .mockResolvedValue([{ success: true, clientId: 'test-channel' }]),
+      sendMessage: jest.fn().mockResolvedValue(undefined),
       isUserOnline: jest.fn().mockReturnValue(true),
       getOnlineUsers: jest.fn().mockReturnValue(['tech-1', 'foreman-1']),
       getUserConnections: jest.fn().mockReturnValue([]),
@@ -103,7 +105,6 @@ describe('Real-time Notification System Integration', () => {
           startLocation: {
             latitude: 40.7128,
             longitude: -74.006,
-            address: '123 Test Street, New York, NY',
           },
           estimatedLength: 1000,
           assignedTechnician: 'tech-1',
@@ -164,10 +165,9 @@ describe('Real-time Notification System Integration', () => {
           failureLocation: {
             latitude: 40.7589,
             longitude: -73.9851,
-            address: '456 Emergency Lane, New York, NY',
           },
-          reportedBy: 'tech-2',
-          severity: 'high',
+          errorCode: 'CABLE_DAMAGE',
+          recoveryActions: ['Replace damaged section', 'Re-route cable'],
         },
       };
 
@@ -224,14 +224,18 @@ describe('Real-time Notification System Integration', () => {
         userId: 'tech-3',
         payload: {
           sectionId: 'SEC-TEST-003',
+          spliceId: 'SPLICE-001',
           spliceLocation: {
             latitude: 40.7505,
             longitude: -73.9934,
-            address: '789 Splice Point, New York, NY',
           },
-          spliceLoss: 0.12,
-          spliceQuality: 'excellent',
-          completedBy: 'tech-3',
+          spliceType: 'fusion',
+          fiberCount: 12,
+          testResults: {
+            loss: 0.12,
+            reflectance: -45,
+            passed: true,
+          },
         },
       };
 
@@ -292,11 +296,10 @@ describe('Real-time Notification System Integration', () => {
           sectionId: 'SEC-TEST-004',
           inspectionType: 'optical',
           inspector: 'inspector-1',
-          qualityScore: 95,
-          testResults: {
-            powerLoss: 0.08,
-            reflectance: -45,
-            continuity: true,
+          results: {
+            passed: true,
+            notes: 'Inspection passed with excellent quality',
+            photos: [],
           },
         },
       };
@@ -414,10 +417,8 @@ describe('Real-time Notification System Integration', () => {
         userId: 'admin-1',
         payload: {
           status: 'in_progress',
-          progressPercentage: 50,
-          updatedFields: ['status', 'progressPercentage'],
-          previousValues: { status: 'pending', progressPercentage: 0 },
-          newValues: { status: 'in_progress', progressPercentage: 50 },
+          priority: 'medium',
+          notes: 'Test WebSocket failure scenario',
         },
       };
 

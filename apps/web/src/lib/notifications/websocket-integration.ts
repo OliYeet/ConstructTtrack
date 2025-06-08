@@ -45,6 +45,9 @@ export interface WebSocketNotificationGateway {
     notification: WebSocketNotification
   ): Promise<DeliveryResult[]>;
 
+  // Send raw message to connection (for external gateway compatibility)
+  sendMessage(connectionId: string, message: unknown): Promise<void>;
+
   // Get online users
   getOnlineUsers(): string[];
 
@@ -298,6 +301,17 @@ export class WebSocketNotificationBridge
         },
       ];
     }
+  }
+
+  /**
+   * Send raw message to connection (for external gateway compatibility)
+   */
+  async sendMessage(connectionId: string, message: unknown): Promise<void> {
+    if (!this.wsGateway) {
+      throw new Error('WebSocket gateway not available');
+    }
+
+    await this.wsGateway.sendMessage(connectionId, message);
   }
 
   /**
