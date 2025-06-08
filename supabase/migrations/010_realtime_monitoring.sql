@@ -179,9 +179,14 @@ RETURNS TABLE (
   count_value BIGINT
 ) AS $$
 BEGIN
+  -- Validate interval parameter to prevent SQL injection
+  IF p_interval !~ '^\d+\s+(second|minute|hour|day|week|month|year)s?$' THEN
+    RAISE EXCEPTION 'Invalid interval format: %', p_interval;
+  END IF;
+
   RETURN QUERY
   EXECUTE format('
-    SELECT 
+    SELECT
       time_bucket(%L, time) AS bucket,
       AVG(value) AS avg_value,
       MAX(value) AS max_value,

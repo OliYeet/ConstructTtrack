@@ -106,6 +106,7 @@ export abstract class BaseRealtimeCollector
     try {
       this.onStart();
       this._status = 'running';
+      this._stats.status = 'running';
       this.emit('started', this.id);
     } catch (error) {
       this._status = 'error';
@@ -128,6 +129,7 @@ export abstract class BaseRealtimeCollector
     try {
       this.onStop();
       this._status = 'stopped';
+      this._stats.status = 'stopped';
       this.emit('stopped', this.id);
     } catch (error) {
       this._status = 'error';
@@ -145,6 +147,7 @@ export abstract class BaseRealtimeCollector
       throw new Error('Cannot reset collector while running');
     }
 
+    this._status = 'stopped'; // Ensure status consistency
     this._stats = {
       id: this.id,
       status: 'stopped',
@@ -173,7 +176,7 @@ export abstract class BaseRealtimeCollector
     if (typeof name !== 'string' || name.length === 0) {
       throw new Error('Metric name must be a non-empty string');
     }
-    if (typeof value !== 'number' || !isFinite(value)) {
+    if (typeof value !== 'number' || !Number.isFinite(value)) {
       throw new Error('Metric value must be a finite number');
     }
     if (typeof unit !== 'string' || unit.length === 0) {
@@ -245,8 +248,11 @@ export class CollectorRegistry {
   unregister(id: string): boolean {
     const collector = this.collectors.get(id);
     if (collector) {
-      if ('stop' in collector && typeof collector.stop === 'function') {
+      try {
         collector.stop();
+      } catch (error) {
+        // Log but continue with unregistration
+        console.error(`Failed to stop collector ${id}:`, error);
       }
       return this.collectors.delete(id);
     }

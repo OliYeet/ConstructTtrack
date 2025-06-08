@@ -241,8 +241,8 @@ export class ThroughputCollector extends BaseRealtimeCollector {
         break;
     }
 
-    // Add to current time window
-    this.addToTimeWindow(size);
+    // Add to current time window (only count bytes for actual byte transfers)
+    this.addToTimeWindow(size, type);
 
     // Emit the raw throughput event as a metric
     this.emitMetric(
@@ -258,12 +258,19 @@ export class ThroughputCollector extends BaseRealtimeCollector {
     );
   }
 
-  private addToTimeWindow(size: number): void {
+  private addToTimeWindow(size: number, eventType: string): void {
     const now = Date.now();
     const currentWindow = this.getCurrentTimeWindow(now);
 
-    currentWindow.messageCount++;
-    currentWindow.byteCount += size;
+    // Only count as message for actual messages, not for event_processed
+    if (eventType !== 'event_processed') {
+      currentWindow.messageCount++;
+    }
+
+    // Only count bytes for actual byte transfers, not for event_processed
+    if (eventType !== 'event_processed') {
+      currentWindow.byteCount += size;
+    }
   }
 
   private getCurrentTimeWindow(timestamp: number): TimeWindow {
@@ -311,7 +318,8 @@ export class ThroughputCollector extends BaseRealtimeCollector {
     size: number,
     channel?: string,
     messageType?: string,
-    userId?: string
+    userId?: string,
+    timestamp?: string
   ): void {
     this.trackThroughput({
       type: 'message_sent',
@@ -319,7 +327,7 @@ export class ThroughputCollector extends BaseRealtimeCollector {
       channel,
       messageType,
       userId,
-      timestamp: new Date().toISOString(),
+      timestamp: timestamp || new Date().toISOString(),
     });
   }
 
@@ -327,7 +335,8 @@ export class ThroughputCollector extends BaseRealtimeCollector {
     size: number,
     channel?: string,
     messageType?: string,
-    userId?: string
+    userId?: string,
+    timestamp?: string
   ): void {
     this.trackThroughput({
       type: 'message_received',
@@ -335,7 +344,7 @@ export class ThroughputCollector extends BaseRealtimeCollector {
       channel,
       messageType,
       userId,
-      timestamp: new Date().toISOString(),
+      timestamp: timestamp || new Date().toISOString(),
     });
   }
 

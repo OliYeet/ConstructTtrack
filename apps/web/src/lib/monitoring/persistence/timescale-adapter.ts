@@ -134,7 +134,7 @@ export class TimescaleAdapter implements MetricPersistenceAdapter {
 
       const { count, error } = await supabase
         .from('realtime_metrics')
-        .delete()
+        .delete({ count: 'exact' })
         .lt('time', olderThan.toISOString());
 
       if (error) {
@@ -192,13 +192,17 @@ export class TimescaleAdapter implements MetricPersistenceAdapter {
       }
     } finally {
       this.isProcessing = false;
+      if (this.pendingBatches.length > 0) {
+        // Process newly-queued batches without delay
+        await this.processPendingBatches();
+      }
     }
   }
 
   // Process a single batch
   private async processBatch(batch: MetricBatch): Promise<void> {
     const { metrics } = batch;
-    const batchSize = realtimeConfig.storage.batchSize;
+    const batchSize = realtimeConfig.storage.batchSize || 500; // Default to 500 if undefined
 
     // Split into smaller chunks if needed
     for (let i = 0; i < metrics.length; i += batchSize) {
@@ -223,8 +227,9 @@ export class TimescaleAdapter implements MetricPersistenceAdapter {
       }));
 
       // Use upsert for better performance with potential duplicates
+      // Note: Cannot use JSONB columns in conflict resolution, so use time,metric_name only
       const { error } = await supabase.from('realtime_metrics').upsert(rows, {
-        onConflict: 'time,metric_name,tags',
+        onConflict: 'time,metric_name',
         ignoreDuplicates: true,
       });
 
@@ -394,5 +399,20 @@ export function createPersistenceAdapter(): MetricPersistenceAdapter {
   }
 }
 
-// Global adapter instance
-export const persistenceAdapter = createPersistenceAdapter();
+// Global adapter instance (lazy initialization)
+let _persistenceAdapter: MetricPersistenceAdapter | null = null;
+
+export function getPersistenceAdapter(): MetricPersistenceAdapter {
+  if (!_persistenceAdapter) {
+    _persistenceAdapter = createPersistenceAdapter();
+  }
+  return _persistenceAdapter;
+}
+
+// For backward compatibility
+export const persistenceAdapter = new Proxy({} as MetricPersistenceAdapter, {
+  get(_, prop) {
+    const adapter = getPersistenceAdapter();
+    return adapter[prop as keyof MetricPersistenceAdapter];
+  },
+});
