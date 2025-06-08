@@ -13,7 +13,13 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "strict": true,
-    "noEmit": false
+    "noEmit": false,
+    "paths": {
+      "@constructtrack/event-sourcing": ["../event-sourcing/index.ts"],
+      "@constructtrack/event-sourcing/*": ["../event-sourcing/src/*"],
+      "@constructtrack/realtime-protocol": ["../realtime-protocol/index.ts"],
+      "@constructtrack/realtime-protocol/*": ["../realtime-protocol/src/*"]
+    }
   },
   "include": ["src/**/*"],
   "exclude": ["dist", "node_modules", "**/*.test.ts"]
