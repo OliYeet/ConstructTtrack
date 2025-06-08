@@ -13,12 +13,57 @@ import {
   generateConnectionEvent,
   generateThroughputEvent,
   generateLoadTestScenario,
-  createTestConfig,
 } from '../../setup/realtime-factory';
 
 // Mock the configuration
 jest.mock('@/lib/monitoring/config/realtime-config', () => ({
-  realtimeConfig: createTestConfig(),
+  realtimeConfig: {
+    enabled: true,
+    retentionDays: 1,
+    samplingRate: 1.0,
+    storage: {
+      type: 'inmemory',
+      batchSize: 10,
+      maxRetries: 1,
+    },
+    alerts: {
+      enabled: false,
+      cooldownMs: 1000,
+      channels: [],
+    },
+    collectors: {
+      connection: {
+        enabled: true,
+        sampleRate: 1.0,
+      },
+      throughput: {
+        enabled: true,
+        sampleRate: 1.0,
+        aggregationWindow: 1000,
+      },
+      resource: {
+        enabled: true,
+        sampleInterval: 1000,
+      },
+      queueDepth: {
+        enabled: true,
+        sampleInterval: 1000,
+      },
+    },
+    metrics: {
+      bufferSize: 100,
+      flushInterval: 1000,
+    },
+    latency: {
+      p99Critical: 1000,
+      p99Warning: 500,
+    },
+    connection: {
+      maxConnections: 1000,
+      heartbeatInterval: 30000,
+      timeoutMs: 5000,
+    },
+  },
   isRealtimeMonitoringEnabled: () => true,
 }));
 
@@ -41,6 +86,10 @@ describe('RealtimeMonitoringIntegration', () => {
     if (integration.status === 'running') {
       await integration.shutdown();
     }
+    // Clear all event listeners to prevent memory leaks
+    integration.removeAllListeners();
+    // Wait a bit for any pending async operations
+    await new Promise(resolve => setTimeout(resolve, 10));
   });
 
   describe('Initialization and Shutdown', () => {
@@ -93,19 +142,22 @@ describe('RealtimeMonitoringIntegration', () => {
     });
 
     it('should register and unregister collectors', () => {
-      const customCollector = new ConnectionCollector();
-      // Note: collector ID is readonly and set in constructor
+      // Create a mock collector with a unique ID to avoid conflicts
+      const mockCollector = {
+        id: `test-collector-${Date.now()}`,
+        start: jest.fn(),
+        stop: jest.fn(),
+        onMetric: jest.fn(),
+      };
 
-      integration.registerCollector(customCollector);
+      integration.registerCollector(mockCollector);
 
-      expect(integration.getCollector(customCollector.id)).toBe(
-        customCollector
-      );
+      expect(integration.getCollector(mockCollector.id)).toBe(mockCollector);
       expect(integration.stats.collectorsRegistered).toBeGreaterThan(0);
 
-      const success = integration.unregisterCollector(customCollector.id);
+      const success = integration.unregisterCollector(mockCollector.id);
       expect(success).toBe(true);
-      expect(integration.getCollector(customCollector.id)).toBeUndefined();
+      expect(integration.getCollector(mockCollector.id)).toBeUndefined();
     });
 
     it('should provide access to default collectors', () => {
@@ -268,13 +320,23 @@ describe('RealtimeMonitoringIntegration', () => {
       integration.on('error', errorSpy);
 
       // Trigger an error by registering a collector with duplicate ID
-      const collector1 = new ConnectionCollector();
-      const collector2 = new ConnectionCollector();
+      const mockCollector1 = {
+        id: `test-error-collector-${Date.now()}`,
+        start: jest.fn(),
+        stop: jest.fn(),
+        onMetric: jest.fn(),
+      };
+      const mockCollector2 = {
+        id: `test-error-collector-${Date.now()}`, // Same ID to trigger error
+        start: jest.fn(),
+        stop: jest.fn(),
+        onMetric: jest.fn(),
+      };
 
-      integration.registerCollector(collector1);
+      integration.registerCollector(mockCollector1);
 
       try {
-        integration.registerCollector(collector2);
+        integration.registerCollector(mockCollector2);
       } catch {
         // Expected to throw
       }
