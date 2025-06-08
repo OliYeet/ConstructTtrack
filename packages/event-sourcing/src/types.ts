@@ -9,6 +9,9 @@ import type {
   EventType,
 } from '../../../src/types/realtime-protocol';
 
+// Re-export RealtimeEvent so that it is available to consumers of this package
+export type { RealtimeEvent };
+
 // CodeRabbit fix: Add UUID type alias for clarity
 export type UUID = string;
 
