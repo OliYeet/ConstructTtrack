@@ -216,10 +216,10 @@ export class TimescaleAdapter implements MetricPersistenceAdapter {
       const rows = metrics.map(metric => ({
         time: metric.timestamp,
         metric_name: metric.name,
-        tags: metric.tags as unknown, // Cast to Json type for Supabase
+        tags: metric.tags as any, // Cast to Json type for Supabase
         value: metric.value,
         unit: metric.unit,
-        metadata: (metric.metadata || {}) as unknown, // Cast to Json type for Supabase
+        metadata: (metric.metadata || {}) as any, // Cast to Json type for Supabase
       }));
 
       // Use upsert for better performance with potential duplicates

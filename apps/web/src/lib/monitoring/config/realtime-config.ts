@@ -118,10 +118,7 @@ function getEnvConfig(): Partial<RealtimeMonitoringConfig> {
 
 // Deep merge utility function
 // Note: Arrays are replaced entirely (not merged) which is intentional for config overrides
-function deepMerge<T extends Record<string, unknown>>(
-  target: T,
-  source: Partial<T>
-): T {
+function deepMerge<T>(target: T, source: Partial<T>): T {
   const result = { ...target } as T;
 
   for (const key in source) {
@@ -137,8 +134,8 @@ function deepMerge<T extends Record<string, unknown>>(
         !Array.isArray(sourceValue)
       ) {
         result[key] = deepMerge(
-          targetValue as Record<string, unknown>,
-          sourceValue as Record<string, unknown>
+          targetValue as any,
+          sourceValue as any
         ) as T[Extract<keyof T, string>];
       } else {
         result[key] = sourceValue as T[Extract<keyof T, string>];
