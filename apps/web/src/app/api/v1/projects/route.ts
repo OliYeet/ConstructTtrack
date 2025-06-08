@@ -117,10 +117,14 @@ async function handleGet(
   const { supabase } = await import('@constructtrack/supabase/client');
 
   // Build query
+  if (!context.organizationId) {
+    throw new Error('Organization ID is required');
+  }
+
   let query = supabase
     .from('projects')
     .select('*', { count: 'exact' })
-    .eq('organization_id', context.organizationId!);
+    .eq('organization_id', context.organizationId);
 
   // Apply filters
   if (queryParams.status) {
@@ -185,8 +189,12 @@ async function handlePost(
   const { supabase } = await import('@constructtrack/supabase/client');
 
   // Prepare data for insertion
+  if (!context.organizationId) {
+    throw new Error('Organization ID is required');
+  }
+
   const insertData = {
-    organization_id: context.organizationId!,
+    organization_id: context.organizationId,
     name: projectData.name,
     description: projectData.description || null,
     start_date: projectData.startDate || null,

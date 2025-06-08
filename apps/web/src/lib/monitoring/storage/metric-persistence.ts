@@ -80,7 +80,7 @@ export class SupabaseMetricStorage implements MetricStorageProvider {
 
       // Perform the insert.  We request `minimal` to avoid unnecessary network
       // traffic (we only care about success/failure, not the inserted rows).
-      const { error } = await client
+      const { error } = await (client as any)
         .from(this.tableName)
         .insert(storageMetrics);
 

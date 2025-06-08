@@ -13,6 +13,26 @@ import {
   defaultSecurityScanConfig,
 } from '@/lib/security/vulnerability-scanner';
 
+// Security parameter interfaces
+interface ScanParameters {
+  scanType: string;
+}
+
+interface PrivacyRequestParameters {
+  requestType: string;
+  userId: string;
+  details?: Record<string, unknown>;
+}
+
+interface RateLimitParameters {
+  target?: string;
+}
+
+interface ReportParameters {
+  format?: string;
+  includeDetails?: boolean;
+}
+
 // Global type declarations for Web APIs
 declare const URL: {
   new (
@@ -138,7 +158,7 @@ export async function POST(request: NextRequest) {
 
     const { action, parameters } = validationResult.data;
 
-    let response: any = {};
+    let response: Record<string, unknown> = {};
 
     switch (action) {
       case 'scan':
@@ -219,7 +239,7 @@ async function getRateLimitStatus() {
   };
 }
 
-async function triggerSecurityScan(parameters: any) {
+async function triggerSecurityScan(parameters: ScanParameters) {
   const { scanType } = parameters;
 
   switch (scanType) {
@@ -265,14 +285,14 @@ async function triggerSecurityScan(parameters: any) {
   }
 }
 
-async function handlePrivacyRequest(parameters: any) {
+async function handlePrivacyRequest(parameters: PrivacyRequestParameters) {
   const { requestType, userId, details } = parameters;
 
   switch (requestType) {
     case 'data-export': {
       const requestId = await privacyManager.submitDataSubjectRequest(
         userId,
-        'access' as any,
+        'access' as const,
         details
       );
 
@@ -294,7 +314,7 @@ async function handlePrivacyRequest(parameters: any) {
     case 'data-deletion': {
       const deletionRequestId = await privacyManager.submitDataSubjectRequest(
         userId,
-        'erasure' as any,
+        'erasure' as const,
         details
       );
 
@@ -330,8 +350,8 @@ async function handlePrivacyRequest(parameters: any) {
   }
 }
 
-async function resetRateLimits(parameters: any) {
-  const { target } = parameters;
+async function resetRateLimits(parameters?: RateLimitParameters) {
+  const { target } = parameters || {};
 
   // In a real implementation, this would reset rate limits in the store
   return {
@@ -343,8 +363,8 @@ async function resetRateLimits(parameters: any) {
   };
 }
 
-async function generateSecurityReport(parameters: any) {
-  const { format, includeDetails } = parameters;
+async function generateSecurityReport(parameters?: ReportParameters) {
+  const { format, includeDetails } = parameters || {};
 
   const vulnerabilityReport = securityScanner.generateSecurityReport();
   const complianceStatus = await privacyManager.checkCompliance();
@@ -369,7 +389,7 @@ async function generateSecurityReport(parameters: any) {
   };
 
   if (includeDetails) {
-    (report as any).details = {
+    (report as Record<string, unknown>).details = {
       vulnerabilities: vulnerabilityReport.findings,
       complianceIssues: complianceStatus.issues,
       recommendations: [

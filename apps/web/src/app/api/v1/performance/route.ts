@@ -24,6 +24,19 @@ interface PerformanceMetric {
   memoryUsage?: number;
 }
 
+// Performance analysis interface
+interface PerformanceAnalysis {
+  metrics: {
+    averageResponseTime: number;
+    errorRate: number;
+    requestCount: number;
+    p95ResponseTime: number;
+    throughput: number;
+  };
+  bottlenecks: string[];
+  recommendations: string[];
+}
+
 // GET /api/v1/performance - Get performance metrics and analysis
 export const GET = withApiMiddleware(
   {
@@ -183,7 +196,9 @@ async function getOptimizationRecommendations(_request: NextRequest) {
   const recommendations: Record<string, unknown>[] = [];
 
   for (const [endpoint] of Object.entries(endpointGroups)) {
-    const analysis = await performanceStore.getAnalysis(endpoint);
+    const analysis = (await performanceStore.getAnalysis(
+      endpoint
+    )) as PerformanceAnalysis;
 
     recommendations.push({
       endpoint,
@@ -438,7 +453,7 @@ function calculatePerformanceScore(metrics: PerformanceMetric[]): number {
 }
 
 function determinePriority(
-  analysis: Record<string, unknown>
+  analysis: PerformanceAnalysis
 ): 'high' | 'medium' | 'low' {
   if (
     analysis.metrics.averageResponseTime > 3000 ||
