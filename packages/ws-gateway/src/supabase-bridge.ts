@@ -16,7 +16,6 @@ import type {
   EventSourcingService,
   RealtimeEvent,
 } from '@constructtrack/event-sourcing';
-import type { WebSocketGateway } from './gateway';
 
 // External libraries
 import {
@@ -28,6 +27,7 @@ import {
 
 // Internal imports
 import { config } from './config';
+import type { WebSocketGateway } from './gateway';
 import { logger } from './utils/logger';
 
 // Database row types - following Charlie's guidance for proper typing
