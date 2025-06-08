@@ -252,6 +252,36 @@ export class RealtimeMonitoringIntegration {
     return this.alertManager;
   }
 
+  // Record a custom metric through the integration
+  recordMetric(
+    name: string,
+    value: number,
+    unit: string,
+    tags: Record<string, string | number> = {}
+  ): void {
+    // Ensure the integration is initialized
+    if (!this.isInitialized) {
+      this.initialize();
+    }
+
+    // Record the metric through the performance monitor
+    performanceMonitor.recordMetric(name, value, unit, {
+      ...tags,
+      component: 'api-metrics',
+      source: 'realtime-integration',
+    });
+
+    const logger = getLogger();
+    logger.debug('Custom metric recorded through realtime integration', {
+      metadata: {
+        name,
+        value,
+        unit,
+        tags,
+      },
+    });
+  }
+
   // Get monitoring status
   getStatus(): {
     initialized: boolean;

@@ -10,6 +10,8 @@ import {
   createSuccessResponse,
   createErrorResponse,
 } from '@/lib/api';
+import { ValidationError } from '@/lib/errors/api-errors';
+import { realtimeMonitoringIntegration } from '@/lib/monitoring/realtime-integration';
 
 // GET /api/v1/metrics - Get enhanced API metrics and monitoring data
 export const GET = withApiMiddleware(
@@ -78,32 +80,37 @@ export async function POST(request: NextRequest) {
   // Validate required fields
   if (!name || typeof value !== 'number' || !unit) {
     return createErrorResponse(
-      new Error('Missing required fields: name, value, unit'),
-      'unknown'
+      new ValidationError('Missing required fields: name, value, unit')
     );
   }
 
   // Validate metric name format (alphanumeric with dots/underscores)
   if (!/^[a-zA-Z0-9._]+$/.test(name)) {
     return createErrorResponse(
-      new Error(
+      new ValidationError(
         'Invalid metric name format. Use only alphanumeric characters, dots, and underscores'
-      ),
-      'validation_error'
+      )
     );
   }
 
   // Validate value is finite
   if (!isFinite(value)) {
     return createErrorResponse(
-      new Error('Metric value must be a finite number'),
-      'validation_error'
+      new ValidationError('Metric value must be a finite number')
     );
   }
 
-  // Record the metric (placeholder implementation)
-  // TODO: Implement actual metric recording
-  // console.log('Recording metric:', { name, value, unit, tags, metadata });
+  // Record the metric through the RealtimeMonitoringIntegration
+  try {
+    realtimeMonitoringIntegration.recordMetric(name, value, unit, tags || {});
+  } catch (error) {
+    return createErrorResponse(
+      new Error(
+        `Failed to record metric: ${error instanceof Error ? error.message : 'Unknown error'}`
+      ),
+      'metric_recording_error'
+    );
+  }
 
   return createSuccessResponse({
     message: 'Metric recorded successfully',
