@@ -17,62 +17,103 @@ function getEnvConfig(): Partial<RealtimeMonitoringConfig> {
   // Validate environment variables first
   const env = validateRealtimeEnv(process.env);
 
-  return {
-    enabled: env.NEXT_PUBLIC_REALTIME_MONITORING_ENABLED === 'true',
-    retentionDays: env.REALTIME_MONITORING_RETENTION_DAYS
-      ? parseInt(env.REALTIME_MONITORING_RETENTION_DAYS, 10)
-      : undefined,
-    samplingRate: env.REALTIME_MONITORING_SAMPLING_RATE
-      ? parseFloat(env.REALTIME_MONITORING_SAMPLING_RATE)
-      : undefined,
-    latency: {
-      p99Critical: env.REALTIME_LATENCY_P99_CRIT
-        ? parseInt(env.REALTIME_LATENCY_P99_CRIT, 10)
-        : undefined,
-      p99Warning: env.REALTIME_LATENCY_P99_WARN
-        ? parseInt(env.REALTIME_LATENCY_P99_WARN, 10)
-        : undefined,
-    },
-    connection: {
-      maxConnections: env.REALTIME_CONNECTION_MAX
-        ? parseInt(env.REALTIME_CONNECTION_MAX, 10)
-        : undefined,
-      heartbeatInterval: env.REALTIME_HEARTBEAT_INTERVAL
-        ? parseInt(env.REALTIME_HEARTBEAT_INTERVAL, 10)
-        : undefined,
-      timeoutMs: env.REALTIME_TIMEOUT_MS
-        ? parseInt(env.REALTIME_TIMEOUT_MS, 10)
-        : undefined,
-    },
-    metrics: {
-      bufferSize: env.REALTIME_BUFFER_SIZE
-        ? parseInt(env.REALTIME_BUFFER_SIZE, 10)
-        : undefined,
-      flushInterval: env.REALTIME_FLUSH_INTERVAL
-        ? parseInt(env.REALTIME_FLUSH_INTERVAL, 10)
-        : undefined,
-    },
-    storage: {
-      type:
-        (env.REALTIME_MONITORING_STORE as 'supabase' | 'inmemory' | 'custom') ||
-        undefined,
-      batchSize: env.REALTIME_BATCH_SIZE
-        ? parseInt(env.REALTIME_BATCH_SIZE, 10)
-        : undefined,
-      maxRetries: env.REALTIME_MAX_RETRIES
-        ? parseInt(env.REALTIME_MAX_RETRIES, 10)
-        : undefined,
-    },
-    alerts: {
-      enabled: env.REALTIME_ALERTS_ENABLED === 'true',
-      cooldownMs: env.REALTIME_ALERTS_COOLDOWN
-        ? parseInt(env.REALTIME_ALERTS_COOLDOWN, 10)
-        : undefined,
-      channels: env.REALTIME_ALERTS_CHANNELS
-        ? env.REALTIME_ALERTS_CHANNELS.split(',').map(c => c.trim())
-        : undefined,
-    },
-  };
+  const envConfig: Partial<RealtimeMonitoringConfig> = {};
+
+  // Only set values that are actually provided in environment
+  if (env.NEXT_PUBLIC_REALTIME_MONITORING_ENABLED !== undefined) {
+    envConfig.enabled = env.NEXT_PUBLIC_REALTIME_MONITORING_ENABLED === 'true';
+  }
+
+  if (env.REALTIME_MONITORING_RETENTION_DAYS) {
+    envConfig.retentionDays = parseInt(
+      env.REALTIME_MONITORING_RETENTION_DAYS,
+      10
+    );
+  }
+
+  if (env.REALTIME_MONITORING_SAMPLING_RATE) {
+    envConfig.samplingRate = parseFloat(env.REALTIME_MONITORING_SAMPLING_RATE);
+  }
+
+  // Latency config
+  const latencyConfig: Partial<RealtimeMonitoringConfig['latency']> = {};
+  if (env.REALTIME_LATENCY_P99_CRIT) {
+    latencyConfig.p99Critical = parseInt(env.REALTIME_LATENCY_P99_CRIT, 10);
+  }
+  if (env.REALTIME_LATENCY_P99_WARN) {
+    latencyConfig.p99Warning = parseInt(env.REALTIME_LATENCY_P99_WARN, 10);
+  }
+  if (Object.keys(latencyConfig).length > 0) {
+    envConfig.latency = latencyConfig as RealtimeMonitoringConfig['latency'];
+  }
+
+  // Connection config
+  const connectionConfig: Partial<RealtimeMonitoringConfig['connection']> = {};
+  if (env.REALTIME_CONNECTION_MAX) {
+    connectionConfig.maxConnections = parseInt(env.REALTIME_CONNECTION_MAX, 10);
+  }
+  if (env.REALTIME_HEARTBEAT_INTERVAL) {
+    connectionConfig.heartbeatInterval = parseInt(
+      env.REALTIME_HEARTBEAT_INTERVAL,
+      10
+    );
+  }
+  if (env.REALTIME_TIMEOUT_MS) {
+    connectionConfig.timeoutMs = parseInt(env.REALTIME_TIMEOUT_MS, 10);
+  }
+  if (Object.keys(connectionConfig).length > 0) {
+    envConfig.connection =
+      connectionConfig as RealtimeMonitoringConfig['connection'];
+  }
+
+  // Metrics config
+  const metricsConfig: Partial<RealtimeMonitoringConfig['metrics']> = {};
+  if (env.REALTIME_BUFFER_SIZE) {
+    metricsConfig.bufferSize = parseInt(env.REALTIME_BUFFER_SIZE, 10);
+  }
+  if (env.REALTIME_FLUSH_INTERVAL) {
+    metricsConfig.flushInterval = parseInt(env.REALTIME_FLUSH_INTERVAL, 10);
+  }
+  if (Object.keys(metricsConfig).length > 0) {
+    envConfig.metrics = metricsConfig as RealtimeMonitoringConfig['metrics'];
+  }
+
+  // Storage config
+  const storageConfig: Partial<RealtimeMonitoringConfig['storage']> = {};
+  if (env.REALTIME_MONITORING_STORE) {
+    storageConfig.type = env.REALTIME_MONITORING_STORE as
+      | 'supabase'
+      | 'inmemory'
+      | 'custom';
+  }
+  if (env.REALTIME_BATCH_SIZE) {
+    storageConfig.batchSize = parseInt(env.REALTIME_BATCH_SIZE, 10);
+  }
+  if (env.REALTIME_MAX_RETRIES) {
+    storageConfig.maxRetries = parseInt(env.REALTIME_MAX_RETRIES, 10);
+  }
+  if (Object.keys(storageConfig).length > 0) {
+    envConfig.storage = storageConfig as RealtimeMonitoringConfig['storage'];
+  }
+
+  // Alerts config
+  const alertsConfig: Partial<RealtimeMonitoringConfig['alerts']> = {};
+  if (env.REALTIME_ALERTS_ENABLED !== undefined) {
+    alertsConfig.enabled = env.REALTIME_ALERTS_ENABLED === 'true';
+  }
+  if (env.REALTIME_ALERTS_COOLDOWN) {
+    alertsConfig.cooldownMs = parseInt(env.REALTIME_ALERTS_COOLDOWN, 10);
+  }
+  if (env.REALTIME_ALERTS_CHANNELS) {
+    alertsConfig.channels = env.REALTIME_ALERTS_CHANNELS.split(',').map(c =>
+      c.trim()
+    );
+  }
+  if (Object.keys(alertsConfig).length > 0) {
+    envConfig.alerts = alertsConfig as RealtimeMonitoringConfig['alerts'];
+  }
+
+  return envConfig;
 }
 
 // Deep merge utility function
@@ -81,7 +122,7 @@ function deepMerge<T extends Record<string, unknown>>(
   target: T,
   source: Partial<T>
 ): T {
-  const result = { ...target };
+  const result = { ...target } as T;
 
   for (const key in source) {
     const sourceValue = source[key];
@@ -95,9 +136,12 @@ function deepMerge<T extends Record<string, unknown>>(
         targetValue !== null &&
         !Array.isArray(sourceValue)
       ) {
-        result[key] = deepMerge(targetValue, sourceValue);
+        result[key] = deepMerge(
+          targetValue as Record<string, unknown>,
+          sourceValue as Record<string, unknown>
+        ) as T[Extract<keyof T, string>];
       } else {
-        result[key] = sourceValue;
+        result[key] = sourceValue as T[Extract<keyof T, string>];
       }
     }
   }

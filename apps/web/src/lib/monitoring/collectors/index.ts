@@ -16,6 +16,20 @@ export {
   type CollectorFactory,
 } from './base';
 
+// Import types for internal use
+import type {
+  RealtimeMetricCollector,
+  ExtendedRealtimeMetricCollector,
+  CollectorStatus,
+  CollectorStats,
+  CollectorFactory,
+} from './base';
+import { BaseRealtimeCollector, CollectorRegistry } from './base';
+import { ConnectionCollector } from './connection-collector';
+import { QueueDepthCollector } from './queue-depth-collector';
+import { ResourceCollector } from './resource-collector';
+import { ThroughputCollector } from './throughput-collector';
+
 // Connection collector exports
 export {
   ConnectionCollector,
@@ -23,7 +37,18 @@ export {
   type ConnectionEventType,
   type ConnectionStats,
 } from './connection-collector';
-
+// Queue depth collector exports
+export {
+  QueueDepthCollector,
+  type QueueMetrics,
+  type QueueStats,
+} from './queue-depth-collector';
+// Resource collector exports
+export {
+  ResourceCollector,
+  type ResourceMetrics,
+  type ResourceStats,
+} from './resource-collector';
 // Throughput collector exports
 export {
   ThroughputCollector,
@@ -31,20 +56,6 @@ export {
   type ThroughputEventType,
   type ThroughputStats,
 } from './throughput-collector';
-
-// Resource collector exports
-export {
-  ResourceCollector,
-  type ResourceMetrics,
-  type ResourceStats,
-} from './resource-collector';
-
-// Queue depth collector exports
-export {
-  QueueDepthCollector,
-  type QueueMetrics,
-  type QueueStats,
-} from './queue-depth-collector';
 
 // Collector factory implementations
 export class DefaultCollectorFactory implements CollectorFactory {

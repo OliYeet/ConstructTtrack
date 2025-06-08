@@ -83,6 +83,18 @@ export {
   getUnhealthyCollectors,
 } from './collectors';
 
+// Import for internal use
+import type {
+  ConnectionCollector,
+  ThroughputCollector,
+  ResourceCollector,
+  QueueDepthCollector,
+  ConnectionEvent,
+  ThroughputEvent,
+  RealtimeMetricEvent,
+} from './collectors';
+import { realtimeMonitoringIntegration } from './realtime-monitoring-integration';
+
 // Integration exports
 export {
   RealtimeMonitoringIntegration,
@@ -228,34 +240,58 @@ export function dropItem(
 
 // Type guards for runtime type checking
 export function isConnectionEvent(event: unknown): event is ConnectionEvent {
+  if (event === null || typeof event !== 'object') {
+    return false;
+  }
+
+  const eventObj = event as Record<string, unknown>;
   return (
-    event &&
-    typeof event.type === 'string' &&
-    typeof event.connectionId === 'string' &&
-    typeof event.timestamp === 'string'
+    'type' in eventObj &&
+    'connectionId' in eventObj &&
+    'timestamp' in eventObj &&
+    typeof eventObj.type === 'string' &&
+    typeof eventObj.connectionId === 'string' &&
+    typeof eventObj.timestamp === 'string'
   );
 }
 
 export function isThroughputEvent(event: unknown): event is ThroughputEvent {
+  if (event === null || typeof event !== 'object') {
+    return false;
+  }
+
+  const eventObj = event as Record<string, unknown>;
   return (
-    event &&
-    typeof event.type === 'string' &&
-    typeof event.size === 'number' &&
-    typeof event.timestamp === 'string'
+    'type' in eventObj &&
+    'size' in eventObj &&
+    'timestamp' in eventObj &&
+    typeof eventObj.type === 'string' &&
+    typeof eventObj.size === 'number' &&
+    typeof eventObj.timestamp === 'string'
   );
 }
 
 export function isRealtimeMetricEvent(
   event: unknown
 ): event is RealtimeMetricEvent {
+  if (event === null || typeof event !== 'object') {
+    return false;
+  }
+
+  const eventObj = event as Record<string, unknown>;
   return (
-    event &&
-    typeof event.id === 'string' &&
-    typeof event.timestamp === 'string' &&
-    typeof event.name === 'string' &&
-    typeof event.value === 'number' &&
-    typeof event.unit === 'string' &&
-    typeof event.tags === 'object'
+    'id' in eventObj &&
+    'timestamp' in eventObj &&
+    'name' in eventObj &&
+    'value' in eventObj &&
+    'unit' in eventObj &&
+    'tags' in eventObj &&
+    typeof eventObj.id === 'string' &&
+    typeof eventObj.timestamp === 'string' &&
+    typeof eventObj.name === 'string' &&
+    typeof eventObj.value === 'number' &&
+    typeof eventObj.unit === 'string' &&
+    typeof eventObj.tags === 'object'
   );
 }
 

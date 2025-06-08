@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access */
 describe('supabase client core utilities', () => {
   const SUPABASE_URL = 'https://example.supabase.co';
   const SUPABASE_ANON_KEY = 'anon-key';

@@ -116,7 +116,10 @@ export class TimescaleAdapter implements MetricPersistenceAdapter {
         throw new Error(`Query failed: ${error.message}`);
       }
 
-      return data || [];
+      return (data || []).map(row => ({
+        ...row,
+        tags: row.tags as Record<string, unknown>,
+      }));
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error('Failed to query metrics:', error);
@@ -213,10 +216,10 @@ export class TimescaleAdapter implements MetricPersistenceAdapter {
       const rows = metrics.map(metric => ({
         time: metric.timestamp,
         metric_name: metric.name,
-        tags: metric.tags,
+        tags: metric.tags as unknown, // Cast to Json type for Supabase
         value: metric.value,
         unit: metric.unit,
-        metadata: metric.metadata || {},
+        metadata: (metric.metadata || {}) as unknown, // Cast to Json type for Supabase
       }));
 
       // Use upsert for better performance with potential duplicates
@@ -322,13 +325,13 @@ export class InMemoryAdapter implements MetricPersistenceAdapter {
     }
 
     if (options.startTime) {
-      filtered = filtered.filter(
-        m => new Date(m.timestamp) >= options.startTime
-      );
+      const startTime = options.startTime;
+      filtered = filtered.filter(m => new Date(m.timestamp) >= startTime);
     }
 
     if (options.endTime) {
-      filtered = filtered.filter(m => new Date(m.timestamp) <= options.endTime);
+      const endTime = options.endTime;
+      filtered = filtered.filter(m => new Date(m.timestamp) <= endTime);
     }
 
     if (options.tags) {

@@ -94,22 +94,18 @@ describe('RealtimeMonitoringIntegration', () => {
 
     it('should register and unregister collectors', () => {
       const customCollector = new ConnectionCollector();
-      customCollector.id = 'custom-connection-collector';
+      // Note: collector ID is readonly and set in constructor
 
       integration.registerCollector(customCollector);
 
-      expect(integration.getCollector('custom-connection-collector')).toBe(
+      expect(integration.getCollector(customCollector.id)).toBe(
         customCollector
       );
       expect(integration.stats.collectorsRegistered).toBeGreaterThan(0);
 
-      const success = integration.unregisterCollector(
-        'custom-connection-collector'
-      );
+      const success = integration.unregisterCollector(customCollector.id);
       expect(success).toBe(true);
-      expect(
-        integration.getCollector('custom-connection-collector')
-      ).toBeUndefined();
+      expect(integration.getCollector(customCollector.id)).toBeUndefined();
     });
 
     it('should provide access to default collectors', () => {
