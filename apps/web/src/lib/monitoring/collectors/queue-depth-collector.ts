@@ -324,11 +324,15 @@ export class QueueDepthCollector extends BaseRealtimeCollector {
       return;
     }
 
-    const queue = this.queues.get(queueName);
+    let queue = this.queues.get(queueName);
     if (!queue) {
       this.registerQueue(queueName);
-      this.enqueueItem(queueName, itemId, size, priority, metadata);
-      return;
+      // Get the queue again after registration to avoid recursion
+      queue = this.queues.get(queueName);
+      if (!queue) {
+        // If queue still doesn't exist after registration, something is wrong
+        throw new Error(`Failed to register queue: ${queueName}`);
+      }
     }
 
     const item: QueueItem = {
