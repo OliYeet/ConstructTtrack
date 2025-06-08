@@ -114,9 +114,12 @@ export class ThroughputCollector extends BaseRealtimeCollector {
       0
     );
 
+    // Guard against division by zero
+    const windowSizeSeconds = this.windowSize / 1000;
     this.throughputStats.messagesPerSecond =
-      totalMessages / (this.windowSize / 1000);
-    this.throughputStats.bytesPerSecond = totalBytes / (this.windowSize / 1000);
+      windowSizeSeconds > 0 ? totalMessages / windowSizeSeconds : 0;
+    this.throughputStats.bytesPerSecond =
+      windowSizeSeconds > 0 ? totalBytes / windowSizeSeconds : 0;
 
     // Update peaks
     if (

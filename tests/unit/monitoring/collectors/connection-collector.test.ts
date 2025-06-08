@@ -173,7 +173,8 @@ describe('ConnectionCollector', () => {
       expect(stats.reconnectAttempts).toBe(1);
     });
 
-    it('should calculate connection duration correctly', done => {
+    it('should calculate connection duration correctly', () => {
+      jest.useFakeTimers();
       const metricSpy = jest.fn();
       collector.on('metric', metricSpy);
 
@@ -185,25 +186,25 @@ describe('ConnectionCollector', () => {
       };
       collector.trackConnection(connectEvent);
 
-      // Wait a bit then disconnect
-      setTimeout(() => {
-        const disconnectEvent: ConnectionEvent = {
-          type: 'disconnected',
-          connectionId: 'conn-123',
-          timestamp: new Date().toISOString(),
-        };
-        collector.trackConnection(disconnectEvent);
+      // Advance virtual time
+      jest.advanceTimersByTime(100);
 
-        // Check that duration metric was emitted
-        const durationMetrics = metricSpy.mock.calls
-          .map(call => call[0])
-          .filter(metric => metric.name === 'connection_duration');
+      const disconnectEvent: ConnectionEvent = {
+        type: 'disconnected',
+        connectionId: 'conn-123',
+        timestamp: new Date().toISOString(),
+      };
+      collector.trackConnection(disconnectEvent);
 
-        expect(durationMetrics).toHaveLength(1);
-        expect(durationMetrics[0].value).toBeGreaterThan(0);
+      // Check that duration metric was emitted
+      const durationMetrics = metricSpy.mock.calls
+        .map(call => call[0])
+        .filter(metric => metric.name === 'connection_duration');
 
-        done();
-      }, 10);
+      expect(durationMetrics).toHaveLength(1);
+      expect(durationMetrics[0].value).toBeGreaterThan(0);
+
+      jest.useRealTimers();
     });
 
     it('should track peak connections', () => {
@@ -271,9 +272,21 @@ describe('ConnectionCollector', () => {
       const errorSpy = jest.fn();
       collector.on('error', errorSpy);
 
-      // This should not throw
+      // Test with missing required fields
       expect(() => {
-        collector.trackConnection({} as ConnectionEvent);
+        collector.trackConnection({
+          type: 'connected',
+          // Missing connectionId and timestamp
+        } as ConnectionEvent);
+      }).not.toThrow();
+
+      // Test with invalid event type
+      expect(() => {
+        collector.trackConnection({
+          type: 'invalid_type' as any,
+          connectionId: 'conn-123',
+          timestamp: new Date().toISOString(),
+        } as ConnectionEvent);
       }).not.toThrow();
     });
 

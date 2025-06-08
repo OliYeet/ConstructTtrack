@@ -245,14 +245,15 @@ RETURNS TABLE (
 ) AS $$
 BEGIN
   RETURN QUERY
-  SELECT 
+  SELECT
     ra.id,
     ra.threshold_type,
     ra.threshold_value,
-    CASE 
+    CASE
       WHEN ra.threshold_type = 'above' THEN p_value > ra.threshold_value
       WHEN ra.threshold_type = 'below' THEN p_value < ra.threshold_value
-      WHEN ra.threshold_type = 'equal' THEN p_value = ra.threshold_value
+      -- Use epsilon comparison for floating-point equality
+      WHEN ra.threshold_type = 'equal' THEN ABS(p_value - ra.threshold_value) < 0.0001
       ELSE FALSE
     END AS should_trigger
   FROM realtime_alerts ra
@@ -260,7 +261,7 @@ BEGIN
     AND ra.enabled = TRUE
     AND (ra.tags = '{}' OR ra.tags @> p_tags)
     AND (
-      ra.last_triggered_at IS NULL 
+      ra.last_triggered_at IS NULL
       OR ra.last_triggered_at < NOW() - (ra.cooldown_minutes || ' minutes')::INTERVAL
     );
 END;
@@ -294,6 +295,13 @@ GRANT SELECT ON realtime_alerts TO authenticated;
 -- Grant permissions on continuous aggregates
 GRANT SELECT ON realtime_metrics_hourly TO service_role, authenticated;
 GRANT SELECT ON realtime_metrics_daily TO service_role, authenticated;
+
+-- Grant execute permissions on functions
+GRANT EXECUTE ON FUNCTION get_metric_stats TO service_role, authenticated;
+GRANT EXECUTE ON FUNCTION get_top_metrics TO service_role, authenticated;
+GRANT EXECUTE ON FUNCTION get_metric_trends TO service_role, authenticated;
+GRANT EXECUTE ON FUNCTION cleanup_old_metrics TO service_role;
+GRANT EXECUTE ON FUNCTION check_metric_alerts TO service_role, authenticated;
 
 -- Create comments for documentation
 COMMENT ON TABLE realtime_metrics IS 'Stores real-time monitoring metrics with TimescaleDB optimization';

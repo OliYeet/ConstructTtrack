@@ -137,7 +137,7 @@ describe('RealtimeMonitoringIntegration', () => {
       await integration.initialize();
     });
 
-    it('should process connection metrics', done => {
+    it('should process connection metrics', async () => {
       const metricSpy = jest.fn();
       integration.on('metric', metricSpy);
 
@@ -153,18 +153,15 @@ describe('RealtimeMonitoringIntegration', () => {
 
         connectionCollector.trackConnection(connectionEvent);
 
-        // Give some time for async processing
-        setTimeout(() => {
-          expect(metricSpy).toHaveBeenCalled();
-          expect(integration.stats.totalMetricsCollected).toBeGreaterThan(0);
-          done();
-        }, 100);
-      } else {
-        done();
+        // Wait for async processing with a promise
+        await new Promise(resolve => setTimeout(resolve, 50));
+
+        expect(metricSpy).toHaveBeenCalled();
+        expect(integration.stats.totalMetricsCollected).toBeGreaterThan(0);
       }
     });
 
-    it('should process throughput metrics', done => {
+    it('should process throughput metrics', async () => {
       const metricSpy = jest.fn();
       integration.on('metric', metricSpy);
 
@@ -180,13 +177,11 @@ describe('RealtimeMonitoringIntegration', () => {
 
         throughputCollector.trackThroughput(throughputEvent);
 
-        setTimeout(() => {
-          expect(metricSpy).toHaveBeenCalled();
-          expect(integration.stats.totalMetricsCollected).toBeGreaterThan(0);
-          done();
-        }, 100);
-      } else {
-        done();
+        // Wait for async processing
+        await new Promise(resolve => setTimeout(resolve, 50));
+
+        expect(metricSpy).toHaveBeenCalled();
+        expect(integration.stats.totalMetricsCollected).toBeGreaterThan(0);
       }
     });
 

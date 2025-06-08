@@ -169,6 +169,17 @@ export abstract class BaseRealtimeCollector
     tags: Record<string, string | number> = {},
     metadata?: Record<string, unknown>
   ): void {
+    // Validate inputs
+    if (typeof name !== 'string' || name.length === 0) {
+      throw new Error('Metric name must be a non-empty string');
+    }
+    if (typeof value !== 'number' || !isFinite(value)) {
+      throw new Error('Metric value must be a finite number');
+    }
+    if (typeof unit !== 'string' || unit.length === 0) {
+      throw new Error('Metric unit must be a non-empty string');
+    }
+
     const metric: RealtimeMetricEvent = {
       id: `${this.id}_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
       timestamp: new Date().toISOString(),

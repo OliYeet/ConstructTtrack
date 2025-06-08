@@ -192,8 +192,9 @@ export function generateTimeSeriesMetrics(
 ): RealtimeMetricEvent[] {
   const metrics: RealtimeMetricEvent[] = [];
   const startTime = Date.now() - duration;
+  const endTime = startTime + duration; // Fix: Capture end time once
 
-  for (let time = startTime; time <= Date.now(); time += interval) {
+  for (let time = startTime; time <= endTime; time += interval) {
     const value = baseValue + (Math.random() - 0.5) * variance * 2;
 
     metrics.push({
@@ -224,7 +225,9 @@ export function generateLoadTestScenario(
   const throughputEvents: ThroughputEvent[] = [];
   const connections: string[] = [];
 
-  const interval = 1000 / connectionsPerSecond;
+  // Fix: Guard against pathological input and use integer math
+  const rawInterval = 1000 / connectionsPerSecond;
+  const interval = Math.max(1, Math.floor(rawInterval)); // Minimum 1ms interval
   const startTime = Date.now();
 
   for (let time = 0; time < duration; time += interval) {

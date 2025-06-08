@@ -35,11 +35,14 @@ const StorageConfigSchema = z.object({
   maxRetries: z.number().int().nonnegative(),
 });
 
+// Supported alert channels
+const AlertChannelSchema = z.enum(['email', 'webhook', 'slack']);
+
 // Alerts configuration schema
 const AlertsConfigSchema = z.object({
   enabled: z.boolean(),
   cooldownMs: z.number().int().positive(),
-  channels: z.array(z.string()),
+  channels: z.array(AlertChannelSchema),
 });
 
 // Collector configuration schemas

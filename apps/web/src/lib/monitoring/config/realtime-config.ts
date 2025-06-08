@@ -76,6 +76,7 @@ function getEnvConfig(): Partial<RealtimeMonitoringConfig> {
 }
 
 // Deep merge utility function
+// Note: Arrays are replaced entirely (not merged) which is intentional for config overrides
 function deepMerge<T extends Record<string, unknown>>(
   target: T,
   source: Partial<T>

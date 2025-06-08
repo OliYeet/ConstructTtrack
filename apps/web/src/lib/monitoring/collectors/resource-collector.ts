@@ -259,8 +259,12 @@ export class ResourceCollector extends BaseRealtimeCollector {
       oldSamples.reduce((sum, val) => sum + val, 0) / oldSamples.length;
 
     // If recent average is significantly higher than old average
-    const threshold = 1.2; // 20% increase
-    if (recentAverage > oldAverage * threshold) {
+    const threshold = 1.2; // 20% increase threshold
+    const minMemoryIncrease = 10; // Minimum 10MB increase to avoid false positives
+    if (
+      recentAverage > oldAverage * threshold &&
+      recentAverage - oldAverage > minMemoryIncrease
+    ) {
       this.resourceStats.memoryLeakDetected = true;
 
       this.emitMetric('memory_leak_detected', 1, 'count', {

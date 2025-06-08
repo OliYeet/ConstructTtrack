@@ -209,15 +209,21 @@ export class TimescaleAdapter implements MetricPersistenceAdapter {
     try {
       const { supabase } = await import('@constructtrack/supabase/client');
 
-      // Transform metrics to database format
+      // Transform metrics to database format with unit field
       const rows = metrics.map(metric => ({
         time: metric.timestamp,
         metric_name: metric.name,
         tags: metric.tags,
         value: metric.value,
+        unit: metric.unit,
+        metadata: metric.metadata || {},
       }));
 
-      const { error } = await supabase.from('realtime_metrics').insert(rows);
+      // Use upsert for better performance with potential duplicates
+      const { error } = await supabase.from('realtime_metrics').upsert(rows, {
+        onConflict: 'time,metric_name,tags',
+        ignoreDuplicates: true,
+      });
 
       if (error) {
         throw new Error(`Insert failed: ${error.message}`);

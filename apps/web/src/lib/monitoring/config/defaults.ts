@@ -58,7 +58,7 @@ export interface RealtimeMonitoringConfig {
 export const defaultRealtimeMonitoringConfig: RealtimeMonitoringConfig = {
   enabled: true,
   retentionDays: 7,
-  samplingRate: 1.0, // 100% sampling by default
+  samplingRate: 0.1, // 10% sampling by default (can be overridden per environment)
   latency: {
     p99Critical: 500, // 500ms
     p99Warning: 250, // 250ms
