@@ -8,14 +8,13 @@
 // NEVER bundle this file for browser/client-side use - server-only!
 // The service role key provides root-level database access
 
+// Re-ordered to satisfy ESLint import-order rules
 import { randomUUID } from 'crypto';
 
 import type {
   EventSourcingService,
   RealtimeEvent,
 } from '@constructtrack/event-sourcing';
-import type { WebSocketGateway } from './gateway';
-
 import {
   createClient,
   SupabaseClient,
@@ -24,6 +23,7 @@ import {
 } from '@supabase/supabase-js';
 
 import { config } from './config';
+import type { WebSocketGateway } from './gateway';
 import { logger } from './utils/logger';
 
 // Database row types - following Charlie's guidance for proper typing
