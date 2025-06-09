@@ -225,7 +225,6 @@ export class PrivacyComplianceManager {
     legalBasis: string,
     metadata: Record<string, unknown> = {}
   ): Promise<string> {
-    import { randomUUID } from 'crypto';
     const processingId = `proc_${randomUUID()}`;
 
     const processing: ProcessingRecord = {

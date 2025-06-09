@@ -35,7 +35,9 @@ class Logger {
       try {
         return `[${timestamp}] ${level.toUpperCase()}: ${message} ${JSON.stringify(data)}`;
       } catch (error) {
-        return `[${timestamp}] ${level.toUpperCase()}: ${message} [Data serialization failed: ${error.message}]`;
+        const errorMessage =
+          error instanceof Error ? error.message : 'Unknown error';
+        return `[${timestamp}] ${level.toUpperCase()}: ${message} [Data serialization failed: ${errorMessage}]`;
       }
     }
     return `[${timestamp}] ${level.toUpperCase()}: ${message}`;

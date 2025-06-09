@@ -169,8 +169,8 @@ export class SupabaseBridge {
   }
 
   private getAffectedRooms(
-    workOrder: WorkOrder,
-    oldWorkOrder?: WorkOrder
+    workOrder: WorkOrder | null,
+    oldWorkOrder?: WorkOrder | null
   ): string[] {
     const rooms: string[] = [];
 

@@ -251,6 +251,11 @@ export class CacheManager {
     await this.store.invalidateByTag(tag);
   }
 
+  // Clear all cache entries
+  async clear(): Promise<void> {
+    await this.store.clear();
+  }
+
   private generateETag(data: unknown): string {
     // Use dynamic import for crypto in browser-compatible way
     try {

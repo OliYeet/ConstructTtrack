@@ -23,6 +23,7 @@ import { realtimePerformanceMonitor } from './realtime-performance-monitor';
 export class RealtimeMonitoringIntegration {
   private alertManager: RealtimeAlertManager;
   private isInitialized = false;
+  private statsInterval?: NodeJS.Timeout;
 
   constructor() {
     this.alertManager = new RealtimeAlertManager(
@@ -123,7 +124,7 @@ export class RealtimeMonitoringIntegration {
     );
 
     // Setup periodic reporting to main performance monitor
-    setInterval(() => {
+    this.statsInterval = setInterval(() => {
       const stats = realtimePerformanceMonitor.getCurrentStats();
       if (stats) {
         // Report key metrics to main performance monitor

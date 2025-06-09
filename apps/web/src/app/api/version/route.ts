@@ -21,7 +21,7 @@ export const GET = withApiMiddleware({
     const url = new URL(request.url);
     const action = url.searchParams.get('action') || 'info';
     const versionParam = url.searchParams.get('version');
-    if (versionParam && !API_VERSIONS[versionParam]) {
+    if (versionParam && !Object.keys(API_VERSIONS).includes(versionParam)) {
       return createSuccessResponse({ error: 'Unsupported version supplied' });
     }
     const version = versionParam as ApiVersion | undefined;

@@ -18,11 +18,13 @@ async function handleGraphQLRequest(request: NextRequest) {
   } catch (error) {
     // Use a proper logging solution instead of console.error
     // Consider using your application's logging framework here
+    const errorMessage =
+      error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
       {
         error: 'GraphQL server not available',
         message:
-          process.env.NODE_ENV === 'development' ? error.message : undefined,
+          process.env.NODE_ENV === 'development' ? errorMessage : undefined,
       },
       { status: 500 }
     );
