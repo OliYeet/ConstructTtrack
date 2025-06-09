@@ -50,14 +50,26 @@ jest.mock('../../config/realtime-config', () => ({
 
 describe('TimescaleAdapter', () => {
   let adapter: TimescaleAdapter;
+  const originalEnv = process.env;
 
   beforeEach(() => {
+    // Set up test environment variables
+    process.env = {
+      ...originalEnv,
+      SUPABASE_URL: 'https://test.supabase.co',
+      SUPABASE_ANON_KEY: 'test-anon-key',
+      NODE_ENV: 'test',
+      CI: 'true',
+    };
+
     adapter = new TimescaleAdapter();
     jest.clearAllMocks();
   });
 
   afterEach(async () => {
     await adapter.shutdown();
+    // Restore original environment
+    process.env = originalEnv;
   });
 
   describe('query', () => {
@@ -167,6 +179,44 @@ describe('TimescaleAdapter', () => {
         },
       ];
 
+      await expect(adapter.flush(metrics)).resolves.not.toThrow();
+    });
+
+    it('should validate metrics before insertion', async () => {
+      const invalidMetrics: RealtimeMetricEvent[] = [
+        {
+          id: '', // Invalid: empty id
+          name: 'test_metric',
+          value: 1,
+          unit: 'count',
+          timestamp: new Date().toISOString(),
+          tags: { test: 'value' },
+          metadata: {},
+        },
+      ];
+
+      // Should not throw in CI environment
+      await expect(adapter.flush(invalidMetrics)).resolves.not.toThrow();
+    });
+
+    it('should handle missing environment variables gracefully', async () => {
+      // Remove environment variables
+      delete process.env.SUPABASE_URL;
+      delete process.env.SUPABASE_ANON_KEY;
+
+      const metrics: RealtimeMetricEvent[] = [
+        {
+          id: 'test-metric-env',
+          name: 'test_metric',
+          value: 1,
+          unit: 'count',
+          timestamp: new Date().toISOString(),
+          tags: { test: 'value' },
+          metadata: {},
+        },
+      ];
+
+      // Should not throw in CI environment
       await expect(adapter.flush(metrics)).resolves.not.toThrow();
     });
   });

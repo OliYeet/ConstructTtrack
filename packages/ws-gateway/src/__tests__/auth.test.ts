@@ -132,6 +132,61 @@ describe('Authentication', () => {
 
       expect(result).toBeNull();
     });
+
+    it('should handle malformed JWT tokens', () => {
+      const malformedTokens = [
+        'not.a.jwt',
+        'malformed',
+        '',
+        'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.malformed',
+        'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1c2VyMTIzIn0.invalid_signature',
+      ];
+
+      malformedTokens.forEach(token => {
+        const result = verifyToken(token);
+        expect(result).toBeNull();
+      });
+    });
+
+    it('should handle tokens with invalid signatures', () => {
+      const payload = {
+        sub: 'user123',
+        roles: ['field_worker'],
+        projects: ['project456'],
+        email: 'test@example.com',
+        exp: baseTime + 3600,
+        iss: 'constructtrack',
+        aud: 'ws-gateway',
+      };
+
+      // Sign with correct secret
+      const validToken = jwt.sign(payload, 'test-secret-key-for-testing-only');
+
+      // Tamper with the signature
+      const parts = validToken.split('.');
+      const tamperedToken = `${parts[0]}.${parts[1]}.tampered_signature`;
+
+      const result = verifyToken(tamperedToken);
+      expect(result).toBeNull();
+    });
+
+    it('should handle tokens with future not-before time', () => {
+      const payload = {
+        sub: 'user123',
+        roles: ['field_worker'],
+        projects: ['project456'],
+        email: 'test@example.com',
+        exp: baseTime + 3600,
+        nbf: baseTime + 1800, // Not valid for another 30 minutes
+        iss: 'constructtrack',
+        aud: 'ws-gateway',
+      };
+
+      const token = jwt.sign(payload, 'test-secret-key-for-testing-only');
+      const result = verifyToken(token);
+
+      expect(result).toBeNull();
+    });
   });
 
   describe('generateConnectionId', () => {
