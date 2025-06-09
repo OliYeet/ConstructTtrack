@@ -88,7 +88,11 @@ export function useErrorHandler(options: ErrorHandlerOptions = {}) {
             }
           );
         } catch (reportingError) {
-          console.warn('Failed to report error:', reportingError);
+          // Use logger instead of console for error reporting failures
+          const logger = getLogger();
+          await logger.warn('Failed to report error', reportingError as Error, {
+            metadata: { originalError: error.message },
+          });
         }
       }
 
@@ -273,7 +277,7 @@ function isErrorRecoverable(error: Error): boolean {
 
   // Check for specific error codes if available
   if ('code' in error) {
-    const errorCode = (error as any).code;
+    const errorCode = (error as { code?: string }).code;
     // Network-related error codes
     if (
       ['ECONNREFUSED', 'ETIMEDOUT', 'ENOTFOUND', 'ENETUNREACH'].includes(
