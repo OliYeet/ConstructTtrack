@@ -274,9 +274,14 @@ export const CHANNEL_PATTERNS = {
 } as const;
 
 // Enhanced Validation Utilities
-import { DateTime } from 'luxon';
-export const isValidISO8601 = (timestamp: string): boolean =>
-  DateTime.fromISO(timestamp).isValid;
+export const isValidISO8601 = (timestamp: string): boolean => {
+  try {
+    const date = new Date(timestamp);
+    return !isNaN(date.getTime()) && timestamp === date.toISOString();
+  } catch {
+    return false;
+  }
+};
 
 export const validateEventPayload = (event: RealtimeEvent): boolean => {
   switch (event.type) {
