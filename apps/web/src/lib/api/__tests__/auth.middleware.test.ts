@@ -86,13 +86,14 @@ jest.mock('../caching', () => ({
 jest.mock('../response', () => ({
   addCorsHeaders: jest.fn(response => response),
   createErrorResponse: jest.fn((error: unknown, requestId) => {
-    const status = error?.status || 500;
+    const errorObj = error as { status?: number; code?: string; message?: string };
+    const status = errorObj?.status || 500;
     return NextResponse.json(
       {
         success: false,
         error: {
-          code: error?.code || 'UNKNOWN_ERROR',
-          message: error?.message || 'Test error',
+          code: errorObj?.code || 'UNKNOWN_ERROR',
+          message: errorObj?.message || 'Test error',
           statusCode: status,
         },
         meta: {
@@ -120,7 +121,7 @@ jest.mock('../response', () => ({
 }));
 
 // Mock the auth module
-const mockCreateRequestContext = jest.fn();
+const mockCreateRequestContext = jest.fn() as jest.MockedFunction<any>;
 jest.mock('@/lib/api/auth', () => ({
   createRequestContext: mockCreateRequestContext,
 }));
