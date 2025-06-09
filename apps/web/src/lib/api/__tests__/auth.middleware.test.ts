@@ -9,7 +9,7 @@ import { withAuth } from '../middleware';
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { createMockRequest } from '../../../tests/setup';
-import { createRequestContext } from '@/lib/api/auth';
+// Import removed - using mock instead
 
 // Import the mocked supabase client (for type checking only)
 
@@ -85,7 +85,7 @@ jest.mock('../caching', () => ({
 
 jest.mock('../response', () => ({
   addCorsHeaders: jest.fn(response => response),
-  createErrorResponse: jest.fn((error: any, requestId) => {
+  createErrorResponse: jest.fn((error: unknown, requestId) => {
     const status = error?.status || 500;
     return NextResponse.json(
       {
@@ -120,8 +120,9 @@ jest.mock('../response', () => ({
 }));
 
 // Mock the auth module
+const mockCreateRequestContext = jest.fn();
 jest.mock('@/lib/api/auth', () => ({
-  createRequestContext: jest.fn(),
+  createRequestContext: mockCreateRequestContext,
 }));
 
 // Mock the error classes
@@ -149,13 +150,12 @@ const exec = (request: NextRequest) =>
 describe('Authentication middleware (`withAuth`)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockCreateRequestContext.mockClear();
   });
 
   it('allows request with a valid token', async () => {
     // Mock createRequestContext to return context with user
-    (
-      createRequestContext as jest.MockedFunction<typeof createRequestContext>
-    ).mockResolvedValueOnce({
+    mockCreateRequestContext.mockResolvedValueOnce({
       user: {
         id: 'user-123',
         email: 'test@example.com',
@@ -182,9 +182,7 @@ describe('Authentication middleware (`withAuth`)', () => {
 
   it('rejects request when token is missing', async () => {
     // Mock createRequestContext to return context without user
-    (
-      createRequestContext as jest.MockedFunction<typeof createRequestContext>
-    ).mockResolvedValueOnce({
+    mockCreateRequestContext.mockResolvedValueOnce({
       user: undefined,
       organizationId: undefined,
       requestId: 'test-request-id',
@@ -205,9 +203,7 @@ describe('Authentication middleware (`withAuth`)', () => {
 
   it('rejects request when token is invalid', async () => {
     // Mock createRequestContext to return context without user (invalid token)
-    (
-      createRequestContext as jest.MockedFunction<typeof createRequestContext>
-    ).mockResolvedValueOnce({
+    mockCreateRequestContext.mockResolvedValueOnce({
       user: undefined,
       organizationId: undefined,
       requestId: 'test-request-id',

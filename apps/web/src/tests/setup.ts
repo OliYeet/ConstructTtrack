@@ -24,6 +24,22 @@ class MockHeaders {
   has(name: string): boolean {
     return this.map.has(name.toLowerCase());
   }
+
+  forEach(callback: (_value: string, _key: string) => void) {
+    this.map.forEach((_value, _key) => callback(_value, _key));
+  }
+
+  entries() {
+    return this.map.entries();
+  }
+
+  keys() {
+    return this.map.keys();
+  }
+
+  values() {
+    return this.map.values();
+  }
 }
 
 class MockNextResponse {
@@ -59,8 +75,20 @@ class MockNextResponse {
 
 /* A minimal placeholder – extend when tests require more surface area */
 class MockNextRequest {
+  public url: string;
+  public method: string;
+  public headers: MockHeaders;
+
   /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-  constructor(public _info: any = {}) {}
+  constructor(public _info: any = {}) {
+    this.url = _info.url || 'http://localhost:3000/api/test';
+    this.method = _info.method || 'GET';
+    this.headers = _info.headers || new MockHeaders();
+  }
+
+  async json() {
+    return this._info.body || {};
+  }
 }
 
 /* Make mocks globally visible for convenience (optional) */
@@ -312,32 +340,17 @@ export const createMockRequest = (
   } = options;
 
   // Create a proper Headers object
-  const headersObj = new Headers();
-  Object.entries({
+  const headersObj = new MockHeaders({
     'content-type': 'application/json',
     ...headers,
-  }).forEach(([key, value]) => {
-    headersObj.set(key.toLowerCase(), value);
   });
 
-  const request = {
+  return new MockNextRequest({
     method,
     url,
     headers: headersObj,
-    json: jest.fn().mockResolvedValue(body),
-  };
-
-  // Add a case-insensitive `get` helper only when one is not already present
-  if (typeof (request.headers as { get?: unknown }).get !== 'function') {
-    (
-      request.headers as Map<string, string> & {
-        get: (_key: string) => string | undefined;
-      }
-    ).get = (key: string) =>
-      // `Map#get` will exist when `request.headers` is a Map-backed mock
-      (request.headers as Map<string, string>).get?.(key.toLowerCase());
-  }
-  return request as unknown as NextRequest;
+    body,
+  }) as unknown as NextRequest;
 };
 
 export const createMockResponse = () => ({
