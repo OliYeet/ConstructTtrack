@@ -61,6 +61,7 @@ describe('TimescaleAdapter', () => {
         const metrics: RealtimeMetricEvent[] = [];
         for (let j = 0; j < metricsPerBatch; j++) {
           metrics.push({
+            id: `test_metric_${i}_${j}_${Date.now()}`,
             name: `test_metric_${i}_${j}`,
             value: Math.random() * 100,
             unit: 'count',
@@ -106,6 +107,7 @@ describe('TimescaleAdapter', () => {
         for (let i = 0; i < totalBatches; i++) {
           const metrics: RealtimeMetricEvent[] = [
             {
+              id: `continuous_metric_${i}_${Date.now()}`,
               name: `continuous_metric_${i}`,
               value: i,
               unit: 'count',
@@ -153,6 +155,7 @@ describe('TimescaleAdapter', () => {
 
       const metrics: RealtimeMetricEvent[] = [
         {
+          id: `error_test_metric_${Date.now()}`,
           name: 'error_test_metric',
           value: 42,
           unit: 'count',
@@ -202,6 +205,7 @@ describe('TimescaleAdapter', () => {
       const promises = Array.from({ length: 10 }, (_, i) => {
         const metrics: RealtimeMetricEvent[] = [
           {
+            id: `concurrent_metric_${i}_${Date.now()}`,
             name: `concurrent_metric_${i}`,
             value: i,
             unit: 'count',
@@ -224,6 +228,7 @@ describe('TimescaleAdapter', () => {
     it('should provide accurate statistics', async () => {
       const metrics: RealtimeMetricEvent[] = [
         {
+          id: `stats_test_metric_${Date.now()}`,
           name: 'stats_test_metric',
           value: 100,
           unit: 'count',
@@ -252,6 +257,7 @@ describe('TimescaleAdapter', () => {
     it('should properly shutdown and flush pending batches', async () => {
       const metrics: RealtimeMetricEvent[] = [
         {
+          id: `shutdown_test_metric_${Date.now()}`,
           name: 'shutdown_test_metric',
           value: 200,
           unit: 'count',
@@ -281,6 +287,7 @@ describe('InMemoryAdapter', () => {
   it('should store and retrieve metrics correctly', async () => {
     const metrics: RealtimeMetricEvent[] = [
       {
+        id: `memory_test_metric_1_${Date.now()}`,
         name: 'memory_test_metric_1',
         value: 10,
         unit: 'count',
@@ -289,6 +296,7 @@ describe('InMemoryAdapter', () => {
         metadata: {},
       },
       {
+        id: `memory_test_metric_2_${Date.now()}`,
         name: 'memory_test_metric_2',
         value: 20,
         unit: 'ms',
@@ -318,6 +326,7 @@ describe('InMemoryAdapter', () => {
     for (let i = 0; i < 10; i++) {
       const metrics: RealtimeMetricEvent[] = [
         {
+          id: `limit_test_metric_${i}_${Date.now()}`,
           name: `limit_test_metric_${i}`,
           value: i,
           unit: 'count',
