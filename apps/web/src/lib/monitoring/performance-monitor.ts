@@ -144,7 +144,21 @@ export class PerformanceMonitor {
 
   // Start timing an operation
   startTiming(operationId: string): void {
-    this.timings.set(operationId, performance.now());
+    // Use performance API if available, otherwise use perf_hooks for Node.js
+    let perf: { now(): number };
+    if (typeof performance !== 'undefined') {
+      perf = performance;
+    } else {
+      // Dynamic import for Node.js environment
+      try {
+        const perfHooks = eval('require')('perf_hooks');
+        perf = perfHooks.performance;
+      } catch {
+        // Fallback if perf_hooks is not available
+        perf = { now: () => Date.now() };
+      }
+    }
+    this.timings.set(operationId, perf.now());
   }
 
   // End timing an operation

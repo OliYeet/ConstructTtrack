@@ -102,8 +102,8 @@ export class SupabaseBridge {
       table: payload.table,
     });
 
-    const workOrder = payload.new as WorkOrder;
-    const oldWorkOrder = payload.old as WorkOrder;
+    const workOrder = payload.new as WorkOrder | null;
+    const oldWorkOrder = payload.old as WorkOrder | null;
 
     // Determine affected rooms
     const rooms = this.getAffectedRooms(workOrder, oldWorkOrder);

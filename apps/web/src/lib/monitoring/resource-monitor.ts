@@ -344,7 +344,7 @@ export class ResourceMonitor {
       performanceMonitor.recordMetric(
         'system_cpu_usage',
         snapshot.cpu.usage,
-        'seconds',
+        'percent',
         { type: 'cpu' }
       );
     }
@@ -491,7 +491,7 @@ export class ResourceMonitor {
       .filter(s => s.cpu.usage > 0)
       .map(s => ({
         timestamp: s.timestamp,
-        value: s.cpu.usage * 100,
+        value: s.cpu.usage,
       }));
     if (cpuValues.length > 1) {
       trends.push(this.calculateTrend('cpu_usage', cpuValues));

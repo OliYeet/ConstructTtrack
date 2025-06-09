@@ -181,7 +181,7 @@ export class SecurityMiddleware {
         request,
         context
       );
-      if (suspiciousActivity) {
+      if (suspiciousActivity.length > 0) {
         context.securityFlags.suspiciousActivity = true;
 
         if (this.config.enableSecurityLogging) {

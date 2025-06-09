@@ -13,7 +13,10 @@ type RequestWithContext = NextRequest & { context?: RequestContext };
 // Mock the middleware to return the GET handler directly
 jest.mock('@/lib/api/middleware', () => ({
   withApiMiddleware: jest.fn(handlers => {
-    return async (request: Request, context: RequestContext) => {
+    return async (
+      request: NextRequest,
+      context: { params: Record<string, unknown> }
+    ) => {
       const handler = handlers.GET;
       if (handler) {
         return await handler(request, context);
@@ -44,7 +47,7 @@ describe('/api/v1/health', () => {
       timestamp: new Date().toISOString(),
     };
 
-    const response = await GET(request, { params: Promise.resolve({}) });
+    const response = await GET(request, { params: {} });
     const data = await response.json();
 
     expect(response.status).toBe(200);

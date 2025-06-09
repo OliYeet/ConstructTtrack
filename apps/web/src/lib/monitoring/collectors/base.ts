@@ -161,8 +161,8 @@ export abstract class BaseRealtimeCollector
   public onMetric?(metric: RealtimeMetricEvent): void;
 
   // Protected methods for subclasses to implement
-  protected abstract onStart(): void;
-  protected abstract onStop(): void;
+  protected abstract onStart(): Promise<void> | void;
+  protected abstract onStop(): Promise<void> | void;
 
   // Helper method to emit metrics
   protected emitMetric(

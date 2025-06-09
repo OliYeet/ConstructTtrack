@@ -264,15 +264,32 @@ export class TimescaleAdapter implements MetricPersistenceAdapter {
     const maxRetries = realtimeConfig.storage.maxRetries;
 
     if (batch.retryCount < maxRetries) {
-      // Retry the batch
+      // Retry the batch with exponential backoff
       batch.retryCount++;
-      this.pendingBatches.push(batch);
+
+      // Add exponential backoff delay to prevent immediate retry loops
+      const backoffDelay = Math.min(
+        1000 * Math.pow(2, batch.retryCount - 1),
+        10000
+      ); // Max 10 seconds
 
       // eslint-disable-next-line no-console
       console.warn(
-        `Batch processing failed, retrying (${batch.retryCount}/${maxRetries}):`,
+        `Batch processing failed, retrying (${batch.retryCount}/${maxRetries}) after ${backoffDelay}ms:`,
         error
       );
+
+      // Schedule retry after backoff delay instead of immediate retry
+      setTimeout(() => {
+        this.pendingBatches.push(batch);
+        // Trigger processing if not already running
+        if (!this.isProcessing) {
+          this.processPendingBatches().catch(retryError => {
+            // eslint-disable-next-line no-console
+            console.error('Retry processing failed:', retryError);
+          });
+        }
+      }, backoffDelay);
     } else {
       // Max retries reached, log and discard
       // eslint-disable-next-line no-console

@@ -135,22 +135,13 @@ describe('TimescaleAdapter', () => {
     });
 
     it('should handle batch processing errors without infinite recursion', async () => {
-      // Mock insertMetrics to fail initially, then succeed
-      let failCount = 0;
-      const maxFails = 2;
+      // Mock insertMetrics to always fail to test that we don't get infinite recursion
+      let callCount = 0;
 
-      const originalInsertMetrics = (
-        adapter as unknown as {
-          insertMetrics: (_metrics: unknown) => Promise<void>;
-        }
-      ).insertMetrics;
       (adapter as unknown as { insertMetrics: jest.Mock }).insertMetrics =
-        jest.fn(async metrics => {
-          if (failCount < maxFails) {
-            failCount++;
-            throw new Error(`Simulated failure ${failCount}`);
-          }
-          return originalInsertMetrics.call(adapter, metrics);
+        jest.fn(async (_metrics: unknown) => {
+          callCount++;
+          throw new Error(`Simulated failure ${callCount}`);
         });
 
       const metrics: RealtimeMetricEvent[] = [
@@ -165,17 +156,29 @@ describe('TimescaleAdapter', () => {
         },
       ];
 
-      // This should not cause infinite recursion
+      // This should not cause infinite recursion - it should fail once and schedule retries
+      const startTime = Date.now();
       await adapter.flush(metrics);
+      const endTime = Date.now();
 
-      // Verify the batch was eventually processed or discarded
+      // The key test: flush should complete quickly without infinite recursion
+      // If there was infinite recursion, this would take much longer or timeout
+      expect(endTime - startTime).toBeLessThan(1000); // Should complete in less than 1 second
+
+      // The initial call should complete without infinite recursion
       const stats = adapter.getStats();
       expect(stats.isProcessing).toBe(false);
 
-      // Should have attempted to process the failed batch
-      expect(
-        (adapter as unknown as { insertMetrics: jest.Mock }).insertMetrics
-      ).toHaveBeenCalled();
+      // Should have been called once initially (retries are scheduled asynchronously)
+      const insertMetricsMock = (
+        adapter as unknown as { insertMetrics: jest.Mock }
+      ).insertMetrics;
+      expect(insertMetricsMock).toHaveBeenCalledTimes(1);
+      expect(callCount).toBe(1);
+
+      // The batch should be scheduled for retry (not immediately retried in a loop)
+      // We can verify this by checking that only one call happened during flush
+      expect(insertMetricsMock).toHaveBeenCalledTimes(1);
     });
 
     it('should respect processing flag to prevent concurrent processing', async () => {

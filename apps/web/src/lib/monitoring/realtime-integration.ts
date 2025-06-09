@@ -58,6 +58,10 @@ export class RealtimeMonitoringIntegration {
     }
 
     realtimePerformanceMonitor.stop();
+    if (this.statsInterval) {
+      clearInterval(this.statsInterval);
+      this.statsInterval = undefined;
+    }
     this.isInitialized = false;
 
     const logger = getLogger();

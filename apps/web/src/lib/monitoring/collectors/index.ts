@@ -83,7 +83,7 @@ export const defaultCollectors = {
   connection: new ConnectionCollector(),
   throughput: new ThroughputCollector(),
   resource: new ResourceCollector(),
-  queueDepth: new QueueDepthCollector(),
+  'queue-depth': new QueueDepthCollector(),
 };
 
 // Collector registry instance

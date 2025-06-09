@@ -3,13 +3,15 @@
  * Provides correlation IDs for tracking requests across services and logs
  */
 
+import { AsyncLocalStorage } from 'node:async_hooks';
+
 import { NextRequest } from 'next/server';
 
 import { RequestContext } from '@/types/api';
 
 // Generate a unique correlation ID
 export function generateCorrelationId(): string {
-  return `req_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+  return `req_${crypto.randomUUID()}`;
 }
 
 // Generate a unique request ID
@@ -61,27 +63,23 @@ export function addCorrelationHeaders(
   correlationId: string,
   requestId: string
 ): Response {
-  const headers = new Headers(response.headers);
-  headers.set('x-correlation-id', correlationId);
-  headers.set('x-request-id', requestId);
-
-  return new Response(response.body, {
-    status: response.status,
-    statusText: response.statusText,
-    headers,
-  });
+  response.headers.set('x-correlation-id', correlationId);
+  response.headers.set('x-request-id', requestId);
+  return response;
 }
 
 // Correlation context storage for async operations
 class CorrelationStore {
+  private als = new AsyncLocalStorage<{ id: string }>();
   private store = new Map<string, string>();
 
-  set(key: string, correlationId: string): void {
-    this.store.set(key, correlationId);
+  getCurrent(): string | undefined {
+    return this.als.getStore()?.id || this.store.get('current');
   }
 
-  get(key: string): string | undefined {
-    return this.store.get(key);
+  setCurrent(correlationId: string): void {
+    this.als.enterWith({ id: correlationId });
+    this.store.set('current', correlationId);
   }
 
   delete(key: string): void {
@@ -90,17 +88,6 @@ class CorrelationStore {
 
   clear(): void {
     this.store.clear();
-  }
-
-  // Get correlation ID for current async context
-  getCurrent(): string | undefined {
-    // In a real implementation, you might use AsyncLocalStorage
-    // For now, we'll use a simple approach
-    return this.store.get('current');
-  }
-
-  setCurrent(correlationId: string): void {
-    this.store.set('current', correlationId);
   }
 }
 

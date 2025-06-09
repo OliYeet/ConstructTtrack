@@ -20,7 +20,11 @@ export const GET = withApiMiddleware({
   GET: async (request: NextRequest) => {
     const url = new URL(request.url);
     const action = url.searchParams.get('action') || 'info';
-    const version = url.searchParams.get('version') as ApiVersion;
+    const versionParam = url.searchParams.get('version');
+    if (versionParam && !API_VERSIONS[versionParam]) {
+      return createSuccessResponse({ error: 'Unsupported version supplied' });
+    }
+    const version = versionParam as ApiVersion | undefined;
 
     switch (action) {
       case 'info':

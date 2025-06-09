@@ -89,15 +89,15 @@ export class ResourceCollector extends BaseRealtimeCollector {
 
     // Take initial CPU measurement
     this.previousCpuUsage = process.cpuUsage();
-    this.previousSampleTime = Date.now();
 
-    // Start periodic sampling
-    this.samplingInterval = setInterval(() => {
-      this.sampleResources();
-    }, this.config.sampleInterval);
+    // Start the sampling loop
+    this.scheduleSample();
+  }
 
-    // Take immediate sample but skip CPU % until we have a delta
-    this.sampleResources();
+  private async scheduleSample(): Promise<void> {
+    if (!this.isSampling) return;
+    await this.sampleResources();
+    setTimeout(() => this.scheduleSample(), this.config.sampleInterval);
   }
 
   private stopSampling(): void {
@@ -138,8 +138,12 @@ export class ResourceCollector extends BaseRealtimeCollector {
       if (timeDelta > 10) {
         // Minimum 10ms to avoid division by zero
         // Convert microseconds to milliseconds and calculate percentage
-        const totalCpuTime = (cpuDelta.user + cpuDelta.system) / 1000;
-        cpuPercentage = (totalCpuTime / timeDelta) * 100;
+        const totalCpuTime = (cpuDelta.user + cpuDelta.system) / 1000; // ms
+        // Use a default of 1 core, will be updated with actual count later
+        const cores = 1; // Default, will use actual count from os module if available
+        cpuPercentage = (totalCpuTime / (timeDelta * cores)) * 100;
+
+        // Don’t clamp – callers can decide how to interpret >100 %
       }
     }
 

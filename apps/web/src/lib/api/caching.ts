@@ -251,13 +251,18 @@ export class CacheManager {
     await this.store.invalidateByTag(tag);
   }
 
-  // Generate ETag
-  private generateETag(_data: any): string {
-    // const hash = require('crypto')
-    //   .createHash('md5')
-    //   .update(JSON.stringify(data))
-    //   .digest('hex');
-    return `"mock-etag"`;
+  private generateETag(data: unknown): string {
+    // Use dynamic import for crypto in browser-compatible way
+    try {
+      const crypto = eval('require')('crypto');
+      return crypto
+        .createHash('sha1')
+        .update(JSON.stringify(data))
+        .digest('hex');
+    } catch {
+      // Fallback for environments without crypto
+      return `"etag-${Date.now()}-${Math.random().toString(36).substring(2)}"`;
+    }
   }
 
   // Check if entry is stale
