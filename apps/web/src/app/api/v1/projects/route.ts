@@ -104,7 +104,7 @@ function transformProject(row: ProjectRow): ProjectResponse {
 async function handleGet(
   request: NextRequest,
 
-  _: { params: Record<string, string> }
+  _: { params: Promise<Record<string, string>> }
 ) {
   const context = (
     request as NextRequest & {
@@ -169,7 +169,7 @@ async function handleGet(
 async function handlePost(
   request: NextRequest,
 
-  _: { params: Record<string, string> }
+  _: { params: Promise<Record<string, string>> }
 ) {
   const context = (
     request as NextRequest & {

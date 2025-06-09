@@ -420,16 +420,20 @@ export class ErrorReporter {
         // Restore aggregations (convert affectedUsers back to Set)
         if (data.aggregations) {
           Object.entries(data.aggregations).forEach(([fingerprint, agg]) => {
-            const aggregation = agg as any;
-            aggregation.affectedUsers = new Set(
-              aggregation.affectedUsers || []
-            );
-            this.aggregations.set(fingerprint, aggregation);
+            const aggregation = agg as ErrorAggregation & {
+              affectedUsers: string[];
+            };
+            const restoredAggregation: ErrorAggregation = {
+              ...aggregation,
+              affectedUsers: new Set(aggregation.affectedUsers || []),
+            };
+            this.aggregations.set(fingerprint, restoredAggregation);
           });
         }
       }
-    } catch (error) {
-      console.warn('Failed to load error reports from storage:', error);
+    } catch {
+      // Silently fail storage loading to avoid console pollution
+      // Storage errors are not critical for error reporting functionality
     }
   }
 
@@ -458,8 +462,9 @@ export class ErrorReporter {
         'constructtrack_error_reports',
         JSON.stringify(data)
       );
-    } catch (error) {
-      console.warn('Failed to save error reports to storage:', error);
+    } catch {
+      // Silently fail storage saving to avoid console pollution
+      // Storage errors are not critical for error reporting functionality
     }
   }
 

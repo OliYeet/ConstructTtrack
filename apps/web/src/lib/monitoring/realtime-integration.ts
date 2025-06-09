@@ -23,6 +23,7 @@ import { realtimePerformanceMonitor } from './realtime-performance-monitor';
 export class RealtimeMonitoringIntegration {
   private alertManager: RealtimeAlertManager;
   private isInitialized = false;
+  private statsInterval?: NodeJS.Timeout;
 
   constructor() {
     this.alertManager = new RealtimeAlertManager(
@@ -58,6 +59,10 @@ export class RealtimeMonitoringIntegration {
     }
 
     realtimePerformanceMonitor.stop();
+    if (this.statsInterval) {
+      clearInterval(this.statsInterval);
+      this.statsInterval = undefined;
+    }
     this.isInitialized = false;
 
     const logger = getLogger();
@@ -67,12 +72,14 @@ export class RealtimeMonitoringIntegration {
   // Setup event listeners for real-time monitoring
   private setupEventListeners(): void {
     // Listen for alerts and send them through alert manager
-    realtimePerformanceMonitor.on('alert', async (alert: RealtimeAlert) => {
+    realtimePerformanceMonitor.on('alert', async (data: unknown) => {
+      const alert = data as RealtimeAlert;
       await this.alertManager.sendAlert(alert);
     });
 
     // Listen for performance stats and log them
-    realtimePerformanceMonitor.on('stats', stats => {
+    realtimePerformanceMonitor.on('stats', (data: unknown) => {
+      const stats = data as any; // Type assertion for stats object
       const logger = getLogger();
       logger.info('Real-time performance stats calculated', {
         metadata: {
@@ -88,7 +95,8 @@ export class RealtimeMonitoringIntegration {
     });
 
     // Listen for metrics and optionally sample them for detailed logging
-    realtimePerformanceMonitor.on('metric', event => {
+    realtimePerformanceMonitor.on('metric', (data: unknown) => {
+      const event = data as any; // Type assertion for event object
       if (event.type === 'latency') {
         const metric = event.metric as RealtimeLatencyMetric;
 
@@ -119,7 +127,7 @@ export class RealtimeMonitoringIntegration {
     );
 
     // Setup periodic reporting to main performance monitor
-    setInterval(() => {
+    this.statsInterval = setInterval(() => {
       const stats = realtimePerformanceMonitor.getCurrentStats();
       if (stats) {
         // Report key metrics to main performance monitor

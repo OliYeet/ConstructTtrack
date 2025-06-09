@@ -41,7 +41,7 @@ export type RealtimeDispatch<
 // Internals - per-channel handler registry to avoid duplicate listeners
 // ---------------------------------------------------------------------------
 
-type AnyRealtimeDispatch = RealtimeDispatch<any>;
+type AnyRealtimeDispatch = RealtimeDispatch<ManagedTableName>;
 
 /**
  * Stores, for each channel, a map of the external `handler` provided to

@@ -9,7 +9,7 @@ import { RequestContext } from '@/types/api';
 
 // Generate a unique correlation ID
 export function generateCorrelationId(): string {
-  return `req_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+  return `req_${crypto.randomUUID()}`;
 }
 
 // Generate a unique request ID
@@ -61,27 +61,41 @@ export function addCorrelationHeaders(
   correlationId: string,
   requestId: string
 ): Response {
-  const headers = new Headers(response.headers);
-  headers.set('x-correlation-id', correlationId);
-  headers.set('x-request-id', requestId);
-
-  return new Response(response.body, {
-    status: response.status,
-    statusText: response.statusText,
-    headers,
-  });
+  response.headers.set('x-correlation-id', correlationId);
+  response.headers.set('x-request-id', requestId);
+  return response;
 }
 
 // Correlation context storage for async operations
 class CorrelationStore {
+  private als: any = null;
   private store = new Map<string, string>();
 
-  set(key: string, correlationId: string): void {
-    this.store.set(key, correlationId);
+  constructor() {
+    // Only use AsyncLocalStorage in server environment
+    if (typeof window === 'undefined') {
+      try {
+        const { AsyncLocalStorage } = eval('require')('node:async_hooks');
+        this.als = new AsyncLocalStorage();
+      } catch {
+        // Fallback if AsyncLocalStorage is not available
+        this.als = null;
+      }
+    }
   }
 
-  get(key: string): string | undefined {
-    return this.store.get(key);
+  getCurrent(): string | undefined {
+    if (this.als && typeof window === 'undefined') {
+      return this.als.getStore()?.id || this.store.get('current');
+    }
+    return this.store.get('current');
+  }
+
+  setCurrent(correlationId: string): void {
+    if (this.als && typeof window === 'undefined') {
+      this.als.enterWith({ id: correlationId });
+    }
+    this.store.set('current', correlationId);
   }
 
   delete(key: string): void {
@@ -90,17 +104,6 @@ class CorrelationStore {
 
   clear(): void {
     this.store.clear();
-  }
-
-  // Get correlation ID for current async context
-  getCurrent(): string | undefined {
-    // In a real implementation, you might use AsyncLocalStorage
-    // For now, we'll use a simple approach
-    return this.store.get('current');
-  }
-
-  setCurrent(correlationId: string): void {
-    this.store.set('current', correlationId);
   }
 }
 

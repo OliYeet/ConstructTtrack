@@ -24,6 +24,22 @@ class MockHeaders {
   has(name: string): boolean {
     return this.map.has(name.toLowerCase());
   }
+
+  forEach(callback: (_value: string, _key: string) => void) {
+    this.map.forEach((_value, _key) => callback(_value, _key));
+  }
+
+  entries() {
+    return this.map.entries();
+  }
+
+  keys() {
+    return this.map.keys();
+  }
+
+  values() {
+    return this.map.values();
+  }
 }
 
 class MockNextResponse {
@@ -59,17 +75,62 @@ class MockNextResponse {
 
 /* A minimal placeholder – extend when tests require more surface area */
 class MockNextRequest {
-  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-  constructor(public _info: any = {}) {}
+  public url: string;
+  public method: string;
+  public headers: MockHeaders;
+  private _body: unknown;
+
+  constructor(
+    url?:
+      | string
+      | {
+          url?: string;
+          method?: string;
+          headers?: MockHeaders | Record<string, string>;
+          body?: unknown;
+        },
+    options?: {
+      method?: string;
+      headers?: MockHeaders | Record<string, string>;
+      body?: unknown;
+    }
+  ) {
+    // Handle both NextRequest(url, options) and MockNextRequest(_info) patterns
+    if (typeof url === 'string') {
+      this.url = url;
+      this.method = options?.method || 'GET';
+      this.headers =
+        options?.headers instanceof MockHeaders
+          ? options.headers
+          : new MockHeaders(options?.headers || {});
+      this._body = options?.body;
+    } else {
+      // Legacy _info pattern
+      const _info = url || {};
+      this.url = _info.url || 'http://localhost:3000/api/test';
+      this.method = _info.method || 'GET';
+      this.headers =
+        _info.headers instanceof MockHeaders
+          ? _info.headers
+          : new MockHeaders(_info.headers || {});
+      this._body = _info.body;
+    }
+  }
+
+  async json() {
+    return this._body || {};
+  }
 }
 
 /* Make mocks globally visible for convenience (optional) */
 // Only polyfill Headers if the runtime does not already provide it
-if (typeof (global as any).Headers === 'undefined') {
-  (global as any).Headers = MockHeaders;
+if (typeof (global as { Headers?: unknown }).Headers === 'undefined') {
+  (global as { Headers: typeof MockHeaders }).Headers = MockHeaders;
 }
-(global as any).NextResponse = MockNextResponse;
-(global as any).NextRequest = MockNextRequest;
+(global as { NextResponse: typeof MockNextResponse }).NextResponse =
+  MockNextResponse;
+(global as { NextRequest: typeof MockNextRequest }).NextRequest =
+  MockNextRequest;
 
 /* Provide module mock so `import { NextResponse } from 'next/server'` resolves */
 jest.mock('next/server', () => ({
@@ -89,9 +150,11 @@ import { NextRequest } from 'next/server';
 // Next.js' `NextResponse.json` helper relies on `Response.json` existing.
 if (
   typeof Response !== 'undefined' &&
-  typeof (Response as any).json !== 'function'
+  typeof (Response as { json?: unknown }).json !== 'function'
 ) {
-  (Response as any).json = function json(data: unknown, init?: ResponseInit) {
+  (
+    Response as { json: (_data: unknown, _init?: ResponseInit) => Response }
+  ).json = function json(_data: unknown, _init?: ResponseInit) {
     // Create headers with default content type
     const defaultHeaders = [['Content-Type', 'application/json']] as [
       string,
@@ -99,21 +162,21 @@ if (
     ][];
     const headers = new Headers(defaultHeaders);
 
-    // Add any additional headers from init
-    if (init?.headers) {
-      if (Array.isArray(init.headers)) {
-        init.headers.forEach(([key, value]) => headers.set(key, value));
-      } else if (init.headers instanceof Headers) {
-        init.headers.forEach((value, key) => headers.set(key, value));
+    // Add any additional headers from _init
+    if (_init?.headers) {
+      if (Array.isArray(_init.headers)) {
+        _init.headers.forEach(([key, value]) => headers.set(key, value));
+      } else if (_init.headers instanceof Headers) {
+        _init.headers.forEach((value, key) => headers.set(key, value));
       } else {
-        Object.entries(init.headers).forEach(([key, value]) =>
+        Object.entries(_init.headers).forEach(([key, value]) =>
           headers.set(key, value)
         );
       }
     }
 
-    return new Response(JSON.stringify(data), {
-      ...init,
+    return new Response(JSON.stringify(_data), {
+      ..._init,
       headers: headers as HeadersInit,
     });
   };
@@ -122,8 +185,10 @@ if (
 // Global type declarations for Jest and browser APIs
 /* eslint-disable no-unused-vars */
 declare const jest: {
-  fn: (implementation?: any) => any;
-  mock: (moduleName: string, factory: () => any) => void;
+  fn: (
+    implementation?: (...args: unknown[]) => unknown
+  ) => jest.MockedFunction<(...args: unknown[]) => unknown>;
+  mock: (moduleName: string, factory: () => unknown) => void;
   clearAllMocks: () => void;
 };
 
@@ -131,9 +196,9 @@ declare const beforeEach: (fn: () => void) => void;
 declare const afterEach: (fn: () => void) => void;
 declare const afterAll: (fn: () => void) => void;
 declare const expect: {
-  extend: (matchers: any) => void;
-} & any;
-declare const global: any;
+  extend: (matchers: Record<string, unknown>) => void;
+} & jest.Matchers<unknown>;
+declare const global: Record<string, unknown>;
 
 declare const Headers: {
   new (init?: [string, string][]): {
@@ -181,16 +246,18 @@ declare global {
 
 // Custom Jest matchers
 expect.extend({
-  toBeValidApiResponse(received: any) {
+  toBeValidApiResponse(received: unknown) {
+    const obj = received as Record<string, unknown>;
     const pass =
       typeof received === 'object' &&
       received !== null &&
-      typeof received.success === 'boolean' &&
-      received.success === true &&
-      received.data !== undefined &&
-      typeof received.meta === 'object' &&
-      typeof received.meta.timestamp === 'string' &&
-      typeof received.meta.version === 'string';
+      typeof obj.success === 'boolean' &&
+      obj.success === true &&
+      obj.data !== undefined &&
+      typeof obj.meta === 'object' &&
+      obj.meta !== null &&
+      typeof (obj.meta as Record<string, unknown>).timestamp === 'string' &&
+      typeof (obj.meta as Record<string, unknown>).version === 'string';
 
     if (pass) {
       return {
@@ -207,19 +274,22 @@ expect.extend({
     }
   },
 
-  toBeValidApiError(received: any) {
+  toBeValidApiError(received: unknown) {
+    const obj = received as Record<string, unknown>;
     const pass =
       typeof received === 'object' &&
       received !== null &&
-      typeof received.success === 'boolean' &&
-      received.success === false &&
-      typeof received.error === 'object' &&
-      typeof received.error.code === 'string' &&
-      typeof received.error.message === 'string' &&
-      typeof received.error.statusCode === 'number' &&
-      typeof received.meta === 'object' &&
-      typeof received.meta.timestamp === 'string' &&
-      typeof received.meta.version === 'string';
+      typeof obj.success === 'boolean' &&
+      obj.success === false &&
+      typeof obj.error === 'object' &&
+      obj.error !== null &&
+      typeof (obj.error as Record<string, unknown>).code === 'string' &&
+      typeof (obj.error as Record<string, unknown>).message === 'string' &&
+      typeof (obj.error as Record<string, unknown>).statusCode === 'number' &&
+      typeof obj.meta === 'object' &&
+      obj.meta !== null &&
+      typeof (obj.meta as Record<string, unknown>).timestamp === 'string' &&
+      typeof (obj.meta as Record<string, unknown>).version === 'string';
 
     if (pass) {
       return {
@@ -238,10 +308,12 @@ expect.extend({
 });
 
 // Mock fetch for tests
-global.fetch = jest.fn().mockResolvedValue({
-  ok: true,
-  json: async () => ({}),
-});
+global.fetch = jest.fn(() =>
+  Promise.resolve({
+    ok: true,
+    json: () => Promise.resolve({}),
+  })
+) as jest.MockedFunction<typeof fetch>;
 
 // Mock Supabase client
 jest.mock('@constructtrack/supabase/client', () => ({
@@ -312,32 +384,17 @@ export const createMockRequest = (
   } = options;
 
   // Create a proper Headers object
-  const headersObj = new Headers();
-  Object.entries({
+  const headersObj = new MockHeaders({
     'content-type': 'application/json',
     ...headers,
-  }).forEach(([key, value]) => {
-    headersObj.set(key.toLowerCase(), value);
   });
 
-  const request = {
+  // Use the new NextRequest(url, options) pattern
+  return new MockNextRequest(url, {
     method,
-    url,
     headers: headersObj,
-    json: jest.fn().mockResolvedValue(body),
-  };
-
-  // Add a case-insensitive `get` helper only when one is not already present
-  if (typeof (request.headers as { get?: unknown }).get !== 'function') {
-    (
-      request.headers as Map<string, string> & {
-        get: (_key: string) => string | undefined;
-      }
-    ).get = (key: string) =>
-      // `Map#get` will exist when `request.headers` is a Map-backed mock
-      (request.headers as Map<string, string>).get?.(key.toLowerCase());
-  }
-  return request as unknown as NextRequest;
+    body,
+  }) as unknown as NextRequest;
 };
 
 export const createMockResponse = () => ({

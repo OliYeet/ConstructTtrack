@@ -275,7 +275,12 @@ export const CHANNEL_PATTERNS = {
 
 // Enhanced Validation Utilities
 export const isValidISO8601 = (timestamp: string): boolean => {
-  return !isNaN(Date.parse(timestamp));
+  try {
+    const date = new Date(timestamp);
+    return !isNaN(date.getTime()) && timestamp === date.toISOString();
+  } catch {
+    return false;
+  }
 };
 
 export const validateEventPayload = (event: RealtimeEvent): boolean => {

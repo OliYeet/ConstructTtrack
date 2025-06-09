@@ -57,6 +57,7 @@ export class ResourceCollector extends BaseRealtimeCollector {
   private previousSampleTime?: number;
   private memoryHistory: number[] = [];
   private readonly maxHistorySize = 100; // Keep last 100 samples for leak detection
+  private isSampling = false;
 
   constructor() {
     super('resource-collector');
@@ -84,21 +85,23 @@ export class ResourceCollector extends BaseRealtimeCollector {
     if (this.samplingInterval) {
       clearInterval(this.samplingInterval);
     }
+    this.isSampling = true;
 
     // Take initial CPU measurement
     this.previousCpuUsage = process.cpuUsage();
-    this.previousSampleTime = Date.now();
 
-    // Start periodic sampling
-    this.samplingInterval = setInterval(() => {
-      this.sampleResources();
-    }, this.config.sampleInterval);
+    // Start the sampling loop
+    this.scheduleSample();
+  }
 
-    // Take immediate sample
-    this.sampleResources();
+  private async scheduleSample(): Promise<void> {
+    if (!this.isSampling) return;
+    await this.sampleResources();
+    setTimeout(() => this.scheduleSample(), this.config.sampleInterval);
   }
 
   private stopSampling(): void {
+    this.isSampling = false;
     if (this.samplingInterval) {
       clearInterval(this.samplingInterval);
       this.samplingInterval = undefined;
@@ -106,6 +109,8 @@ export class ResourceCollector extends BaseRealtimeCollector {
   }
 
   private async sampleResources(): Promise<void> {
+    if (!this.isSampling) return; // Guard against sampling when stopped
+
     try {
       const metrics = await this.collectResourceMetrics();
       this.processResourceMetrics(metrics);
@@ -129,9 +134,17 @@ export class ResourceCollector extends BaseRealtimeCollector {
       const cpuDelta = process.cpuUsage(this.previousCpuUsage);
       const timeDelta = currentTime - this.previousSampleTime;
 
-      // Convert microseconds to milliseconds and calculate percentage
-      const totalCpuTime = (cpuDelta.user + cpuDelta.system) / 1000;
-      cpuPercentage = (totalCpuTime / timeDelta) * 100;
+      // Guard against division by zero or very small time deltas
+      if (timeDelta > 10) {
+        // Minimum 10ms to avoid division by zero
+        // Convert microseconds to milliseconds and calculate percentage
+        const totalCpuTime = (cpuDelta.user + cpuDelta.system) / 1000; // ms
+        // Use a default of 1 core, will be updated with actual count later
+        const cores = 1; // Default, will use actual count from os module if available
+        cpuPercentage = (totalCpuTime / (timeDelta * cores)) * 100;
+
+        // Don’t clamp – callers can decide how to interpret >100 %
+      }
     }
 
     // Update for next calculation
@@ -145,17 +158,17 @@ export class ResourceCollector extends BaseRealtimeCollector {
     let cpuCount: number | undefined;
 
     try {
-      // These require 'os' module, only available in Node.js
-      if (typeof require !== 'undefined') {
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
-        const os = require('os');
+      // Use dynamic import for os module (Node.js only) to avoid browser compatibility issues
+      if (typeof process !== 'undefined' && process.versions?.node) {
+        // Dynamic import to prevent module loading errors in browser environments
+        const os = await import('os');
         loadAverage = process.platform !== 'win32' ? os.loadavg() : undefined;
         totalMemory = os.totalmem();
         freeMemory = os.freemem();
         cpuCount = os.cpus().length;
       }
     } catch {
-      // Ignore errors if os module is not available
+      // Ignore errors if os module is not available (e.g., in browser environments)
     }
 
     const metrics: ResourceMetrics = {
@@ -259,8 +272,8 @@ export class ResourceCollector extends BaseRealtimeCollector {
       oldSamples.reduce((sum, val) => sum + val, 0) / oldSamples.length;
 
     // If recent average is significantly higher than old average
-    const threshold = 1.2; // 20% increase threshold
-    const minMemoryIncrease = 10; // Minimum 10MB increase to avoid false positives
+    const threshold = 1.5; // 50% increase threshold - less sensitive to normal fluctuations
+    const minMemoryIncrease = 20; // Minimum 20MB increase to avoid false positives
     if (
       recentAverage > oldAverage * threshold &&
       recentAverage - oldAverage > minMemoryIncrease

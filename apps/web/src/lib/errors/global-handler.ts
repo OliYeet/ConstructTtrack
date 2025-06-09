@@ -5,22 +5,7 @@
 
 import { getLogger } from '@/lib/logging';
 
-// Global type declarations for browser APIs
-
-declare const window:
-  | {
-      addEventListener: (type: string, listener: any) => void;
-      removeEventListener: (type: string, listener: any) => void;
-      location: { href: string };
-    }
-  | undefined;
-
-declare const navigator:
-  | {
-      userAgent: string;
-    }
-  | undefined;
-
+// Type declarations for cross-platform compatibility
 declare const setTimeout: (callback: () => void, ms: number) => any;
 
 declare const console: {
@@ -109,7 +94,9 @@ export class GlobalErrorHandler {
     // Handle Node.js uncaught exceptions (server-side)
     if (typeof process !== 'undefined') {
       process.on('uncaughtException', this.handleUncaughtException);
-      process.on('unhandledRejection', this.handleUnhandledRejection);
+      process.on('unhandledRejection', (reason: unknown) =>
+        this.handleUnhandledRejection({ reason })
+      );
     }
 
     this.isInitialized = true;

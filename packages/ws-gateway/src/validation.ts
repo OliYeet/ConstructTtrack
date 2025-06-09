@@ -26,11 +26,7 @@ export function validateClientMessage(
   switch (msg.action) {
     case 'subscribe':
     case 'unsubscribe':
-      return (
-        typeof msg.room === 'string' &&
-        msg.room.length > 0 &&
-        msg.room.length <= 100
-      );
+      return typeof msg.room === 'string' && validateRoomName(msg.room).isValid;
 
     case 'ping':
       return true; // Ping messages don't require additional fields

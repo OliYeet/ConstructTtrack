@@ -5,7 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 
-import { getLogger } from '@/lib/logging';
+import { getLogger, type StructuredLogEntry } from '@/lib/logging';
 
 // Performance metric types
 export interface PerformanceMetric {
@@ -106,10 +106,10 @@ export class MemoryPerformanceStore implements PerformanceStore {
   async getMetrics(filters: PerformanceFilter): Promise<PerformanceMetric[]> {
     let filtered = this.metrics;
 
-    if (filters.startTime) {
+    if (filters.startTime !== undefined) {
       filtered = filtered.filter(m => m.timestamp >= filters.startTime!);
     }
-    if (filters.endTime) {
+    if (filters.endTime !== undefined) {
       filtered = filtered.filter(m => m.timestamp <= filters.endTime!);
     }
     if (filters.endpoint) {
@@ -118,12 +118,12 @@ export class MemoryPerformanceStore implements PerformanceStore {
     if (filters.method) {
       filtered = filtered.filter(m => m.method === filters.method);
     }
-    if (filters.minResponseTime) {
+    if (filters.minResponseTime !== undefined) {
       filtered = filtered.filter(
         m => m.responseTime >= filters.minResponseTime!
       );
     }
-    if (filters.maxResponseTime) {
+    if (filters.maxResponseTime !== undefined) {
       filtered = filtered.filter(
         m => m.responseTime <= filters.maxResponseTime!
       );
@@ -346,7 +346,11 @@ export class PerformanceMonitor {
   private store: PerformanceStore;
   private thresholds: PerformanceThreshold[];
   private alerts: PerformanceAlert[];
-  private logger: any;
+  private logger: {
+    error: (msg: string, meta?: Partial<StructuredLogEntry>) => Promise<void>;
+    warn: (msg: string, meta?: Partial<StructuredLogEntry>) => Promise<void>;
+    info: (msg: string, meta?: Partial<StructuredLogEntry>) => Promise<void>;
+  };
 
   constructor(
     store: PerformanceStore,
@@ -371,7 +375,7 @@ export class PerformanceMonitor {
       const traceId = this.generateTraceId();
 
       // Add trace ID to request context
-      (request as any).traceId = traceId;
+      (request as NextRequest & { traceId?: string }).traceId = traceId;
 
       let response: NextResponse;
       // let error: string | undefined;
@@ -391,14 +395,15 @@ export class PerformanceMonitor {
 
       const metric: PerformanceMetric = {
         timestamp: startTime,
-        endpoint: new URL(request.url).pathname,
+        endpoint: this.extractEndpoint(request.url),
         method: request.method,
         responseTime,
         requestSize: this.getRequestSize(request),
         responseSize: this.getResponseSize(response),
         statusCode: response.status,
-        userId: (request as any).userId,
-        organizationId: (request as any).organizationId,
+        userId: (request as NextRequest & { userId?: string }).userId,
+        organizationId: (request as NextRequest & { organizationId?: string })
+          .organizationId,
         traceId,
       };
 
@@ -455,11 +460,13 @@ export class PerformanceMonitor {
         this.alerts.push(alert);
 
         this.logger.warn('Performance threshold violated', {
-          alertId: alert.id,
-          endpoint: alert.endpoint,
-          method: alert.method,
-          severity: alert.severity,
-          message: alert.message,
+          metadata: {
+            alertId: alert.id,
+            endpoint: alert.endpoint,
+            method: alert.method,
+            severity: alert.severity,
+            message: alert.message,
+          },
         });
       }
     }
@@ -474,7 +481,9 @@ export class PerformanceMonitor {
     if (alert) {
       alert.resolved = true;
       alert.resolvedAt = Date.now();
-      this.logger.info('Performance alert resolved', { alertId });
+      this.logger.info('Performance alert resolved', {
+        metadata: { alertId },
+      });
     }
   }
 
@@ -493,6 +502,27 @@ export class PerformanceMonitor {
       return parseInt(contentLength, 10);
     }
     return 0;
+  }
+
+  private extractEndpoint(url: string): string {
+    try {
+      const urlObj = new URL(url);
+      let pathname = urlObj.pathname;
+
+      // Normalize API paths by removing IDs and dynamic segments
+      pathname = pathname
+        .replace(/\/api\/v\d+/, '/api') // Remove version
+        .replace(
+          /\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi,
+          '/:id'
+        ) // UUIDs
+        .replace(/\/\d+/g, '/:id') // Numeric IDs
+        .replace(/\/[a-f0-9]{24}/g, '/:id'); // MongoDB ObjectIds
+
+      return pathname;
+    } catch {
+      return url;
+    }
   }
 }
 

@@ -32,7 +32,13 @@ class Logger {
     const timestamp = new Date().toISOString();
 
     if (data) {
-      return `[${timestamp}] ${level.toUpperCase()}: ${message} ${JSON.stringify(data)}`;
+      try {
+        return `[${timestamp}] ${level.toUpperCase()}: ${message} ${JSON.stringify(data)}`;
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : 'Unknown error';
+        return `[${timestamp}] ${level.toUpperCase()}: ${message} [Data serialization failed: ${errorMessage}]`;
+      }
     }
     return `[${timestamp}] ${level.toUpperCase()}: ${message}`;
   }

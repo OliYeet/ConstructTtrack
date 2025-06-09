@@ -235,7 +235,10 @@ export function withApiMiddleware(
 ) {
   return async function handler(
     request: NextRequest,
-    context: { params: Promise<Record<string, string>> }
+    // Next.js 15 always provides params as a Promise
+    context: {
+      params: Promise<Record<string, string>>;
+    }
   ): Promise<NextResponse> {
     const startTime = Date.now();
     let requestContext: RequestContext | undefined;
@@ -303,17 +306,19 @@ export function withApiMiddleware(
         const rateLimitResult = await rateLimitMiddleware(request);
 
         if (!rateLimitResult.allowed && rateLimitResult.response) {
-          // Apply security headers to rate limit response
-          const response = new NextResponse(rateLimitResult.response.body, {
-            status: rateLimitResult.response.status,
-            headers: rateLimitResult.response.headers,
+          // The rate limiting middleware returns a Response object, convert to NextResponse
+          const response = rateLimitResult.response;
+          const nextResponse = new NextResponse(response.body, {
+            status: response.status,
+            statusText: response.statusText,
+            headers: response.headers,
           });
 
-          applyApiHeaders(response, options.cors !== false);
+          applyApiHeaders(nextResponse, options.cors !== false);
 
           const duration = Date.now() - startTime;
-          logResponse(request, 429, duration, requestContext);
-          return response;
+          logResponse(request, nextResponse.status, duration, requestContext);
+          return nextResponse;
         }
 
         // Store rate limit headers for later application to successful responses
@@ -403,7 +408,7 @@ export function withApiMiddleware(
 
         if (
           'tags' in cacheConfig &&
-          (cacheConfig as any).tags?.includes('organization') &&
+          (cacheConfig as { tags?: string[] }).tags?.includes('organization') &&
           requestContext.organizationId
         ) {
           additionalKeys.push(`org:${requestContext.organizationId}`);
@@ -459,8 +464,9 @@ export function withApiMiddleware(
               // Return stale data immediately, revalidate in background
               setImmediate(async () => {
                 try {
-                  const params = await context.params;
-                  const freshResponse = await handler(request, { params });
+                  const freshResponse = await handler(request, {
+                    params: context.params,
+                  });
 
                   if (freshResponse.ok && freshResponse.status === 200) {
                     const responseClone = freshResponse.clone();
@@ -505,8 +511,7 @@ export function withApiMiddleware(
       }
 
       // Execute handler
-      const params = await context.params;
-      let response = await handler(request, { params });
+      let response = await handler(request, { params: context.params });
 
       // Prepare headers for modification
       let needsNewResponse = false;
@@ -537,7 +542,9 @@ export function withApiMiddleware(
 
           if (
             'tags' in cacheConfig &&
-            (cacheConfig as any).tags?.includes('organization') &&
+            (cacheConfig as { tags?: string[] }).tags?.includes(
+              'organization'
+            ) &&
             requestContext.organizationId
           ) {
             additionalKeys.push(`org:${requestContext.organizationId}`);

@@ -308,6 +308,9 @@ export const defaultAlertRules: AlertRule[] = [
   },
 ];
 
+// Runtime alert registry for dynamically added rules
+export const runtimeAlertRegistry: AlertRule[] = [];
+
 // Rule templates for easy creation
 export const alertRuleTemplates = {
   // Performance template
@@ -392,7 +395,7 @@ export function createAlertRule(
     ...(() => {
       if (
         process.env.NODE_ENV !== 'production' &&
-        defaultAlertRules.some(r => r.id === id)
+        [...defaultAlertRules, ...runtimeAlertRegistry].some(r => r.id === id)
       ) {
         throw new Error(`Duplicate alert rule id detected: ${id}`);
       }
@@ -431,10 +434,19 @@ export function validateAlertRule(rule: AlertRule): {
     errors.push('Condition metric is required');
   }
 
-  if (typeof rule.condition.threshold === 'undefined') {
+  if (
+    typeof rule.condition.threshold !== 'number' ||
+    Number.isNaN(rule.condition.threshold)
+  ) {
     errors.push('Condition threshold is required');
   }
 
+  if (
+    typeof rule.condition.duration !== 'number' ||
+    rule.condition.duration <= 0
+  ) {
+    errors.push('Condition duration must be positive');
+  }
   // Validate operator
   const validOperators = ['gt', 'gte', 'lt', 'lte', 'eq', 'neq'];
   if (

@@ -7,6 +7,7 @@ import { NextRequest } from 'next/server';
 
 import { withApiMiddleware, createSuccessResponse } from '@/lib/api';
 import { BaseApiError } from '@/lib/errors/api-errors';
+import { ApiRequest } from '@/types/api';
 
 // Demo endpoint with basic metrics (default)
 export const GET = withApiMiddleware({
@@ -170,8 +171,8 @@ export const PATCH = withApiMiddleware(
 // Demo endpoint with authentication required for user activity metrics
 export const DELETE = withApiMiddleware(
   {
-    DELETE: async (request: NextRequest) => {
-      const user = (request as any).context?.user;
+    DELETE: async (request: ApiRequest) => {
+      const user = request.context?.user;
 
       return createSuccessResponse({
         message: 'Authenticated metrics demo',
