@@ -141,8 +141,10 @@ describe('API Security Headers', () => {
 
     // Handle the mock status object structure
     const statusValue =
-      typeof response.status === 'object' && 'status' in response.status
-        ? response.status.status
+      typeof response.status === 'object' &&
+      response.status !== null &&
+      'status' in response.status
+        ? (response.status as { status: number }).status
         : response.status;
     expect(statusValue).toBe(200);
   });

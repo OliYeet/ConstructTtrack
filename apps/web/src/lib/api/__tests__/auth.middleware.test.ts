@@ -131,7 +131,7 @@ jest.mock('../response', () => ({
 
 // Mock the auth module - specifically the verifyToken function
 const mockVerifyToken = jest.fn();
-const mockCreateRequestContext = jest.fn();
+const mockCreateRequestContext = jest.fn() as jest.MockedFunction<any>;
 
 jest.mock('@/lib/api/auth', () => ({
   verifyToken: mockVerifyToken,

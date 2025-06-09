@@ -247,15 +247,17 @@ declare global {
 // Custom Jest matchers
 expect.extend({
   toBeValidApiResponse(received: unknown) {
+    const obj = received as Record<string, unknown>;
     const pass =
       typeof received === 'object' &&
       received !== null &&
-      typeof received.success === 'boolean' &&
-      received.success === true &&
-      received.data !== undefined &&
-      typeof received.meta === 'object' &&
-      typeof received.meta.timestamp === 'string' &&
-      typeof received.meta.version === 'string';
+      typeof obj.success === 'boolean' &&
+      obj.success === true &&
+      obj.data !== undefined &&
+      typeof obj.meta === 'object' &&
+      obj.meta !== null &&
+      typeof (obj.meta as Record<string, unknown>).timestamp === 'string' &&
+      typeof (obj.meta as Record<string, unknown>).version === 'string';
 
     if (pass) {
       return {
@@ -273,18 +275,21 @@ expect.extend({
   },
 
   toBeValidApiError(received: unknown) {
+    const obj = received as Record<string, unknown>;
     const pass =
       typeof received === 'object' &&
       received !== null &&
-      typeof received.success === 'boolean' &&
-      received.success === false &&
-      typeof received.error === 'object' &&
-      typeof received.error.code === 'string' &&
-      typeof received.error.message === 'string' &&
-      typeof received.error.statusCode === 'number' &&
-      typeof received.meta === 'object' &&
-      typeof received.meta.timestamp === 'string' &&
-      typeof received.meta.version === 'string';
+      typeof obj.success === 'boolean' &&
+      obj.success === false &&
+      typeof obj.error === 'object' &&
+      obj.error !== null &&
+      typeof (obj.error as Record<string, unknown>).code === 'string' &&
+      typeof (obj.error as Record<string, unknown>).message === 'string' &&
+      typeof (obj.error as Record<string, unknown>).statusCode === 'number' &&
+      typeof obj.meta === 'object' &&
+      obj.meta !== null &&
+      typeof (obj.meta as Record<string, unknown>).timestamp === 'string' &&
+      typeof (obj.meta as Record<string, unknown>).version === 'string';
 
     if (pass) {
       return {
@@ -303,10 +308,12 @@ expect.extend({
 });
 
 // Mock fetch for tests
-global.fetch = jest.fn().mockResolvedValue({
-  ok: true,
-  json: async () => ({}),
-});
+global.fetch = jest.fn(() =>
+  Promise.resolve({
+    ok: true,
+    json: () => Promise.resolve({}),
+  })
+) as jest.MockedFunction<typeof fetch>;
 
 // Mock Supabase client
 jest.mock('@constructtrack/supabase/client', () => ({

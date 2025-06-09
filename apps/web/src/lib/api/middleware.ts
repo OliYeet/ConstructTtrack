@@ -306,14 +306,19 @@ export function withApiMiddleware(
         const rateLimitResult = await rateLimitMiddleware(request);
 
         if (!rateLimitResult.allowed && rateLimitResult.response) {
-          // The rate limiting middleware returns a Response object, use it directly
+          // The rate limiting middleware returns a Response object, convert to NextResponse
           const response = rateLimitResult.response;
+          const nextResponse = new NextResponse(response.body, {
+            status: response.status,
+            statusText: response.statusText,
+            headers: response.headers,
+          });
 
-          applyApiHeaders(response, options.cors !== false);
+          applyApiHeaders(nextResponse, options.cors !== false);
 
           const duration = Date.now() - startTime;
-          logResponse(request, response.status, duration, requestContext);
-          return response;
+          logResponse(request, nextResponse.status, duration, requestContext);
+          return nextResponse;
         }
 
         // Store rate limit headers for later application to successful responses

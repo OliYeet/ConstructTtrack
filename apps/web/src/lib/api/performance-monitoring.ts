@@ -5,7 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 
-import { getLogger } from '@/lib/logging';
+import { getLogger, type StructuredLogEntry } from '@/lib/logging';
 
 // Performance metric types
 export interface PerformanceMetric {
@@ -347,9 +347,9 @@ export class PerformanceMonitor {
   private thresholds: PerformanceThreshold[];
   private alerts: PerformanceAlert[];
   private logger: {
-    error: (msg: string, meta?: unknown) => void;
-    warn: (msg: string, meta?: unknown) => void;
-    info: (msg: string, meta?: unknown) => void;
+    error: (msg: string, meta?: Partial<StructuredLogEntry>) => Promise<void>;
+    warn: (msg: string, meta?: Partial<StructuredLogEntry>) => Promise<void>;
+    info: (msg: string, meta?: Partial<StructuredLogEntry>) => Promise<void>;
   };
 
   constructor(
@@ -460,11 +460,13 @@ export class PerformanceMonitor {
         this.alerts.push(alert);
 
         this.logger.warn('Performance threshold violated', {
-          alertId: alert.id,
-          endpoint: alert.endpoint,
-          method: alert.method,
-          severity: alert.severity,
-          message: alert.message,
+          metadata: {
+            alertId: alert.id,
+            endpoint: alert.endpoint,
+            method: alert.method,
+            severity: alert.severity,
+            message: alert.message,
+          },
         });
       }
     }
@@ -479,7 +481,9 @@ export class PerformanceMonitor {
     if (alert) {
       alert.resolved = true;
       alert.resolvedAt = Date.now();
-      this.logger.info('Performance alert resolved', { alertId });
+      this.logger.info('Performance alert resolved', {
+        metadata: { alertId },
+      });
     }
   }
 
