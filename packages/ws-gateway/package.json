@@ -11,6 +11,7 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
+    "validate-jwt": "node scripts/validate-jwt-config.js",
     "healthcheck": "curl -f http://localhost:8080/healthz || exit 1",
     "type-check": "tsc --noEmit",
     "lint": "eslint src --ext .ts,.tsx",

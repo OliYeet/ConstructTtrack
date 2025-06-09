@@ -43,7 +43,9 @@ describe.skip('WebSocket Gateway Integration', () => {
       projects: ['test-project'],
       exp: Math.floor(Date.now() / 1000) + 3600,
     };
-    const token = jwt.sign(payload, 'test-secret-key-for-testing-only');
+    const token = jwt.sign(payload, 'test-secret-key-for-testing-only', {
+      algorithm: 'HS256'
+    });
 
     // Connect to WebSocket with token
     const ws = new WebSocket(`ws://localhost:${testPort}/ws?token=${token}`);
