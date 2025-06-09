@@ -14,15 +14,20 @@ import { createMockRequest } from '../../../tests/setup';
 // Import the mocked supabase client (for type checking only)
 
 // Mock the Supabase client methods before tests
+const mockGetUser = jest.fn();
+const mockSelect = jest.fn().mockReturnThis();
+const mockEq = jest.fn().mockReturnThis();
+const mockSingle = jest.fn();
+
 jest.mock('@constructtrack/supabase/client', () => ({
   supabase: {
     auth: {
-      getUser: jest.fn(),
+      getUser: mockGetUser,
     },
     from: jest.fn(() => ({
-      select: jest.fn().mockReturnThis(),
-      eq: jest.fn().mockReturnThis(),
-      single: jest.fn(),
+      select: mockSelect,
+      eq: mockEq,
+      single: mockSingle,
     })),
   },
 }));
@@ -125,7 +130,7 @@ jest.mock('../response', () => ({
 }));
 
 // Mock the auth module
-const mockCreateRequestContext = jest.fn() as jest.MockedFunction<any>;
+const mockCreateRequestContext = jest.fn();
 jest.mock('@/lib/api/auth', () => ({
   createRequestContext: mockCreateRequestContext,
 }));
@@ -156,9 +161,34 @@ describe('Authentication middleware (`withAuth`)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockCreateRequestContext.mockClear();
+    mockGetUser.mockClear();
+    mockSelect.mockClear();
+    mockEq.mockClear();
+    mockSingle.mockClear();
   });
 
   it('allows request with a valid token', async () => {
+    // Mock Supabase auth to return valid user
+    mockGetUser.mockResolvedValueOnce({
+      data: {
+        user: {
+          id: 'user-123',
+          email: 'test@example.com',
+        },
+      },
+      error: null,
+    });
+
+    // Mock profile lookup
+    mockSingle.mockResolvedValueOnce({
+      data: {
+        role: 'field_worker',
+        organization_id: 'org-123',
+        full_name: 'Test User',
+      },
+      error: null,
+    });
+
     // Mock createRequestContext to return context with user
     mockCreateRequestContext.mockResolvedValueOnce({
       user: {
@@ -186,7 +216,7 @@ describe('Authentication middleware (`withAuth`)', () => {
   });
 
   it('rejects request when token is missing', async () => {
-    // Mock createRequestContext to return context without user
+    // Mock createRequestContext to return context without user (no token provided)
     mockCreateRequestContext.mockResolvedValueOnce({
       user: undefined,
       organizationId: undefined,
@@ -207,6 +237,12 @@ describe('Authentication middleware (`withAuth`)', () => {
   });
 
   it('rejects request when token is invalid', async () => {
+    // Mock Supabase auth to return error for invalid token
+    mockGetUser.mockResolvedValueOnce({
+      data: { user: null },
+      error: { message: 'Invalid JWT token' },
+    });
+
     // Mock createRequestContext to return context without user (invalid token)
     mockCreateRequestContext.mockResolvedValueOnce({
       user: undefined,
