@@ -16,13 +16,14 @@ const logger = {
 
 class ProductionSeeder {
   constructor() {
-    // Use production-specific environment variables
-    this.supabaseUrl = process.env.SUPABASE_URL;
-    this.supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
+    this.supabaseUrl =
+      process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
+    this.supabaseServiceKey =
+      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
 
     if (!this.supabaseUrl || !this.supabaseServiceKey) {
       throw new Error(
-        'Missing required environment variables: SUPABASE_URL and SUPABASE_SERVICE_KEY (production seeding requires server-side environment variables)'
+        'Missing required environment variables: SUPABASE_URL and SUPABASE_SERVICE_KEY'
       );
     }
 

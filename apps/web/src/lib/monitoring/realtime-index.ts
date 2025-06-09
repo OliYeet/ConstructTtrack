@@ -13,8 +13,6 @@
  */
 
 // Import functions for internal use
-import type { NextRequest, NextResponse } from 'next/server';
-
 import {
   realtimeMonitoringIntegration,
   SupabaseRealtimeIntegration,
@@ -141,10 +139,8 @@ export const RealtimeMonitoring = {
 };
 
 // Performance monitoring middleware for API routes
-export const withRealtimeMonitoring = (
-  handler: (req: NextRequest, res: NextResponse) => Promise<unknown>
-) => {
-  return async (req: NextRequest, res: NextResponse) => {
+export const withRealtimeMonitoring = (handler: any) => {
+  return async (req: any, res: any) => {
     const startTime = Date.now();
     const eventId = RealtimeMonitoring.trackEvent(
       'ApiRequest',
@@ -152,7 +148,7 @@ export const withRealtimeMonitoring = (
       {
         method: req.method,
         url: req.url,
-        userAgent: req.headers.get('user-agent'),
+        userAgent: req.headers['user-agent'],
       }
     );
 

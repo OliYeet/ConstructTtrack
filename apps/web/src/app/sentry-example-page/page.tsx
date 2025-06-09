@@ -17,13 +17,8 @@ export default function Page() {
 
   useEffect(() => {
     async function checkConnectivity() {
-      try {
-        const result = await Sentry.diagnoseSdkConnectivity();
-        setIsConnected(result !== 'sentry-unreachable');
-      } catch (error) {
-        console.warn('Failed to check Sentry connectivity:', error);
-        setIsConnected(false);
-      }
+      const result = await Sentry.diagnoseSdkConnectivity();
+      setIsConnected(result !== 'sentry-unreachable');
     }
     checkConnectivity();
   }, []);
@@ -54,7 +49,7 @@ export default function Page() {
           Click the button below, and view the sample error on the Sentry{' '}
           <a
             target='_blank'
-            href={process.env.NEXT_PUBLIC_SENTRY_ISSUES_URL || '#'}
+            href='https://lumenfront.sentry.io/issues/?project=4509442431189072'
           >
             Issues Page
           </a>

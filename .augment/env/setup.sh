@@ -1,5 +1,5 @@
 #!/bin/bash
- set -euo pipefail
+set -e
 
 echo "🚀 Setting up ConstructTrack development environment..."
 
@@ -19,7 +19,7 @@ echo "✅ npm version: $(npm --version)"
 echo 'export PATH="/usr/bin:$PATH"' >> $HOME/.profile
 
 # Navigate to workspace directory
- cd "${WORKSPACE_DIR:-$(pwd)}"
+cd /mnt/persist/workspace
 
 # Create basic environment file for testing
 echo "🔧 Setting up test environment variables..."

@@ -131,7 +131,7 @@ function deepMerge<T>(target: T, source: Partial<T>): T {
         sourceValue !== null &&
         typeof targetValue === 'object' &&
         targetValue !== null &&
-        !Array.isArray(sourceValue) // Arrays are replaced entirely, not merged
+        !Array.isArray(sourceValue)
       ) {
         result[key] = deepMerge(
           targetValue as any,

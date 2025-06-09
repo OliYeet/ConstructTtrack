@@ -15,9 +15,7 @@ CREATE TYPE document_type AS ENUM ('drawing', 'permit', 'contract', 'report', 'p
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
-    IF NEW.updated_at IS NULL OR NEW.updated_at = OLD.updated_at THEN
-        NEW.updated_at := NOW();
-    END IF;
+    NEW.updated_at = NOW();
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
@@ -30,7 +28,7 @@ CREATE TABLE equipment (
     organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
     type TEXT NOT NULL, -- 'vehicle', 'tool', 'testing_equipment', 'safety'
-    serial_number TEXT UNIQUE,
+    serial_number TEXT,
     model TEXT,
     manufacturer TEXT,
     purchase_date DATE,

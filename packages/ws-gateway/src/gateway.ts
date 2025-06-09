@@ -151,6 +151,20 @@ export class WebSocketGateway {
         return;
       }
 
+      // Rate limiting per IP address
+      const ipConnections = this.connectionLimiter.get(ipAddress) || 0;
+      if (ipConnections >= config.server.maxConnectionsPerIP) {
+        const error = ErrorFactory.rateLimit(
+          `Too many connections from IP: ${ipAddress}`
+        );
+        logger.warn(error.message, {
+          ipAddress,
+          currentConnections: ipConnections,
+        });
+        ws.close(1008, 'Connection limit exceeded');
+        return;
+      }
+
       // Initialize authenticated WebSocket with enhanced metadata
       ws.authContext = authContext;
       ws.connectionId = generateConnectionId();
@@ -164,7 +178,7 @@ export class WebSocketGateway {
       });
 
       // Update connection counters
-      this.connectionLimiter.set(ipAddress, currentConnections + 1);
+      this.connectionLimiter.set(ipAddress, ipConnections + 1);
     } catch (error) {
       const gatewayError = ErrorHandler.normalize(
         error,

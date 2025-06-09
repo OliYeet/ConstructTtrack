@@ -18,11 +18,9 @@ import { program } from 'commander';
 
 // Import contract testing framework
 // Note: In a real implementation, you'd need to handle ES modules properly
-// For now, we'll use require for CommonJS compatibility
-const {
-  ContractTestRunner,
-  contractTestUtils,
-} = require('../apps/web/src/lib/api/contract-testing.js');
+const { ContractTestRunner, contractTestUtils } = await import(
+  '../apps/web/src/lib/api/contract-testing.js'
+);
 
 // CLI configuration
 program

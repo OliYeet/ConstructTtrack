@@ -279,13 +279,12 @@ export class QueueDepthCollector extends BaseRealtimeCollector {
     }
 
     // Calculate rate based on recent history (items processed per second)
-    // Note: history stores items processed per sample interval, not cumulative counts
     const recentHistory = history.slice(-10); // Last 10 samples
     const timePeriod =
       recentHistory.length * (this.config.sampleInterval / 1000); // Convert to seconds
     const totalProcessed = recentHistory.reduce((sum, count) => sum + count, 0);
 
-    return timePeriod > 0 ? totalProcessed / timePeriod : 0;
+    return totalProcessed / timePeriod;
   }
 
   private createEmptyQueueStats(): QueueStats {
@@ -324,15 +323,10 @@ export class QueueDepthCollector extends BaseRealtimeCollector {
       return;
     }
 
-    let queue = this.queues.get(queueName);
+    const queue = this.queues.get(queueName);
     if (!queue) {
       this.registerQueue(queueName);
-      // Get the queue again after registration to avoid recursion
-      queue = this.queues.get(queueName);
-      if (!queue) {
-        // If queue still doesn't exist after registration, something is wrong
-        throw new Error(`Failed to register queue: ${queueName}`);
-      }
+      return this.enqueueItem(queueName, itemId, size, priority, metadata);
     }
 
     const item: QueueItem = {

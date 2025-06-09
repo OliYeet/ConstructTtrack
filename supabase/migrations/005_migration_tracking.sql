@@ -31,32 +31,14 @@ RETURNS BOOLEAN AS $$
 BEGIN
     -- This function ensures the migration table exists
     -- It's idempotent and safe to call multiple times
+    
     IF NOT EXISTS (
-        SELECT 1
-        FROM   information_schema.tables
-        WHERE  table_schema = CURRENT_SCHEMA
-        AND    table_name   = 'schema_migrations'
-    ) THEN
-        EXECUTE $ddl$
-          CREATE TABLE schema_migrations (
+        SELECT 1 FROM information_schema.tables 
+        WHERE table_name = 'schema_migrations' 
+        PERFORM 1; -- no-op, table is already created by this migration
             id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
             filename TEXT NOT NULL UNIQUE,
             checksum TEXT,
-            applied_at TIMESTAMPTZ DEFAULT NOW(),
-            applied_by TEXT DEFAULT current_user,
-            execution_time_ms INTEGER,
-            success BOOLEAN DEFAULT TRUE,
-            error_message TEXT,
-            rollback_sql TEXT,
-            metadata JSONB DEFAULT '{}'::jsonb,
-            created_at TIMESTAMPTZ DEFAULT NOW()
-          );
-          CREATE INDEX idx_schema_migrations_filename  ON schema_migrations(filename);
-          CREATE INDEX idx_schema_migrations_applied_at ON schema_migrations(applied_at);
-          CREATE INDEX idx_schema_migrations_success    ON schema_migrations(success);
-        $ddl$;
-        RETURN TRUE;
-    END IF;
             applied_at TIMESTAMPTZ DEFAULT NOW(),
             applied_by TEXT DEFAULT current_user,
             execution_time_ms INTEGER,

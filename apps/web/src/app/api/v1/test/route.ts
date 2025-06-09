@@ -32,7 +32,7 @@ interface TestResponse {
 // GET /api/v1/test - Public test endpoint
 async function handleGet(
   request: ApiRequest,
-  _context: { params: Promise<Record<string, string>> }
+  _context: { params: Record<string, string> }
 ) {
   const requestContext = (request as ApiRequest & { context?: RequestContext })
     .context;
@@ -55,7 +55,7 @@ async function handleGet(
 // POST /api/v1/test - Test with request body validation
 async function handlePost(
   request: ApiRequest,
-  _context: { params: Promise<Record<string, string>> }
+  _context: { params: Record<string, string> }
 ) {
   const requestContext = (request as ApiRequest & { context?: RequestContext })
     .context;

@@ -247,7 +247,7 @@ export class RealtimeMonitoringIntegration extends EventEmitter {
     }
 
     if (config.queueDepth.enabled) {
-      this.registerCollector(defaultCollectors['queue-depth']);
+      this.registerCollector(defaultCollectors.queueDepth);
     }
   }
 

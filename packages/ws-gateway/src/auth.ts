@@ -12,79 +12,29 @@ import { logger } from './utils/logger';
 /**
  * Verify JWT token and extract auth context
  * Based on Charlie's handshake specification
- * Enhanced with robust error handling for CI environments
  */
 export function verifyToken(token: string): AuthContext | null {
-  // Validate input
-  if (!token || typeof token !== 'string') {
-    logger.warn('Invalid JWT token: token is empty or not a string');
-    return null;
-  }
-
-  // Validate JWT secret is configured
-  if (!config.jwt.secret) {
-    logger.error('JWT_SECRET is not configured');
-    return null;
-  }
-
   try {
     // Prevent JWT algorithm confusion attacks - CodeRabbit security recommendation
     const decoded = jwt.verify(token, config.jwt.secret, {
       algorithms: ['HS256'], // Explicitly specify allowed algorithms
       issuer: 'constructtrack',
       audience: 'ws-gateway',
-      // Increased clock tolerance for CI environments with potential clock skew
-      clockTolerance: 60, // 60 seconds to handle CI timing issues
+      // Add clock tolerance for network delays
+      clockTolerance: 30, // 30 seconds
     }) as jwt.JwtPayload;
 
-    // Validate required claims with detailed logging
-    if (!decoded.sub) {
-      logger.warn('Invalid JWT: missing subject (sub) claim');
+    // Validate required claims
+    if (!decoded.sub || !decoded.exp) {
+      logger.warn('Invalid JWT: missing required claims');
       return null;
     }
 
-    if (!decoded.exp) {
-      logger.warn('Invalid JWT: missing expiration (exp) claim');
+    // Check expiration (redundant with jwt.verify but explicit)
+    if (Date.now() >= decoded.exp * 1000) {
+      logger.warn('JWT token expired');
       return null;
     }
-
-    // Additional validation for issuer and audience (redundant but explicit)
-    if (decoded.iss !== 'constructtrack') {
-      logger.warn(
-        `Invalid JWT: incorrect issuer. Expected 'constructtrack', got '${decoded.iss}'`
-      );
-      return null;
-    }
-
-    if (decoded.aud !== 'ws-gateway') {
-      logger.warn(
-        `Invalid JWT: incorrect audience. Expected 'ws-gateway', got '${decoded.aud}'`
-      );
-      return null;
-    }
-
-    // Check expiration with detailed logging (redundant with jwt.verify but explicit)
-    const now = Math.floor(Date.now() / 1000);
-    if (now >= decoded.exp) {
-      logger.warn(
-        `JWT token expired. Current time: ${now}, Token exp: ${decoded.exp}, Diff: ${now - decoded.exp}s`
-      );
-      return null;
-    }
-
-    // Check not-before claim if present
-    if (decoded.nbf && now < decoded.nbf) {
-      logger.warn(
-        `JWT token not active yet. Current time: ${now}, Token nbf: ${decoded.nbf}, Diff: ${decoded.nbf - now}s`
-      );
-      return null;
-    }
-
-    logger.info('JWT token verified successfully', {
-      userId: decoded.sub,
-      exp: decoded.exp,
-      timeToExpiry: decoded.exp - now,
-    });
 
     return {
       userId: decoded.sub,
@@ -94,35 +44,14 @@ export function verifyToken(token: string): AuthContext | null {
       exp: decoded.exp,
     };
   } catch (error) {
-    // Enhanced error handling with specific error types and detailed logging
     if (error instanceof jwt.JsonWebTokenError) {
-      logger.warn(
-        `JWT verification failed - JsonWebTokenError: ${error.message}`,
-        {
-          errorName: error.name,
-          tokenPreview: token.substring(0, 20) + '...',
-        }
-      );
+      logger.warn(`JWT verification failed: ${error.message}`);
     } else if (error instanceof jwt.TokenExpiredError) {
-      logger.warn(`JWT token expired - TokenExpiredError: ${error.message}`, {
-        expiredAt: error.expiredAt,
-        currentTime: new Date().toISOString(),
-      });
+      logger.warn('JWT token expired');
     } else if (error instanceof jwt.NotBeforeError) {
-      logger.warn(
-        `JWT token not active yet - NotBeforeError: ${error.message}`,
-        {
-          notBefore: error.date,
-          currentTime: new Date().toISOString(),
-        }
-      );
+      logger.warn('JWT token not active yet');
     } else {
-      logger.warn('JWT verification failed with unexpected error:', {
-        error: error instanceof Error ? error.message : String(error),
-        errorType:
-          error instanceof Error ? error.constructor.name : typeof error,
-        tokenPreview: token.substring(0, 20) + '...',
-      });
+      logger.warn('JWT verification failed:', error);
     }
     return null;
   }

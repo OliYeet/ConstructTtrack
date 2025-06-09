@@ -288,8 +288,16 @@ class MigrationManager {
     try {
       const filepath = path.join(this.migrationsDir, filename);
       const content = fs.readFileSync(filepath, 'utf8');
-      const crypto = require('crypto');
-      return crypto.createHash('sha256').update(content).digest('hex');
+
+      // Simple checksum calculation
+      let hash = 0;
+      for (let i = 0; i < content.length; i++) {
+        const char = content.charCodeAt(i);
+        hash = (hash << 5) - hash + char;
+        hash = hash & hash; // Convert to 32-bit integer
+      }
+
+      return hash.toString(16);
     } catch {
       return 'unknown';
     }

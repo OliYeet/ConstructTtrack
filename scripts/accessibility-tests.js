@@ -299,7 +299,8 @@ const fs = require('fs');
     };
   }
 
-  checkWCAGCompliance(level) {
+  // Check WCAG compliance
+  checkWCAGCompliance(_level) {
     const axeResults = Object.values(this.results.axeResults);
     const criticalViolations = axeResults.reduce((sum, result) => {
       return (
@@ -310,10 +311,7 @@ const fs = require('fs');
       );
     }, 0);
 
-    if (level === '2A') return criticalViolations === 0;
-    if (level === '2AA') return criticalViolations <= 0; // customise
-    if (level === '2AAA') return criticalViolations <= 0; // customise
-    return false;
+    return criticalViolations === 0;
   }
 
   // Generate recommendations

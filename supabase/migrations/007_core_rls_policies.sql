@@ -23,8 +23,7 @@ FOR UPDATE USING (
 
 -- Profiles: Organization isolation
 CREATE POLICY "profiles_organization_isolation" ON profiles
-FOR ALL USING (organization_id = auth.user_organization_id())
-       WITH CHECK (organization_id = auth.user_organization_id());
+FOR ALL USING (organization_id = auth.user_organization_id());
 
 -- Profiles: Users can always see their own profile
 CREATE POLICY "profiles_own_profile_access" ON profiles

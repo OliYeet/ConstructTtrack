@@ -29,6 +29,11 @@ export const GET = withApiMiddleware(
           ttl: '60 seconds',
           staleWhileRevalidate: '30 seconds',
         },
+        headers: {
+          'Cache-Control': 'Response includes cache control headers',
+          ETag: 'Response includes ETag for conditional requests',
+          'X-Cache': 'HIT/MISS indicator',
+        },
       });
     },
   },

@@ -395,31 +395,16 @@ export const inputTypes = gql`
     geometry: Geometry
     metadata: JSON
   }
-  enum ComparisonOperator {
-    EQ
-    NEQ
-    GT
-    GTE
-    LT
-    LTE
-    IN
-    LIKE
-  }
-
-  enum SortDirection {
-    ASC
-    DESC
-  }
 
   input FilterInput {
     field: String!
-    operator: ComparisonOperator!
+    operator: String!
     value: String!
   }
 
   input SortInput {
     field: String!
-    direction: SortDirection!
+    direction: String!
   }
 
   input PaginationInput {

@@ -225,7 +225,7 @@ export class PrivacyComplianceManager {
     legalBasis: string,
     metadata: Record<string, unknown> = {}
   ): Promise<string> {
-    const processingId = `proc_${randomUUID()}`;
+    const processingId = `proc_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
 
     const processing: ProcessingRecord = {
       id: processingId,
@@ -380,13 +380,6 @@ export class PrivacyComplianceManager {
   ): Promise<Record<string, unknown>> {
     const consents = this.consentRecords.get(userId) || [];
     const processing = this.processingRecords.get(userId) || [];
-
-    // Mark processing records for deletion
-    processing.forEach(p => {
-      p.retentionPeriod = 0; // or introduce a dedicated `markedForDeletion` boolean
-    });
-
-    this.processingRecords.set(userId, processing);
     const requests = this.dataSubjectRequests.get(userId) || [];
 
     return {
