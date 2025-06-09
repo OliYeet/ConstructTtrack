@@ -32,7 +32,7 @@ describe('Authentication', () => {
       };
 
       const token = jwt.sign(payload, 'test-secret-key-for-testing-only', {
-        algorithm: 'HS256'
+        algorithm: 'HS256',
       });
       const result = verifyToken(token);
 
@@ -62,7 +62,7 @@ describe('Authentication', () => {
       };
 
       const token = jwt.sign(payload, 'test-secret-key-for-testing-only', {
-        algorithm: 'HS256'
+        algorithm: 'HS256',
       });
       const result = verifyToken(token);
 
@@ -81,7 +81,7 @@ describe('Authentication', () => {
       };
 
       const token = jwt.sign(payload, 'wrong-secret', {
-        algorithm: 'HS256'
+        algorithm: 'HS256',
       });
       const result = verifyToken(token);
 
@@ -100,7 +100,7 @@ describe('Authentication', () => {
       };
 
       const token = jwt.sign(payload, 'test-secret-key-for-testing-only', {
-        algorithm: 'HS256'
+        algorithm: 'HS256',
       });
       const result = verifyToken(token);
 
@@ -119,7 +119,7 @@ describe('Authentication', () => {
       };
 
       const token = jwt.sign(payload, 'test-secret-key-for-testing-only', {
-        algorithm: 'HS256'
+        algorithm: 'HS256',
       });
       const result = verifyToken(token);
 
@@ -138,7 +138,7 @@ describe('Authentication', () => {
       };
 
       const token = jwt.sign(payload, 'test-secret-key-for-testing-only', {
-        algorithm: 'HS256'
+        algorithm: 'HS256',
       });
       const result = verifyToken(token);
 
@@ -173,7 +173,7 @@ describe('Authentication', () => {
 
       // Sign with correct secret
       const validToken = jwt.sign(payload, 'test-secret-key-for-testing-only', {
-        algorithm: 'HS256'
+        algorithm: 'HS256',
       });
 
       // Tamper with the signature
@@ -197,7 +197,7 @@ describe('Authentication', () => {
       };
 
       const token = jwt.sign(payload, 'test-secret-key-for-testing-only', {
-        algorithm: 'HS256'
+        algorithm: 'HS256',
       });
       const result = verifyToken(token);
 
@@ -234,7 +234,7 @@ describe('Authentication', () => {
       };
 
       const token = jwt.sign(payload, 'test-secret-key-for-testing-only', {
-        algorithm: 'HS256'
+        algorithm: 'HS256',
       });
       const result = verifyToken(token);
 
@@ -253,7 +253,7 @@ describe('Authentication', () => {
       };
 
       const token = jwt.sign(payload, 'test-secret-key-for-testing-only', {
-        algorithm: 'HS256'
+        algorithm: 'HS256',
       });
       const result = verifyToken(token);
 
@@ -275,7 +275,7 @@ describe('Authentication', () => {
       };
 
       const token = jwt.sign(payload, 'test-secret-key-for-testing-only', {
-        algorithm: 'HS256'
+        algorithm: 'HS256',
       });
       const result = verifyToken(token);
 
@@ -302,7 +302,7 @@ describe('Authentication', () => {
       };
 
       const token = jwt.sign(payload, 'test-secret-key-for-testing-only', {
-        algorithm: 'HS256'
+        algorithm: 'HS256',
       });
       const result = verifyToken(token);
 

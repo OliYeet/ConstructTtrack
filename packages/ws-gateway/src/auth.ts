@@ -50,32 +50,40 @@ export function verifyToken(token: string): AuthContext | null {
 
     // Additional validation for issuer and audience (redundant but explicit)
     if (decoded.iss !== 'constructtrack') {
-      logger.warn(`Invalid JWT: incorrect issuer. Expected 'constructtrack', got '${decoded.iss}'`);
+      logger.warn(
+        `Invalid JWT: incorrect issuer. Expected 'constructtrack', got '${decoded.iss}'`
+      );
       return null;
     }
 
     if (decoded.aud !== 'ws-gateway') {
-      logger.warn(`Invalid JWT: incorrect audience. Expected 'ws-gateway', got '${decoded.aud}'`);
+      logger.warn(
+        `Invalid JWT: incorrect audience. Expected 'ws-gateway', got '${decoded.aud}'`
+      );
       return null;
     }
 
     // Check expiration with detailed logging (redundant with jwt.verify but explicit)
     const now = Math.floor(Date.now() / 1000);
     if (now >= decoded.exp) {
-      logger.warn(`JWT token expired. Current time: ${now}, Token exp: ${decoded.exp}, Diff: ${now - decoded.exp}s`);
+      logger.warn(
+        `JWT token expired. Current time: ${now}, Token exp: ${decoded.exp}, Diff: ${now - decoded.exp}s`
+      );
       return null;
     }
 
     // Check not-before claim if present
     if (decoded.nbf && now < decoded.nbf) {
-      logger.warn(`JWT token not active yet. Current time: ${now}, Token nbf: ${decoded.nbf}, Diff: ${decoded.nbf - now}s`);
+      logger.warn(
+        `JWT token not active yet. Current time: ${now}, Token nbf: ${decoded.nbf}, Diff: ${decoded.nbf - now}s`
+      );
       return null;
     }
 
     logger.info('JWT token verified successfully', {
       userId: decoded.sub,
       exp: decoded.exp,
-      timeToExpiry: decoded.exp - now
+      timeToExpiry: decoded.exp - now,
     });
 
     return {
@@ -88,25 +96,32 @@ export function verifyToken(token: string): AuthContext | null {
   } catch (error) {
     // Enhanced error handling with specific error types and detailed logging
     if (error instanceof jwt.JsonWebTokenError) {
-      logger.warn(`JWT verification failed - JsonWebTokenError: ${error.message}`, {
-        errorName: error.name,
-        tokenPreview: token.substring(0, 20) + '...'
-      });
+      logger.warn(
+        `JWT verification failed - JsonWebTokenError: ${error.message}`,
+        {
+          errorName: error.name,
+          tokenPreview: token.substring(0, 20) + '...',
+        }
+      );
     } else if (error instanceof jwt.TokenExpiredError) {
       logger.warn(`JWT token expired - TokenExpiredError: ${error.message}`, {
         expiredAt: error.expiredAt,
-        currentTime: new Date().toISOString()
+        currentTime: new Date().toISOString(),
       });
     } else if (error instanceof jwt.NotBeforeError) {
-      logger.warn(`JWT token not active yet - NotBeforeError: ${error.message}`, {
-        notBefore: error.date,
-        currentTime: new Date().toISOString()
-      });
+      logger.warn(
+        `JWT token not active yet - NotBeforeError: ${error.message}`,
+        {
+          notBefore: error.date,
+          currentTime: new Date().toISOString(),
+        }
+      );
     } else {
       logger.warn('JWT verification failed with unexpected error:', {
         error: error instanceof Error ? error.message : String(error),
-        errorType: error instanceof Error ? error.constructor.name : typeof error,
-        tokenPreview: token.substring(0, 20) + '...'
+        errorType:
+          error instanceof Error ? error.constructor.name : typeof error,
+        tokenPreview: token.substring(0, 20) + '...',
       });
     }
     return null;
