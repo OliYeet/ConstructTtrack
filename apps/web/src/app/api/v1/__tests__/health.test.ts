@@ -47,7 +47,7 @@ describe('/api/v1/health', () => {
       timestamp: new Date().toISOString(),
     };
 
-    const response = await GET(request, { params: {} });
+    const response = await GET(request, { params: Promise.resolve({}) });
     const data = await response.json();
 
     expect(response.status).toBe(200);
