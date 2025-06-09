@@ -15,13 +15,13 @@ jest.mock('@/lib/security/rate-limiting', () => ({
       const isRateLimited = url.searchParams.get('rateLimited') === 'true';
 
       if (isRateLimited) {
-        return {
-          allowed: false,
-          response: {
-            body: JSON.stringify({
-              error: 'Rate limit exceeded',
-              retryAfter: 60,
-            }),
+        // Return a proper Response object like the real middleware does
+        const response = new Response(
+          JSON.stringify({
+            error: 'Rate limit exceeded',
+            retryAfter: 60,
+          }),
+          {
             status: 429,
             headers: {
               'Content-Type': 'application/json',
@@ -30,6 +30,17 @@ jest.mock('@/lib/security/rate-limiting', () => ({
               'X-RateLimit-Reset': '1640995200',
               'Retry-After': '60',
             },
+          }
+        );
+
+        return {
+          allowed: false,
+          response,
+          headers: {
+            'X-RateLimit-Limit': '100',
+            'X-RateLimit-Remaining': '0',
+            'X-RateLimit-Reset': '1640995200',
+            'Retry-After': '60',
           },
         };
       }

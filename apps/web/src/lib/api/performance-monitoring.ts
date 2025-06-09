@@ -107,10 +107,10 @@ export class MemoryPerformanceStore implements PerformanceStore {
     let filtered = this.metrics;
 
     if (filters.startTime) {
-      filtered = filtered.filter(m => m.timestamp >= filters.startTime!);
+      filtered = filtered.filter(m => m.timestamp >= filters.startTime);
     }
     if (filters.endTime) {
-      filtered = filtered.filter(m => m.timestamp <= filters.endTime!);
+      filtered = filtered.filter(m => m.timestamp <= filters.endTime);
     }
     if (filters.endpoint) {
       filtered = filtered.filter(m => m.endpoint === filters.endpoint);
@@ -120,12 +120,12 @@ export class MemoryPerformanceStore implements PerformanceStore {
     }
     if (filters.minResponseTime) {
       filtered = filtered.filter(
-        m => m.responseTime >= filters.minResponseTime!
+        m => m.responseTime >= filters.minResponseTime
       );
     }
     if (filters.maxResponseTime) {
       filtered = filtered.filter(
-        m => m.responseTime <= filters.maxResponseTime!
+        m => m.responseTime <= filters.maxResponseTime
       );
     }
     if (filters.statusCode) {
@@ -346,7 +346,11 @@ export class PerformanceMonitor {
   private store: PerformanceStore;
   private thresholds: PerformanceThreshold[];
   private alerts: PerformanceAlert[];
-  private logger: any;
+  private logger: {
+    error: (msg: string, meta?: unknown) => void;
+    warn: (msg: string, meta?: unknown) => void;
+    info: (msg: string, meta?: unknown) => void;
+  };
 
   constructor(
     store: PerformanceStore,
@@ -371,7 +375,7 @@ export class PerformanceMonitor {
       const traceId = this.generateTraceId();
 
       // Add trace ID to request context
-      (request as any).traceId = traceId;
+      (request as NextRequest & { traceId?: string }).traceId = traceId;
 
       let response: NextResponse;
       // let error: string | undefined;
@@ -391,14 +395,15 @@ export class PerformanceMonitor {
 
       const metric: PerformanceMetric = {
         timestamp: startTime,
-        endpoint: new URL(request.url).pathname,
+        endpoint: this.extractEndpoint(request.url),
         method: request.method,
         responseTime,
         requestSize: this.getRequestSize(request),
         responseSize: this.getResponseSize(response),
         statusCode: response.status,
-        userId: (request as any).userId,
-        organizationId: (request as any).organizationId,
+        userId: (request as NextRequest & { userId?: string }).userId,
+        organizationId: (request as NextRequest & { organizationId?: string })
+          .organizationId,
         traceId,
       };
 
@@ -493,6 +498,27 @@ export class PerformanceMonitor {
       return parseInt(contentLength, 10);
     }
     return 0;
+  }
+
+  private extractEndpoint(url: string): string {
+    try {
+      const urlObj = new URL(url);
+      let pathname = urlObj.pathname;
+
+      // Normalize API paths by removing IDs and dynamic segments
+      pathname = pathname
+        .replace(/\/api\/v\d+/, '/api') // Remove version
+        .replace(
+          /\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi,
+          '/:id'
+        ) // UUIDs
+        .replace(/\/\d+/g, '/:id') // Numeric IDs
+        .replace(/\/[a-f0-9]{24}/g, '/:id'); // MongoDB ObjectIds
+
+      return pathname;
+    } catch {
+      return url;
+    }
   }
 }
 

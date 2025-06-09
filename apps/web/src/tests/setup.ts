@@ -78,26 +78,51 @@ class MockNextRequest {
   public url: string;
   public method: string;
   public headers: MockHeaders;
+  private _body: unknown;
 
-  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-  constructor(public _info: any = {}) {
-    this.url = _info.url || 'http://localhost:3000/api/test';
-    this.method = _info.method || 'GET';
-    this.headers = _info.headers || new MockHeaders();
+  constructor(
+    url?:
+      | string
+      | {
+          url?: string;
+          method?: string;
+          headers?: MockHeaders;
+          body?: unknown;
+        },
+    options?: { method?: string; headers?: MockHeaders; body?: unknown }
+  ) {
+    // Handle both NextRequest(url, options) and MockNextRequest(_info) patterns
+    if (typeof url === 'string') {
+      this.url = url;
+      this.method = options?.method || 'GET';
+      this.headers = options?.headers
+        ? new MockHeaders(options.headers)
+        : new MockHeaders();
+      this._body = options?.body;
+    } else {
+      // Legacy _info pattern
+      const _info = url || {};
+      this.url = _info.url || 'http://localhost:3000/api/test';
+      this.method = _info.method || 'GET';
+      this.headers = _info.headers || new MockHeaders();
+      this._body = _info.body;
+    }
   }
 
   async json() {
-    return this._info.body || {};
+    return this._body || {};
   }
 }
 
 /* Make mocks globally visible for convenience (optional) */
 // Only polyfill Headers if the runtime does not already provide it
-if (typeof (global as any).Headers === 'undefined') {
-  (global as any).Headers = MockHeaders;
+if (typeof (global as { Headers?: unknown }).Headers === 'undefined') {
+  (global as { Headers: typeof MockHeaders }).Headers = MockHeaders;
 }
-(global as any).NextResponse = MockNextResponse;
-(global as any).NextRequest = MockNextRequest;
+(global as { NextResponse: typeof MockNextResponse }).NextResponse =
+  MockNextResponse;
+(global as { NextRequest: typeof MockNextRequest }).NextRequest =
+  MockNextRequest;
 
 /* Provide module mock so `import { NextResponse } from 'next/server'` resolves */
 jest.mock('next/server', () => ({
@@ -117,9 +142,11 @@ import { NextRequest } from 'next/server';
 // Next.js' `NextResponse.json` helper relies on `Response.json` existing.
 if (
   typeof Response !== 'undefined' &&
-  typeof (Response as any).json !== 'function'
+  typeof (Response as { json?: unknown }).json !== 'function'
 ) {
-  (Response as any).json = function json(data: unknown, init?: ResponseInit) {
+  (
+    Response as { json: (_data: unknown, _init?: ResponseInit) => Response }
+  ).json = function json(_data: unknown, _init?: ResponseInit) {
     // Create headers with default content type
     const defaultHeaders = [['Content-Type', 'application/json']] as [
       string,
@@ -127,21 +154,21 @@ if (
     ][];
     const headers = new Headers(defaultHeaders);
 
-    // Add any additional headers from init
-    if (init?.headers) {
-      if (Array.isArray(init.headers)) {
-        init.headers.forEach(([key, value]) => headers.set(key, value));
-      } else if (init.headers instanceof Headers) {
-        init.headers.forEach((value, key) => headers.set(key, value));
+    // Add any additional headers from _init
+    if (_init?.headers) {
+      if (Array.isArray(_init.headers)) {
+        _init.headers.forEach(([key, value]) => headers.set(key, value));
+      } else if (_init.headers instanceof Headers) {
+        _init.headers.forEach((value, key) => headers.set(key, value));
       } else {
-        Object.entries(init.headers).forEach(([key, value]) =>
+        Object.entries(_init.headers).forEach(([key, value]) =>
           headers.set(key, value)
         );
       }
     }
 
-    return new Response(JSON.stringify(data), {
-      ...init,
+    return new Response(JSON.stringify(_data), {
+      ..._init,
       headers: headers as HeadersInit,
     });
   };
@@ -150,8 +177,10 @@ if (
 // Global type declarations for Jest and browser APIs
 /* eslint-disable no-unused-vars */
 declare const jest: {
-  fn: (implementation?: any) => any;
-  mock: (moduleName: string, factory: () => any) => void;
+  fn: (
+    implementation?: (...args: unknown[]) => unknown
+  ) => jest.MockedFunction<(...args: unknown[]) => unknown>;
+  mock: (moduleName: string, factory: () => unknown) => void;
   clearAllMocks: () => void;
 };
 
@@ -159,9 +188,9 @@ declare const beforeEach: (fn: () => void) => void;
 declare const afterEach: (fn: () => void) => void;
 declare const afterAll: (fn: () => void) => void;
 declare const expect: {
-  extend: (matchers: any) => void;
-} & any;
-declare const global: any;
+  extend: (matchers: Record<string, unknown>) => void;
+} & jest.Matchers<unknown>;
+declare const global: Record<string, unknown>;
 
 declare const Headers: {
   new (init?: [string, string][]): {
@@ -209,7 +238,7 @@ declare global {
 
 // Custom Jest matchers
 expect.extend({
-  toBeValidApiResponse(received: any) {
+  toBeValidApiResponse(received: unknown) {
     const pass =
       typeof received === 'object' &&
       received !== null &&
@@ -235,7 +264,7 @@ expect.extend({
     }
   },
 
-  toBeValidApiError(received: any) {
+  toBeValidApiError(received: unknown) {
     const pass =
       typeof received === 'object' &&
       received !== null &&
@@ -345,9 +374,9 @@ export const createMockRequest = (
     ...headers,
   });
 
-  return new MockNextRequest({
+  // Use the new NextRequest(url, options) pattern
+  return new MockNextRequest(url, {
     method,
-    url,
     headers: headersObj,
     body,
   }) as unknown as NextRequest;

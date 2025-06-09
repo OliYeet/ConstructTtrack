@@ -152,8 +152,7 @@ describe('Enhanced Request/Response Logging', () => {
     expect(response.status).toBe(200);
 
     // Should call enhanced logging twice (basic + detailed)
-    // For now, let's just check that it's called at least once
-    expect(mockEnhancedLogRequest).toHaveBeenCalledTimes(1);
+    expect(mockEnhancedLogRequest).toHaveBeenCalledTimes(2);
 
     // TODO: Fix detailed logging
     // Check detailed request logging
@@ -174,8 +173,8 @@ describe('Enhanced Request/Response Logging', () => {
     //   }),
     // });
 
-    // Should call enhanced response logging at least once
-    expect(mockEnhancedLogResponse).toHaveBeenCalledTimes(1);
+    // Should call enhanced response logging twice (basic + detailed)
+    expect(mockEnhancedLogResponse).toHaveBeenCalledTimes(2);
 
     // TODO: Fix detailed response logging
     // Check detailed response logging
@@ -218,8 +217,8 @@ describe('Enhanced Request/Response Logging', () => {
     // const detailedRequestCall = mockEnhancedLogRequest.mock.calls[1];
     // expect(detailedRequestCall[1].metadata.body).toEqual(requestBody);
 
-    // For now, just check that basic logging was called
-    expect(mockEnhancedLogRequest).toHaveBeenCalledTimes(1);
+    // Should call enhanced logging twice (basic + detailed)
+    expect(mockEnhancedLogRequest).toHaveBeenCalledTimes(2);
   });
 
   it('should redact sensitive headers in detailed logging', async () => {
@@ -251,8 +250,8 @@ describe('Enhanced Request/Response Logging', () => {
     // expect(headers['x-api-key']).toBe('[REDACTED]');
     // expect(headers['user-agent']).toBe('Test Agent');
 
-    // For now, just check that basic logging was called
-    expect(mockEnhancedLogRequest).toHaveBeenCalledTimes(1);
+    // Should call enhanced logging twice (basic + detailed)
+    expect(mockEnhancedLogRequest).toHaveBeenCalledTimes(2);
   });
 
   it('should handle logging errors gracefully', async () => {
@@ -317,7 +316,7 @@ describe('Enhanced Request/Response Logging', () => {
     // expect(loggedBody).toHaveLength(1000);
     // expect(loggedBody).toBe('x'.repeat(1000));
 
-    // For now, just check that basic logging was called
-    expect(mockEnhancedLogRequest).toHaveBeenCalledTimes(1);
+    // Should call enhanced logging twice (basic + detailed)
+    expect(mockEnhancedLogRequest).toHaveBeenCalledTimes(2);
   });
 });

@@ -138,7 +138,13 @@ describe('API Security Headers', () => {
     // Check that security headers are applied to OPTIONS responses
     expect(response.headers.get('X-Content-Type-Options')).toBe('nosniff');
     expect(response.headers.get('X-Frame-Options')).toBe('DENY');
-    expect(response.status).toBe(200);
+
+    // Handle the mock status object structure
+    const statusValue =
+      typeof response.status === 'object' && response.status.status
+        ? response.status.status
+        : response.status;
+    expect(statusValue).toBe(200);
   });
 
   it('should apply security headers when CORS is disabled', async () => {

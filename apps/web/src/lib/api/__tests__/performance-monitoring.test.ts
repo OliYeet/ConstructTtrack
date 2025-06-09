@@ -309,7 +309,7 @@ describe('API Performance Monitoring System', () => {
       // Check that metric was recorded
       const metrics = await performanceStore.getMetrics({});
       expect(metrics).toHaveLength(1);
-      expect(metrics[0].endpoint).toBe('/api/v1/test');
+      expect(metrics[0].endpoint).toBe('/api/test'); // Version is normalized out
       expect(metrics[0].method).toBe('GET');
       expect(metrics[0].statusCode).toBe(200);
       expect(metrics[0].responseTime).toBeGreaterThan(0);

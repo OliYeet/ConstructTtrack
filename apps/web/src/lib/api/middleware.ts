@@ -306,16 +306,13 @@ export function withApiMiddleware(
         const rateLimitResult = await rateLimitMiddleware(request);
 
         if (!rateLimitResult.allowed && rateLimitResult.response) {
-          // Apply security headers to rate limit response
-          const response = new NextResponse(rateLimitResult.response.body, {
-            status: rateLimitResult.response.status,
-            headers: rateLimitResult.response.headers,
-          });
+          // The rate limiting middleware returns a Response object, use it directly
+          const response = rateLimitResult.response;
 
           applyApiHeaders(response, options.cors !== false);
 
           const duration = Date.now() - startTime;
-          logResponse(request, 429, duration, requestContext);
+          logResponse(request, response.status, duration, requestContext);
           return response;
         }
 
@@ -406,7 +403,7 @@ export function withApiMiddleware(
 
         if (
           'tags' in cacheConfig &&
-          (cacheConfig as any).tags?.includes('organization') &&
+          (cacheConfig as { tags?: string[] }).tags?.includes('organization') &&
           requestContext.organizationId
         ) {
           additionalKeys.push(`org:${requestContext.organizationId}`);
@@ -540,7 +537,9 @@ export function withApiMiddleware(
 
           if (
             'tags' in cacheConfig &&
-            (cacheConfig as any).tags?.includes('organization') &&
+            (cacheConfig as { tags?: string[] }).tags?.includes(
+              'organization'
+            ) &&
             requestContext.organizationId
           ) {
             additionalKeys.push(`org:${requestContext.organizationId}`);
