@@ -7,6 +7,9 @@
 import { RealtimeMetricEvent } from '../collectors/base';
 import { realtimeConfig } from '../config/realtime-config';
 
+// Import Json type for Supabase compatibility
+type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
+
 // Metric persistence interface
 export interface MetricPersistenceAdapter {
   flush(metrics: RealtimeMetricEvent[]): Promise<void>;
@@ -224,16 +227,16 @@ export class TimescaleAdapter implements MetricPersistenceAdapter {
       const rows = metrics.map(metric => ({
         time: metric.timestamp,
         metric_name: metric.name,
-        tags: metric.tags as any, // Cast to Json type for Supabase
+        tags: metric.tags as Json, // Cast to Json type for Supabase
         value: metric.value,
         unit: metric.unit,
-        metadata: (metric.metadata || {}) as any, // Cast to Json type for Supabase
+        metadata: (metric.metadata || {}) as Json, // Cast to Json type for Supabase
       }));
 
       // Use upsert for better performance with potential duplicates
-      // Note: Cannot use JSONB columns in conflict resolution, so use time,metric_name only
+      // Match the database primary key: (time, metric_name, tags)
       const { error } = await supabase.from('realtime_metrics').upsert(rows, {
-        onConflict: 'time,metric_name',
+        onConflict: 'time,metric_name,tags',
         ignoreDuplicates: true,
       });
 
