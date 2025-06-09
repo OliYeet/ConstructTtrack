@@ -139,8 +139,10 @@ export const RealtimeMonitoring = {
 };
 
 // Performance monitoring middleware for API routes
-export const withRealtimeMonitoring = (handler: any) => {
-  return async (req: any, res: any) => {
+export const withRealtimeMonitoring = (
+  handler: (req: unknown, res: unknown) => Promise<unknown>
+) => {
+  return async (req: unknown, res: unknown) => {
     const startTime = Date.now();
     const eventId = RealtimeMonitoring.trackEvent(
       'ApiRequest',

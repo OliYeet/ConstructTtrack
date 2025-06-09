@@ -45,7 +45,7 @@ export class RealtimePerformanceMonitor {
   private lastAlertTimes: Map<string, number> = new Map();
 
   // Event listeners
-  private eventListeners: Map<string, ((event: any) => void)[]> = new Map();
+  private eventListeners: Map<string, ((event: unknown) => void)[]> = new Map();
 
   constructor(config: Partial<RealtimeMonitoringConfig> = {}) {
     this.config = { ...defaultRealtimeMonitoringConfig, ...config };
@@ -324,7 +324,7 @@ export class RealtimePerformanceMonitor {
   }
 
   // Add event listener
-  on(event: string, listener: (data: any) => void): void {
+  on(event: string, listener: (data: unknown) => void): void {
     if (!this.eventListeners.has(event)) {
       this.eventListeners.set(event, []);
     }
@@ -332,7 +332,7 @@ export class RealtimePerformanceMonitor {
   }
 
   // Remove event listener
-  off(event: string, listener: (data: any) => void): void {
+  off(event: string, listener: (data: unknown) => void): void {
     const listeners = this.eventListeners.get(event);
     if (listeners) {
       const index = listeners.indexOf(listener);
@@ -343,7 +343,7 @@ export class RealtimePerformanceMonitor {
   }
 
   // Emit event to listeners
-  private emit(event: string, data: any): void {
+  private emit(event: string, data: unknown): void {
     const listeners = this.eventListeners.get(event);
     if (listeners) {
       listeners.forEach(listener => {
