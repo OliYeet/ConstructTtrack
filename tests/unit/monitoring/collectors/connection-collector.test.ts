@@ -283,7 +283,7 @@ describe('ConnectionCollector', () => {
       // Test with invalid event type
       expect(() => {
         collector.trackConnection({
-          type: 'invalid_type' as any,
+          type: 'invalid_type' as ConnectionEvent['type'],
           connectionId: 'conn-123',
           timestamp: new Date().toISOString(),
         } as ConnectionEvent);

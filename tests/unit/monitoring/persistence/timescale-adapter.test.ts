@@ -151,7 +151,8 @@ describe('TimescaleAdapter', () => {
         throw new Error(`Simulated failure ${callCount}`);
       });
 
-      (adapter as unknown as { insertMetrics: jest.Mock }).insertMetrics = mockInsertMetrics;
+      (adapter as unknown as { insertMetrics: jest.Mock }).insertMetrics =
+        mockInsertMetrics;
 
       const metrics: RealtimeMetricEvent[] = [
         {
@@ -192,9 +193,6 @@ describe('TimescaleAdapter', () => {
       let maxConcurrentCalls = 0;
 
       // Mock processPendingBatches to track concurrency and prevent actual recursion
-      const originalProcessPendingBatches = (
-        adapter as unknown as { processPendingBatches: () => Promise<void> }
-      ).processPendingBatches;
 
       (
         adapter as unknown as { processPendingBatches: jest.Mock }
