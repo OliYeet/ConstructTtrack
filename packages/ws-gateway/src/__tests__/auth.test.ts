@@ -16,6 +16,9 @@ jest.mock('../config', () => ({
 }));
 
 describe('Authentication', () => {
+  // Use consistent time for all tests to avoid timing issues in CI
+  const baseTime = Math.floor(Date.now() / 1000);
+
   describe('verifyToken', () => {
     it('should verify valid JWT token', () => {
       const payload = {
@@ -23,7 +26,7 @@ describe('Authentication', () => {
         roles: ['field_worker'],
         projects: ['project456'],
         email: 'test@example.com',
-        exp: Math.floor(Date.now() / 1000) + 3600, // 1 hour from now
+        exp: baseTime + 3600, // 1 hour from base time
         iss: 'constructtrack',
         aud: 'ws-gateway',
       };
@@ -50,7 +53,10 @@ describe('Authentication', () => {
         sub: 'user123',
         roles: ['field_worker'],
         projects: ['project456'],
-        exp: Math.floor(Date.now() / 1000) - 3600, // 1 hour ago
+        email: 'test@example.com',
+        exp: baseTime - 3600, // 1 hour before base time
+        iss: 'constructtrack',
+        aud: 'ws-gateway',
       };
 
       const token = jwt.sign(payload, 'test-secret-key-for-testing-only');
@@ -64,10 +70,64 @@ describe('Authentication', () => {
         sub: 'user123',
         roles: ['field_worker'],
         projects: ['project456'],
-        exp: Math.floor(Date.now() / 1000) + 3600,
+        email: 'test@example.com',
+        exp: baseTime + 3600,
+        iss: 'constructtrack',
+        aud: 'ws-gateway',
       };
 
       const token = jwt.sign(payload, 'wrong-secret');
+      const result = verifyToken(token);
+
+      expect(result).toBeNull();
+    });
+
+    it('should reject token with missing required claims', () => {
+      const payload = {
+        // Missing 'sub' claim
+        roles: ['field_worker'],
+        projects: ['project456'],
+        email: 'test@example.com',
+        exp: baseTime + 3600,
+        iss: 'constructtrack',
+        aud: 'ws-gateway',
+      };
+
+      const token = jwt.sign(payload, 'test-secret-key-for-testing-only');
+      const result = verifyToken(token);
+
+      expect(result).toBeNull();
+    });
+
+    it('should reject token with wrong issuer', () => {
+      const payload = {
+        sub: 'user123',
+        roles: ['field_worker'],
+        projects: ['project456'],
+        email: 'test@example.com',
+        exp: baseTime + 3600,
+        iss: 'wrong-issuer',
+        aud: 'ws-gateway',
+      };
+
+      const token = jwt.sign(payload, 'test-secret-key-for-testing-only');
+      const result = verifyToken(token);
+
+      expect(result).toBeNull();
+    });
+
+    it('should reject token with wrong audience', () => {
+      const payload = {
+        sub: 'user123',
+        roles: ['field_worker'],
+        projects: ['project456'],
+        email: 'test@example.com',
+        exp: baseTime + 3600,
+        iss: 'constructtrack',
+        aud: 'wrong-audience',
+      };
+
+      const token = jwt.sign(payload, 'test-secret-key-for-testing-only');
       const result = verifyToken(token);
 
       expect(result).toBeNull();
