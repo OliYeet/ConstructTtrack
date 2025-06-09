@@ -3,8 +3,6 @@
  * Provides correlation IDs for tracking requests across services and logs
  */
 
-import { AsyncLocalStorage } from 'node:async_hooks';
-
 import { NextRequest } from 'next/server';
 
 import { RequestContext } from '@/types/api';
@@ -70,15 +68,33 @@ export function addCorrelationHeaders(
 
 // Correlation context storage for async operations
 class CorrelationStore {
-  private als = new AsyncLocalStorage<{ id: string }>();
+  private als: any = null;
   private store = new Map<string, string>();
 
+  constructor() {
+    // Only use AsyncLocalStorage in server environment
+    if (typeof window === 'undefined') {
+      try {
+        const { AsyncLocalStorage } = eval('require')('node:async_hooks');
+        this.als = new AsyncLocalStorage();
+      } catch {
+        // Fallback if AsyncLocalStorage is not available
+        this.als = null;
+      }
+    }
+  }
+
   getCurrent(): string | undefined {
-    return this.als.getStore()?.id || this.store.get('current');
+    if (this.als && typeof window === 'undefined') {
+      return this.als.getStore()?.id || this.store.get('current');
+    }
+    return this.store.get('current');
   }
 
   setCurrent(correlationId: string): void {
-    this.als.enterWith({ id: correlationId });
+    if (this.als && typeof window === 'undefined') {
+      this.als.enterWith({ id: correlationId });
+    }
     this.store.set('current', correlationId);
   }
 

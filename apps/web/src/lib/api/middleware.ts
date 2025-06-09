@@ -235,9 +235,9 @@ export function withApiMiddleware(
 ) {
   return async function handler(
     request: NextRequest,
-    // Accept both sync and async to stay flexible
+    // Next.js 15 always provides params as a Promise
     context: {
-      params: Record<string, string> | Promise<Record<string, string>>;
+      params: Promise<Record<string, string>>;
     }
   ): Promise<NextResponse> {
     const startTime = Date.now();
@@ -462,8 +462,9 @@ export function withApiMiddleware(
               // Return stale data immediately, revalidate in background
               setImmediate(async () => {
                 try {
-                  const params = await context.params;
-                  const freshResponse = await handler(request, { params });
+                  const freshResponse = await handler(request, {
+                    params: context.params,
+                  });
 
                   if (freshResponse.ok && freshResponse.status === 200) {
                     const responseClone = freshResponse.clone();
@@ -508,8 +509,7 @@ export function withApiMiddleware(
       }
 
       // Execute handler
-      const params = await context.params;
-      let response = await handler(request, { params });
+      let response = await handler(request, { params: context.params });
 
       // Prepare headers for modification
       let needsNewResponse = false;
