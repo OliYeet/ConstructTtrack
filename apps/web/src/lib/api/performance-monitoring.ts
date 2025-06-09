@@ -106,11 +106,11 @@ export class MemoryPerformanceStore implements PerformanceStore {
   async getMetrics(filters: PerformanceFilter): Promise<PerformanceMetric[]> {
     let filtered = this.metrics;
 
-    if (filters.startTime) {
-      filtered = filtered.filter(m => m.timestamp >= filters.startTime);
+    if (filters.startTime !== undefined) {
+      filtered = filtered.filter(m => m.timestamp >= filters.startTime!);
     }
-    if (filters.endTime) {
-      filtered = filtered.filter(m => m.timestamp <= filters.endTime);
+    if (filters.endTime !== undefined) {
+      filtered = filtered.filter(m => m.timestamp <= filters.endTime!);
     }
     if (filters.endpoint) {
       filtered = filtered.filter(m => m.endpoint === filters.endpoint);
@@ -118,14 +118,14 @@ export class MemoryPerformanceStore implements PerformanceStore {
     if (filters.method) {
       filtered = filtered.filter(m => m.method === filters.method);
     }
-    if (filters.minResponseTime) {
+    if (filters.minResponseTime !== undefined) {
       filtered = filtered.filter(
-        m => m.responseTime >= filters.minResponseTime
+        m => m.responseTime >= filters.minResponseTime!
       );
     }
-    if (filters.maxResponseTime) {
+    if (filters.maxResponseTime !== undefined) {
       filtered = filtered.filter(
-        m => m.responseTime <= filters.maxResponseTime
+        m => m.responseTime <= filters.maxResponseTime!
       );
     }
     if (filters.statusCode) {

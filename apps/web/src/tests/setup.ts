@@ -86,25 +86,33 @@ class MockNextRequest {
       | {
           url?: string;
           method?: string;
-          headers?: MockHeaders;
+          headers?: MockHeaders | Record<string, string>;
           body?: unknown;
         },
-    options?: { method?: string; headers?: MockHeaders; body?: unknown }
+    options?: {
+      method?: string;
+      headers?: MockHeaders | Record<string, string>;
+      body?: unknown;
+    }
   ) {
     // Handle both NextRequest(url, options) and MockNextRequest(_info) patterns
     if (typeof url === 'string') {
       this.url = url;
       this.method = options?.method || 'GET';
-      this.headers = options?.headers
-        ? new MockHeaders(options.headers)
-        : new MockHeaders();
+      this.headers =
+        options?.headers instanceof MockHeaders
+          ? options.headers
+          : new MockHeaders(options?.headers || {});
       this._body = options?.body;
     } else {
       // Legacy _info pattern
       const _info = url || {};
       this.url = _info.url || 'http://localhost:3000/api/test';
       this.method = _info.method || 'GET';
-      this.headers = _info.headers || new MockHeaders();
+      this.headers =
+        _info.headers instanceof MockHeaders
+          ? _info.headers
+          : new MockHeaders(_info.headers || {});
       this._body = _info.body;
     }
   }

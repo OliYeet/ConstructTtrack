@@ -252,8 +252,8 @@ describe('Authentication middleware (`withAuth`)', () => {
   it('rejects request when token is invalid', async () => {
     // Mock createRequestContext to return context without user (invalid token)
     mockCreateRequestContext.mockResolvedValueOnce({
-      user: undefined,
-      organizationId: undefined,
+      user: null,
+      organizationId: null,
       requestId: 'test-request-id',
       timestamp: new Date().toISOString(),
     });
