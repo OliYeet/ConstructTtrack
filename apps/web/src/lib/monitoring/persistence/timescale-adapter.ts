@@ -8,7 +8,13 @@ import { RealtimeMetricEvent } from '../collectors/base';
 import { realtimeConfig } from '../config/realtime-config';
 
 // Import Json type for Supabase compatibility
-type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
+type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[];
 
 // Metric persistence interface
 export interface MetricPersistenceAdapter {
