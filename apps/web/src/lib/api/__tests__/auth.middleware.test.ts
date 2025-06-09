@@ -86,7 +86,11 @@ jest.mock('../caching', () => ({
 jest.mock('../response', () => ({
   addCorsHeaders: jest.fn(response => response),
   createErrorResponse: jest.fn((error: unknown, requestId) => {
-    const errorObj = error as { status?: number; code?: string; message?: string };
+    const errorObj = error as {
+      status?: number;
+      code?: string;
+      message?: string;
+    };
     const status = errorObj?.status || 500;
     return NextResponse.json(
       {
