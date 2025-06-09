@@ -4,8 +4,6 @@
  * Based on Charlie's implementation blueprint for LUM-585
  */
 
-import * as os from 'os';
-
 import { realtimeConfig } from '../config/realtime-config';
 
 import { BaseRealtimeCollector } from './base';
@@ -156,8 +154,10 @@ export class ResourceCollector extends BaseRealtimeCollector {
     let cpuCount: number | undefined;
 
     try {
-      // Use static import for os module (Node.js only)
+      // Use dynamic import for os module (Node.js only) to avoid browser compatibility issues
       if (typeof process !== 'undefined' && process.versions?.node) {
+        // Dynamic import to prevent module loading errors in browser environments
+        const os = await import('os');
         loadAverage = process.platform !== 'win32' ? os.loadavg() : undefined;
         totalMemory = os.totalmem();
         freeMemory = os.freemem();
