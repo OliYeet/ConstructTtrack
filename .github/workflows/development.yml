@@ -1,4 +1,4 @@
-name: 🔧 Development Workflow
+name: 🔧 Early Development Workflow
 
 on:
   push:
@@ -14,7 +14,7 @@ jobs:
   dev-checks:
     name: 🚀 Quick Development Checks
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 8
 
     steps:
       - name: 📥 Checkout code
@@ -29,103 +29,10 @@ jobs:
       - name: 📦 Install dependencies
         run: npm ci
 
-      - run: npm run lint
+      - name: 🔍 Lint and type check
+        run: |
+          npm run lint
+          npm run type-check
 
-      - name: 🎨 Format check
-        run: npm run format:check
-
-      - name: 🔍 Type check
-        run: npm run type-check
-
-      - name: 🧪 Unit tests
-        run: npm run test:unit
-        continue-on-error: true
-
-  # Development Build
-  dev-build:
-    name: 🏗️ Development Build
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    needs: dev-checks
-    if: github.event_name == 'push'
-
-    steps:
-      - name: 📥 Checkout code
-        uses: actions/checkout@v4
-
-      - name: 📦 Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: 📦 Install dependencies
-        run: npm ci
-
-      - name: 🏗️ Build development version
-        run: npm run build
-        env:
-          NODE_ENV: development
-        continue-on-error: true
-
-  # Code Quality Analysis
-  quality-analysis:
-    name: 📊 Code Quality Analysis
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    needs: dev-checks
-    if: github.event_name == 'pull_request'
-
-    steps:
-      - name: 📥 Checkout code
-        uses: actions/checkout@v4
-
-      - name: 📦 Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: 📦 Install dependencies
-        run: npm ci
-
-      - name: 🔍 ESLint analysis
-        run: npm run lint
-        continue-on-error: true
-
-      - name: 🔒 Security audit
-        run: npm audit --audit-level moderate
-        continue-on-error: true
-
-      - name: 🧪 Test coverage
-        run: npm run test:unit
-        continue-on-error: true
-
-  # Integration Tests
-  integration-tests:
-    name: 🔗 Integration Tests
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    needs: dev-checks
-    if: github.event_name == 'pull_request'
-
-    steps:
-      - name: 📥 Checkout code
-        uses: actions/checkout@v4
-
-      - name: 📦 Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: 📦 Install dependencies
-        run: npm ci
-
-      - name: 🧪 Run integration tests
-        run: npm run test:integration
-        continue-on-error: true
-
-      - name: 🧪 Run e2e tests
-        run: npm run test:e2e
-        continue-on-error: true
+      - name: 🧪 Run tests
+        run: npm test

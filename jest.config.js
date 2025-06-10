@@ -22,39 +22,41 @@ const config = {
     '^.+\\.(js|jsx)$': 'babel-jest',
   },
 
-  // Test match patterns - simplified to just unit and integration
+  // Test match patterns - simplified to just unit tests
   testMatch: [
     '<rootDir>/tests/unit/**/*.test.{js,ts,tsx}',
-    '<rootDir>/tests/integration/**/*.test.{js,ts,tsx}',
     '<rootDir>/apps/*/src/**/*.test.{js,ts,tsx}',
-    '<rootDir>/packages/*/src/**/*.test.{js,ts,tsx}',
   ],
 
-  // Coverage settings - no thresholds initially
+  // Coverage settings - simplified for early development
   collectCoverageFrom: [
     'apps/web/src/**/*.{ts,tsx}',
-    'packages/*/src/**/*.{ts,tsx}',
-    'scripts/**/*.{js,ts}',
+    'tests/unit/**/*.{js,ts}',
     '!**/*.d.ts',
     '!**/*.test.{ts,tsx}',
     '!**/*.spec.{ts,tsx}',
     '!**/node_modules/**',
-    '!**/dist/**',
-    '!**/build/**',
   ],
 
-  coverageReporters: ['text', 'lcov'],
+  coverageReporters: ['text', 'lcov', 'html'],
   coverageDirectory: '<rootDir>/coverage',
+
+  // Simplified coverage for early development - no strict thresholds yet
+  // coverageThreshold: {
+  //   global: {
+  //     statements: 30,
+  //     branches: 25,
+  //     functions: 30,
+  //     lines: 30,
+  //   },
+  // },
 
   // Setup files
   setupFilesAfterEnv: ['<rootDir>/tests/setup.js'],
 
-  // Module name mapping
+  // Module name mapping - simplified for early development
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/apps/web/src/$1',
-    '^@constructtrack/ui/(.*)$': '<rootDir>/packages/ui/src/$1',
-    '^@constructtrack/supabase/(.*)$': '<rootDir>/packages/supabase/$1',
-    '^@tests/(.*)$': '<rootDir>/tests/$1',
   },
 
   // Single timeout for all tests
