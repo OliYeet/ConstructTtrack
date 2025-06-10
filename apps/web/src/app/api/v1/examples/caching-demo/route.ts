@@ -107,7 +107,9 @@ export const PATCH = withApiMiddleware(
 export const DELETE = withApiMiddleware(
   {
     DELETE: async (request: NextRequest) => {
-      const user = (request as any).context?.user;
+      const user = (
+        request as { context?: { user?: { id: string; role: string } } }
+      ).context?.user;
 
       return createSuccessResponse({
         message: 'User-specific caching demo',

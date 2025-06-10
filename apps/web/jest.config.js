@@ -18,9 +18,9 @@ function resolvePackagePath(packageName, subPath = '') {
   const packagePath = path.resolve(packagesDir, packageName);
   const fullPath = subPath ? path.resolve(packagePath, subPath) : packagePath;
 
-  // Check if the path exists to provide better error messages
+  // Check if the path exists - packages may not exist in all environments
   if (!fs.existsSync(packagePath)) {
-    console.warn(`Warning: Package directory not found: ${packagePath}`);
+    // Path will be created during build if needed, or test will fail appropriately
   }
 
   return fullPath;

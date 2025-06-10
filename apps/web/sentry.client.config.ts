@@ -36,10 +36,7 @@ Sentry.init({
 
   // Additional configuration for ConstructTrack
   beforeSend(event, _hint) {
-    // Filter out development errors in production
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Sentry event:', event);
-    }
+    // Development events are automatically captured by Sentry debug mode
 
     // Add custom tags for ConstructTrack
     event.tags = {
