@@ -143,22 +143,41 @@ export class PerformanceMonitor {
   }
 
   // Start timing an operation
-  startTiming(operationId: string): void {
-    this.timings.set(operationId, performance.now());
+  async startTiming(operationId: string): Promise<void> {
+    const perf = await this.getPerformanceAPI();
+    this.timings.set(operationId, perf.now());
+  }
+
+  // Get performance API safely without eval
+  private async getPerformanceAPI(): Promise<{ now(): number }> {
+    // Use performance API if available, otherwise use perf_hooks for Node.js
+    if (typeof performance !== 'undefined') {
+      return performance;
+    } else {
+      // Use dynamic import for Node.js environment to avoid security risks
+      try {
+        const perfHooks = await import('perf_hooks');
+        return perfHooks.performance;
+      } catch {
+        // Fallback if perf_hooks is not available
+        return { now: () => Date.now() };
+      }
+    }
   }
 
   // End timing an operation
-  endTiming(
+  async endTiming(
     operationId: string,
     tags: Record<string, string> = {},
     metadata?: Record<string, unknown>
-  ): number | null {
+  ): Promise<number | null> {
     const startTime = this.timings.get(operationId);
     if (!startTime) {
       return null;
     }
 
-    const endTime = performance.now();
+    const perf = await this.getPerformanceAPI();
+    const endTime = perf.now();
     const duration = endTime - startTime;
 
     this.timings.delete(operationId);
@@ -182,33 +201,33 @@ export class PerformanceMonitor {
     tags: Record<string, string> = {}
   ): Promise<T> {
     const operationId = `${operationName}_${Date.now()}`;
-    this.startTiming(operationId);
+    await this.startTiming(operationId);
 
     try {
       const result = await fn();
-      this.endTiming(operationId, { ...tags, status: 'success' });
+      await this.endTiming(operationId, { ...tags, status: 'success' });
       return result;
     } catch (error) {
-      this.endTiming(operationId, { ...tags, status: 'error' });
+      await this.endTiming(operationId, { ...tags, status: 'error' });
       throw error;
     }
   }
 
   // Measure synchronous function execution time
-  measure<T>(
+  async measure<T>(
     operationName: string,
     fn: () => T,
     tags: Record<string, string> = {}
-  ): T {
+  ): Promise<T> {
     const operationId = `${operationName}_${Date.now()}`;
-    this.startTiming(operationId);
+    await this.startTiming(operationId);
 
     try {
       const result = fn();
-      this.endTiming(operationId, { ...tags, status: 'success' });
+      await this.endTiming(operationId, { ...tags, status: 'success' });
       return result;
     } catch (error) {
-      this.endTiming(operationId, { ...tags, status: 'error' });
+      await this.endTiming(operationId, { ...tags, status: 'error' });
       throw error;
     }
   }

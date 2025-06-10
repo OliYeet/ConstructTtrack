@@ -43,7 +43,7 @@ async function checkDatabase(): Promise<'healthy' | 'unhealthy'> {
 // GET /api/v1/health
 async function handleGet(
   request: ApiRequest,
-  _context: { params: Record<string, string> }
+  _context: { params: Promise<Record<string, string>> }
 ) {
   const requestContext = (request as ApiRequest & { context?: RequestContext })
     .context;

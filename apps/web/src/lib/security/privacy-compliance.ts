@@ -225,7 +225,7 @@ export class PrivacyComplianceManager {
     legalBasis: string,
     metadata: Record<string, unknown> = {}
   ): Promise<string> {
-    const processingId = `proc_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+    const processingId = `proc_${randomUUID()}`;
 
     const processing: ProcessingRecord = {
       id: processingId,
@@ -374,7 +374,7 @@ export class PrivacyComplianceManager {
     }
   }
 
-  // Data export for access requests
+  // Data export for access requests - read-only operation
   private async generateDataExport(
     userId: string
   ): Promise<Record<string, unknown>> {
@@ -386,7 +386,7 @@ export class PrivacyComplianceManager {
       userId,
       exportDate: new Date().toISOString(),
       consents,
-      processingRecords: processing,
+      processingRecords: processing, // Export original data without modification
       dataSubjectRequests: requests,
       // Add other user data as needed
     };
@@ -409,6 +409,11 @@ export class PrivacyComplianceManager {
         consent.withdrawalDate = new Date().toISOString();
       }
     });
+
+    // Mark processing records for deletion if needed
+    // processing.forEach(record => {
+    //   record.retentionPeriod = 0; // Mark for deletion
+    // });
 
     if (this.config.enableAuditLogging) {
       const logger = getLogger();

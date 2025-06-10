@@ -72,7 +72,7 @@ export const GET = withApiMiddleware(
 export async function POST(request: NextRequest) {
   const body = await request.json();
 
-  const { name, value, unit, tags, metadata } = body;
+  const { name, value, unit, tags } = body;
 
   // Validate required fields
   if (!name || typeof value !== 'number' || !unit) {
@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
   }
 
   // Record the metric (placeholder implementation)
-  console.log('Recording metric:', { name, value, unit, tags, metadata });
+  // TODO: Implement actual metrics recording to TimescaleDB
 
   return createSuccessResponse({
     message: 'Metric recorded successfully',

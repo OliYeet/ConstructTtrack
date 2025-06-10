@@ -3,7 +3,7 @@
  * Provides schema metadata, documentation, and examples
  */
 
-import { printSchema, buildSchema } from 'graphql';
+import { buildSchema, getIntrospectionQuery, graphqlSync } from 'graphql';
 import { NextRequest } from 'next/server';
 
 import { withApiMiddleware, createSuccessResponse } from '@/lib/api';
@@ -49,8 +49,10 @@ export const GET = withApiMiddleware({
         // Return introspection schema
         try {
           const schema = buildSchema(typeDefs.loc?.source.body || '');
-          const introspectionSchema = printSchema(schema);
-
+          const introspectionSchema = graphqlSync({
+            schema,
+            source: getIntrospectionQuery(),
+          }).data;
           return createSuccessResponse({
             format: 'Introspection',
             schema: introspectionSchema,

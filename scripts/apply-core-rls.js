@@ -50,7 +50,8 @@ class CoreRLSManager {
         .select('id')
         .limit(1);
 
-      if (error && !error.message.includes('permission denied')) {
+      if (error && error.code !== '42501') {
+        // 42501 = insufficient_privilege
         throw error;
       }
 

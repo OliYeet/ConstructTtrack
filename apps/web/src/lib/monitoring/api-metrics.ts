@@ -77,30 +77,36 @@ export class ApiMetricsTracker {
   private retentionPeriod = 24 * 60 * 60 * 1000; // 24 hours
 
   // Record API request start
-  recordRequestStart(_request: NextRequest, context?: RequestContext): string {
+  async recordRequestStart(
+    _request: NextRequest,
+    context?: RequestContext
+  ): Promise<string> {
     const requestId =
       context?.requestId ||
       `req_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
 
     // Start performance timing
-    performanceMonitor.startTiming(`api_${requestId}`);
+    await performanceMonitor.startTiming(`api_${requestId}`);
 
     return requestId;
   }
 
   // Record API request completion
-  recordRequestEnd(
+  async recordRequestEnd(
     request: NextRequest,
     response: Response,
     requestId: string,
     context?: RequestContext
-  ): void {
+  ): Promise<void> {
     // End performance timing
-    const responseTime = performanceMonitor.endTiming(`api_${requestId}`, {
-      endpoint: this.extractEndpoint(request.url),
-      method: request.method || 'GET',
-      status: response.status.toString(),
-    });
+    const responseTime = await performanceMonitor.endTiming(
+      `api_${requestId}`,
+      {
+        endpoint: this.extractEndpoint(request.url),
+        method: request.method || 'GET',
+        status: response.status.toString(),
+      }
+    );
 
     if (responseTime == null) {
       // covers null OR undefined

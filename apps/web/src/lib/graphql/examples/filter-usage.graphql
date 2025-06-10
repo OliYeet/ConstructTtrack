@@ -1,0 +1,92 @@
+# Example GraphQL queries demonstrating the flexible FilterInput with FilterValue scalar
+
+# Example 1: Filter projects by status using string value
+query FilterProjectsByStatus {
+  projects(filters: [{ field: "status", operator: EQ, value: "IN_PROGRESS" }]) {
+    edges {
+      node {
+        id
+        name
+        status
+      }
+    }
+  }
+}
+
+# Example 2: Filter projects by budget using numeric value
+query FilterProjectsByBudget {
+  projects(
+    filters: [
+      { field: "budget", operator: GT, value: 50000 }
+      { field: "budget", operator: LTE, value: 100000 }
+    ]
+  ) {
+    edges {
+      node {
+        id
+        name
+        budget
+      }
+    }
+  }
+}
+
+# Example 3: Filter projects by multiple statuses using IN operator with array
+query FilterProjectsByMultipleStatuses {
+  projects(
+    filters: [
+      {
+        field: "status"
+        operator: IN
+        value: ["PLANNING", "IN_PROGRESS", "ON_HOLD"]
+      }
+    ]
+  ) {
+    edges {
+      node {
+        id
+        name
+        status
+      }
+    }
+  }
+}
+
+# Example 4: Filter tasks by priority using numeric comparison
+query FilterTasksByPriority {
+  tasks(filters: [{ field: "priority", operator: GTE, value: 3 }]) {
+    edges {
+      node {
+        id
+        title
+        priority
+      }
+    }
+  }
+}
+
+# Example 5: Complex filtering with mixed value types
+query ComplexProjectFilter {
+  projects(
+    filters: [
+      { field: "status", operator: IN, value: ["IN_PROGRESS", "PLANNING"] }
+      { field: "budget", operator: GT, value: 25000 }
+      { field: "customerName", operator: LIKE, value: "Tech" }
+    ]
+    sort: [{ field: "budget", direction: DESC }]
+  ) {
+    edges {
+      node {
+        id
+        name
+        status
+        budget
+        customerName
+      }
+    }
+    pageInfo {
+      totalCount
+      hasNextPage
+    }
+  }
+}

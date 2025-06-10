@@ -104,7 +104,7 @@ function transformProject(row: ProjectRow): ProjectResponse {
 async function handleGet(
   request: NextRequest,
 
-  _: { params: Record<string, string> }
+  _: { params: Promise<Record<string, string>> }
 ) {
   const context = (
     request as NextRequest & {
@@ -116,11 +116,16 @@ async function handleGet(
   // Dynamically import Supabase client
   const { supabase } = await import('@constructtrack/supabase/client');
 
+  // Ensure organizationId is available
+  if (!context.organizationId) {
+    throw new Error('Organization ID is required');
+  }
+
   // Build query
   let query = supabase
     .from('projects')
     .select('*', { count: 'exact' })
-    .eq('organization_id', context.organizationId!);
+    .eq('organization_id', context.organizationId);
 
   // Apply filters
   if (queryParams.status) {
@@ -169,7 +174,7 @@ async function handleGet(
 async function handlePost(
   request: NextRequest,
 
-  _: { params: Record<string, string> }
+  _: { params: Promise<Record<string, string>> }
 ) {
   const context = (
     request as NextRequest & {
@@ -184,9 +189,14 @@ async function handlePost(
   // Dynamically import Supabase client
   const { supabase } = await import('@constructtrack/supabase/client');
 
+  // Ensure organizationId is available
+  if (!context.organizationId) {
+    throw new Error('Organization ID is required');
+  }
+
   // Prepare data for insertion
   const insertData = {
-    organization_id: context.organizationId!,
+    organization_id: context.organizationId,
     name: projectData.name,
     description: projectData.description || null,
     start_date: projectData.startDate || null,

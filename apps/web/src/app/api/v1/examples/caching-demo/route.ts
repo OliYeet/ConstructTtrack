@@ -29,11 +29,6 @@ export const GET = withApiMiddleware(
           ttl: '60 seconds',
           staleWhileRevalidate: '30 seconds',
         },
-        headers: {
-          'Cache-Control': 'Response includes cache control headers',
-          ETag: 'Response includes ETag for conditional requests',
-          'X-Cache': 'HIT/MISS indicator',
-        },
       });
     },
   },
@@ -112,7 +107,9 @@ export const PATCH = withApiMiddleware(
 export const DELETE = withApiMiddleware(
   {
     DELETE: async (request: NextRequest) => {
-      const user = (request as any).context?.user;
+      const user = (
+        request as { context?: { user?: { id: string; role: string } } }
+      ).context?.user;
 
       return createSuccessResponse({
         message: 'User-specific caching demo',

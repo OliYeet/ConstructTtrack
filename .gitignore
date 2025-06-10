@@ -199,3 +199,4 @@ pnpm-lock.yaml
 
 # Turbo
 .turbo
+.linear-mcp-config.json

@@ -262,6 +262,7 @@ export default [
       'notion_scripts/**/*.js',
       'src/**/*.js',
       'apps/web/src/tests/**/*.js',
+      'packages/**/scripts/**/*.js',
     ],
     languageOptions: {
       ecmaVersion: 'latest',

@@ -7,7 +7,10 @@ import { NextRequest } from 'next/server';
 import { z } from 'zod';
 
 import { createSuccessResponse, createErrorResponse } from '@/lib/api/response';
-import { privacyManager } from '@/lib/security/privacy-compliance';
+import {
+  privacyManager,
+  DataSubjectRight,
+} from '@/lib/security/privacy-compliance';
 import {
   securityScanner,
   defaultSecurityScanConfig,
@@ -138,7 +141,7 @@ export async function POST(request: NextRequest) {
 
     const { action, parameters } = validationResult.data;
 
-    let response: any = {};
+    let response: Record<string, unknown> = {};
 
     switch (action) {
       case 'scan':
@@ -219,7 +222,9 @@ async function getRateLimitStatus() {
   };
 }
 
-async function triggerSecurityScan(parameters: any) {
+async function triggerSecurityScan(parameters: {
+  scanType: 'vulnerability' | 'compliance';
+}) {
   const { scanType } = parameters;
 
   switch (scanType) {
@@ -265,14 +270,18 @@ async function triggerSecurityScan(parameters: any) {
   }
 }
 
-async function handlePrivacyRequest(parameters: any) {
+async function handlePrivacyRequest(parameters: {
+  requestType: 'data-export' | 'data-deletion' | 'consent-withdrawal';
+  userId: string;
+  details?: Record<string, unknown>;
+}) {
   const { requestType, userId, details } = parameters;
 
   switch (requestType) {
     case 'data-export': {
       const requestId = await privacyManager.submitDataSubjectRequest(
         userId,
-        'access' as any,
+        DataSubjectRight.ACCESS,
         details
       );
 
@@ -294,7 +303,7 @@ async function handlePrivacyRequest(parameters: any) {
     case 'data-deletion': {
       const deletionRequestId = await privacyManager.submitDataSubjectRequest(
         userId,
-        'erasure' as any,
+        DataSubjectRight.ERASURE,
         details
       );
 
@@ -313,14 +322,14 @@ async function handlePrivacyRequest(parameters: any) {
     case 'consent-withdrawal': {
       const success = await privacyManager.withdrawConsent(
         userId,
-        details.consentId
+        details?.consentId as string
       );
 
       return {
         requestType: 'consent-withdrawal',
         status: success ? 'completed' : 'failed',
         userId,
-        consentId: details.consentId,
+        consentId: details?.consentId as string | undefined,
         processedAt: new Date().toISOString(),
       };
     }
@@ -330,8 +339,8 @@ async function handlePrivacyRequest(parameters: any) {
   }
 }
 
-async function resetRateLimits(parameters: any) {
-  const { target } = parameters;
+async function resetRateLimits(parameters?: { target?: string }) {
+  const target = parameters?.target;
 
   // In a real implementation, this would reset rate limits in the store
   return {
@@ -343,8 +352,12 @@ async function resetRateLimits(parameters: any) {
   };
 }
 
-async function generateSecurityReport(parameters: any) {
-  const { format, includeDetails } = parameters;
+async function generateSecurityReport(parameters?: {
+  format?: 'json' | 'csv' | 'pdf';
+  includeDetails?: boolean;
+}) {
+  const format = parameters?.format;
+  const includeDetails = parameters?.includeDetails;
 
   const vulnerabilityReport = securityScanner.generateSecurityReport();
   const complianceStatus = await privacyManager.checkCompliance();
@@ -369,7 +382,8 @@ async function generateSecurityReport(parameters: any) {
   };
 
   if (includeDetails) {
-    (report as any).details = {
+    const reportWithDetails = report as Record<string, unknown>;
+    reportWithDetails.details = {
       vulnerabilities: vulnerabilityReport.findings,
       complianceIssues: complianceStatus.issues,
       recommendations: [

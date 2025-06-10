@@ -234,7 +234,7 @@ export class CacheManager {
       timestamp: Date.now(),
       ttl: config.ttl,
       tags: config.tags ? [...config.tags] : [],
-      etag: this.generateETag(data),
+      etag: await this.generateETag(data),
       headers,
     };
 
@@ -251,13 +251,25 @@ export class CacheManager {
     await this.store.invalidateByTag(tag);
   }
 
-  // Generate ETag
-  private generateETag(_data: any): string {
-    // const hash = require('crypto')
-    //   .createHash('md5')
-    //   .update(JSON.stringify(data))
-    //   .digest('hex');
-    return `"mock-etag"`;
+  // Clear all cache entries
+  async clear(): Promise<void> {
+    await this.store.clear();
+  }
+
+  private async generateETag(data: unknown): Promise<string> {
+    // Use dynamic import for crypto in browser-compatible way
+    try {
+      // Use dynamic import for security instead of require
+      const crypto = await import('crypto');
+      const hash = crypto
+        .createHash('sha1')
+        .update(JSON.stringify(data))
+        .digest('hex');
+      return `"${hash}"`; // Ensure consistent quoted format
+    } catch {
+      // Fallback for environments without crypto - plain string without extra quotes
+      return `etag-${Date.now()}-${Math.random().toString(36).substring(2)}`;
+    }
   }
 
   // Check if entry is stale

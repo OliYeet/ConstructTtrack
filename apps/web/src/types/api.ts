@@ -71,7 +71,7 @@ export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 // API Route Handler Type
 export type ApiHandler = (
   request: ApiRequest,
-  context: { params: Record<string, string> }
+  context: { params: Promise<Record<string, string>> }
 ) => Promise<NextResponse>;
 
 // Validation Error

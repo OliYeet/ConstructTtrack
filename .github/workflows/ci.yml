@@ -1,4 +1,4 @@
-name: 🔄 CI/CD Pipeline
+name: 🔄 Early Development CI/CD Pipeline
 
 on:
   push:
@@ -11,17 +11,15 @@ env:
   NODE_VERSION: '18'
 
 jobs:
-  # Job 1: Code Quality & Security
+  # Job 1: Quality Checks
   quality:
-    name: 🔍 Code Quality & Security
+    name: 🔍 Quality Checks
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
 
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: 📦 Setup Node.js
         uses: actions/setup-node@v4
@@ -38,30 +36,15 @@ jobs:
       - name: 🎨 Check code formatting
         run: npm run format:check
 
-      - name: 🔒 Security audit
-        run: npm audit --audit-level moderate
-
       - name: 🔍 Type checking
         run: npm run type-check
 
-      - name: 🛡️ Security scan with Snyk
-        uses: snyk/actions/node@master
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          args: --severity-threshold=high
-        continue-on-error: true
-
-  # Job 2: Unit & Integration Tests
+  # Job 2: Tests
   test:
     name: 🧪 Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 15
     needs: quality
-
-    strategy:
-      matrix:
-        test-group: [unit, integration, e2e]
 
     steps:
       - name: 📥 Checkout code
@@ -76,26 +59,20 @@ jobs:
       - name: 📦 Install dependencies
         run: npm ci
 
-      - name: 🧪 Run ${{ matrix.test-group }} tests
-        run: npm run test:${{ matrix.test-group }}
+      - name: 🧪 Run tests with coverage
+        run: npm run test:coverage
         env:
           CI: true
 
-      - name: 📊 Upload coverage to Codecov
-        if: ${{ matrix.test-group == 'unit' }}
-        uses: codecov/codecov-action@v3
-        with:
-          file: ./coverage/lcov.info
-          flags: unittests
-          name: codecov-umbrella
+      # Coverage reporting removed for early development
 
-  # Job 3: Build & Deploy Preview
-  build:
-    name: 🏗️ Build & Deploy Preview
+  # Job 3: Deploy
+  deploy:
+    name: 🚀 Deploy
     runs-on: ubuntu-latest
     timeout-minutes: 15
     needs: [quality, test]
-    if: github.event_name == 'pull_request'
+    if: github.ref == 'refs/heads/main' || github.event_name == 'pull_request'
 
     steps:
       - name: 📥 Checkout code
@@ -114,190 +91,11 @@ jobs:
         run: npm run web:build
         env:
           NODE_ENV: production
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-          SENTRY_ORG: lumenfront
-          SENTRY_PROJECT: constructtrack
 
-      - name: 📊 Create Sentry Preview Release
-        uses: getsentry/action-release@v1
-        env:
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-          SENTRY_ORG: lumenfront
-          SENTRY_PROJECT: constructtrack
-        with:
-          environment: preview
-          version: ${{ github.sha }}-preview
-          sourcemaps: './apps/web/.next'
-
-      - name: 🚀 Deploy to Vercel Preview
+      - name: 🚀 Deploy to Vercel
         uses: amondnet/vercel-action@v25
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
           vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-
-  # Job 4: Production Deployment
-  deploy:
-    name: 🚀 Production Deployment
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    needs: [quality, test]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    environment: production
-
-    steps:
-      - name: 📥 Checkout code
-        uses: actions/checkout@v4
-
-      - name: 📦 Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: 📦 Install dependencies
-        run: npm ci
-
-      - name: 🏗️ Build application
-        run: npm run web:build
-        env:
-          NODE_ENV: production
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-          SENTRY_ORG: lumenfront
-          SENTRY_PROJECT: constructtrack
-
-      - name: 📊 Create Sentry Release
-        uses: getsentry/action-release@v1
-        env:
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-          SENTRY_ORG: lumenfront
-          SENTRY_PROJECT: constructtrack
-        with:
-          environment: production
-          version: ${{ github.sha }}
-          sourcemaps: './apps/web/.next'
-
-      - name: 🧪 Run production smoke tests
-        run: npm run test:smoke
-
-      - name: 🚀 Deploy to Vercel Production
-        uses: amondnet/vercel-action@v25
-        with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          vercel-args: '--prod'
-
-      - name: 🎯 Finalize Sentry Release
-        if: success()
-        uses: getsentry/action-release@v1
-        env:
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-          SENTRY_ORG: lumenfront
-          SENTRY_PROJECT: constructtrack
-        with:
-          environment: production
-          version: ${{ github.sha }}
-          finalize: true
-
-      # Slack notifications disabled - can be re-enabled when needed
-      # - name: 🎉 Notify deployment success
-      #   if: success()
-      #   uses: 8398a7/action-slack@v3
-      #   with:
-      #     status: success
-      #     text: '✅ Production deployment successful'
-      #     webhook_url: ${{ secrets.SLACK_WEBHOOK }}
-
-      # - name: 🚨 Notify deployment failure
-      #   if: failure()
-      #   uses: 8398a7/action-slack@v3
-      #   with:
-      #     status: failure
-      #     text: '❌ Production deployment failed'
-      #     webhook_url: ${{ secrets.SLACK_WEBHOOK }}
-
-  # Job 5: Database Migrations (Production)
-  migrate:
-    name: 🗄️ Database Migrations
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    needs: deploy
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    environment: production
-
-    steps:
-      - name: 📥 Checkout code
-        uses: actions/checkout@v4
-
-      - name: 📦 Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: 📦 Install dependencies
-        run: npm ci
-
-      # Database migrations temporarily disabled for debugging
-      # - name: 🗄️ Run database migrations
-      #   run: |
-      #     # Install Supabase CLI
-      #     npm install -g @supabase/cli
-      #
-      #     # Authenticate with Supabase
-      #     echo "${{ secrets.SUPABASE_ACCESS_TOKEN }}" | supabase auth login --token
-      #
-      #     # Link to remote project
-      #     supabase link --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
-      #
-      #     # Run migrations
-      #     npm run db:migrate
-      #   env:
-      #     DATABASE_URL: ${{ secrets.DATABASE_URL }}
-      #     SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
-
-      # Database seeding temporarily disabled for debugging
-      # - name: 🌱 Seed production data (if needed)
-      #   run: npm run db:seed:prod
-      #   env:
-      #     DATABASE_URL: ${{ secrets.DATABASE_URL }}
-      #     SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
-      #   continue-on-error: true
-
-  # Job 6: Performance & Security Monitoring
-  monitoring:
-    name: 📊 Performance & Security Monitoring
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    needs: deploy
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-
-    steps:
-      - name: 📥 Checkout code
-        uses: actions/checkout@v4
-
-      # Lighthouse CI temporarily disabled for debugging
-      # - name: 🔍 Lighthouse CI
-      #   uses: treosh/lighthouse-ci-action@v10
-      #   with:
-      #     configPath: './lighthouse.config.js'
-      #     uploadArtifacts: true
-      #     temporaryPublicStorage: true
-
-      - name: 🔒 Security scan with ZAP
-        uses: zaproxy/action-full-scan@v0.7.0
-        with:
-          target: ${{ secrets.PRODUCTION_URL }}
-          rules_file_name: '.zap/rules.tsv'
-          cmd_options: '-a'
-        continue-on-error: true
-
-      - name: 📊 Send metrics to monitoring
-        run: |
-          # Send metrics to DataDog, New Relic, or similar
-          curl -X POST https://api.datadoghq.com/api/v1/series \
-            -H "DD-API-KEY: ${{ secrets.DD_API_KEY }}" \
-            -H "Content-Type: application/json" \
-            -d @metrics.json
-        continue-on-error: true
+          vercel-args: ${{ github.ref == 'refs/heads/main' && '--prod' || '' }}

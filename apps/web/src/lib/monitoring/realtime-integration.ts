@@ -13,16 +13,57 @@ import { getLogger } from '../logging';
 import { performanceMonitor } from './performance-monitor';
 import { RealtimeAlertManager } from './realtime-alerts';
 import {
-  RealtimeLatencyMetric,
   RealtimeAlert,
+  RealtimePerformanceStats,
   defaultRealtimeMonitoringConfig,
 } from './realtime-metrics';
 import { realtimePerformanceMonitor } from './realtime-performance-monitor';
+
+// Event payload type definitions
+type AlertEventPayload = RealtimeAlert;
+type StatsEventPayload = RealtimePerformanceStats;
+
+// Type guard functions for safe type narrowing
+function isRealtimeAlert(data: unknown): data is RealtimeAlert {
+  return (
+    typeof data === 'object' &&
+    data !== null &&
+    'id' in data &&
+    'timestamp' in data &&
+    'type' in data &&
+    'severity' in data &&
+    'message' in data &&
+    typeof (data as RealtimeAlert).id === 'string' &&
+    typeof (data as RealtimeAlert).timestamp === 'number' &&
+    ['latency', 'error_rate', 'connection', 'throughput'].includes(
+      (data as RealtimeAlert).type
+    ) &&
+    ['warning', 'critical'].includes((data as RealtimeAlert).severity) &&
+    typeof (data as RealtimeAlert).message === 'string'
+  );
+}
+
+function isRealtimePerformanceStats(
+  data: unknown
+): data is RealtimePerformanceStats {
+  return (
+    typeof data === 'object' &&
+    data !== null &&
+    'totalEvents' in data &&
+    'timeWindow' in data &&
+    'latencyStats' in data &&
+    'connectionStats' in data &&
+    'errorStats' in data &&
+    'throughputStats' in data &&
+    typeof (data as RealtimePerformanceStats).totalEvents === 'number'
+  );
+}
 
 // Integration manager for real-time monitoring
 export class RealtimeMonitoringIntegration {
   private alertManager: RealtimeAlertManager;
   private isInitialized = false;
+  private statsInterval?: NodeJS.Timeout;
 
   constructor() {
     this.alertManager = new RealtimeAlertManager(
@@ -58,6 +99,10 @@ export class RealtimeMonitoringIntegration {
     }
 
     realtimePerformanceMonitor.stop();
+    if (this.statsInterval) {
+      clearInterval(this.statsInterval);
+      this.statsInterval = undefined;
+    }
     this.isInitialized = false;
 
     const logger = getLogger();
@@ -67,12 +112,30 @@ export class RealtimeMonitoringIntegration {
   // Setup event listeners for real-time monitoring
   private setupEventListeners(): void {
     // Listen for alerts and send them through alert manager
-    realtimePerformanceMonitor.on('alert', async (alert: RealtimeAlert) => {
+    realtimePerformanceMonitor.on('alert', async (data: unknown) => {
+      if (!isRealtimeAlert(data)) {
+        const logger = getLogger();
+        logger.warn('Invalid alert event payload received', {
+          metadata: { receivedData: data },
+        });
+        return;
+      }
+
+      const alert: AlertEventPayload = data;
       await this.alertManager.sendAlert(alert);
     });
 
     // Listen for performance stats and log them
-    realtimePerformanceMonitor.on('stats', stats => {
+    realtimePerformanceMonitor.on('stats', (data: unknown) => {
+      if (!isRealtimePerformanceStats(data)) {
+        const logger = getLogger();
+        logger.warn('Invalid stats event payload received', {
+          metadata: { receivedData: data },
+        });
+        return;
+      }
+
+      const stats: StatsEventPayload = data;
       const logger = getLogger();
       logger.info('Real-time performance stats calculated', {
         metadata: {
@@ -85,26 +148,6 @@ export class RealtimeMonitoringIntegration {
           },
         },
       });
-    });
-
-    // Listen for metrics and optionally sample them for detailed logging
-    realtimePerformanceMonitor.on('metric', event => {
-      if (event.type === 'latency') {
-        const metric = event.metric as RealtimeLatencyMetric;
-
-        // Log high-latency events for debugging
-        if (metric.latencies.endToEnd && metric.latencies.endToEnd > 1000) {
-          const logger = getLogger();
-          logger.warn('High latency real-time event detected', {
-            metadata: {
-              eventId: metric.eventId,
-              eventType: metric.eventType,
-              endToEndLatency: metric.latencies.endToEnd,
-              channel: metric.metadata.channel,
-            },
-          });
-        }
-      }
     });
   }
 
@@ -119,7 +162,7 @@ export class RealtimeMonitoringIntegration {
     );
 
     // Setup periodic reporting to main performance monitor
-    setInterval(() => {
+    this.statsInterval = setInterval(() => {
       const stats = realtimePerformanceMonitor.getCurrentStats();
       if (stats) {
         // Report key metrics to main performance monitor
