@@ -7,7 +7,10 @@ import { NextRequest } from 'next/server';
 import { z } from 'zod';
 
 import { createSuccessResponse, createErrorResponse } from '@/lib/api/response';
-import { privacyManager, DataSubjectRight } from '@/lib/security/privacy-compliance';
+import {
+  privacyManager,
+  DataSubjectRight,
+} from '@/lib/security/privacy-compliance';
 import {
   securityScanner,
   defaultSecurityScanConfig,
@@ -219,7 +222,9 @@ async function getRateLimitStatus() {
   };
 }
 
-async function triggerSecurityScan(parameters: { scanType: 'vulnerability' | 'compliance' }) {
+async function triggerSecurityScan(parameters: {
+  scanType: 'vulnerability' | 'compliance';
+}) {
   const { scanType } = parameters;
 
   switch (scanType) {
