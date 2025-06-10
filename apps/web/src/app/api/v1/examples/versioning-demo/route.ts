@@ -68,6 +68,8 @@ export const POST = withApiMiddleware({
       timestamp: string;
       features?: string[];
       deprecationWarning?: string;
+      format?: string;
+      metadata?: unknown;
     } = {
       message: 'Version-specific behavior demo',
       version: apiVersion?.version || 'unknown',

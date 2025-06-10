@@ -38,6 +38,8 @@ describe('/api/v1/health - Basic Tests', () => {
     const result = await GET(mockRequest, { params: Promise.resolve({}) });
 
     expect(result).toBeDefined();
-    expect(GET).toHaveBeenCalledWith(mockRequest, { params: Promise.resolve({}) });
+    expect(GET).toHaveBeenCalledWith(mockRequest, {
+      params: Promise.resolve({}),
+    });
   });
 });

@@ -1,10 +1,13 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this
+repository.
 
 ## Project Overview
 
-TiefbauApp (ConstructTrack) is a fiber optic installation management platform built as a TypeScript monorepo with Next.js web and React Native mobile applications. The system focuses on field worker tools, project management, and real-time geospatial tracking using Supabase as the backend.
+TiefbauApp (ConstructTrack) is a fiber optic installation management platform built as a TypeScript
+monorepo with Next.js web and React Native mobile applications. The system focuses on field worker
+tools, project management, and real-time geospatial tracking using Supabase as the backend.
 
 ## Development Commands
 
@@ -61,12 +64,14 @@ npm run workspace:validate  # Validate monorepo structure
 ### Testing Philosophy
 
 The testing infrastructure has been deliberately simplified for rapid early development:
+
 - **Focus**: Essential unit tests and basic API endpoint tests only
 - **Structure**: Tests in `/tests/unit/` and `/apps/web/src/__tests__/`
 - **Approach**: Mocked external dependencies, no database integration tests
 - **Execution**: All tests run in <1 second for fast feedback loops
 
 Current test coverage:
+
 - Core business logic (math, string manipulation, array operations)
 - Validation utilities (email, UUID, password, project data)
 - API endpoints (health, projects) with mocked responses
@@ -81,11 +86,13 @@ Current test coverage:
 
 ### API Structure
 
-RESTful API at `/api/v1/` with health, projects, monitoring, and performance endpoints. Uses standardized response format with comprehensive error handling.
+RESTful API at `/api/v1/` with health, projects, monitoring, and performance endpoints. Uses
+standardized response format with comprehensive error handling.
 
 ### Monitoring System
 
 Advanced real-time monitoring with:
+
 - Connection, throughput, resource, and queue depth collectors
 - P99 latency tracking with configurable thresholds
 - TimescaleDB adapter for metrics persistence

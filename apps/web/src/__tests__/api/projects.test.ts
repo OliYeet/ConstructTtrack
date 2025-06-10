@@ -37,7 +37,9 @@ describe('/api/v1/projects - Basic Tests', () => {
       const result = await GET(mockRequest, { params: Promise.resolve({}) });
 
       expect(result).toBeDefined();
-      expect(GET).toHaveBeenCalledWith(mockRequest, { params: Promise.resolve({}) });
+      expect(GET).toHaveBeenCalledWith(mockRequest, {
+        params: Promise.resolve({}),
+      });
     });
   });
 
@@ -65,7 +67,9 @@ describe('/api/v1/projects - Basic Tests', () => {
       const result = await POST(mockRequest, { params: Promise.resolve({}) });
 
       expect(result).toBeDefined();
-      expect(POST).toHaveBeenCalledWith(mockRequest, { params: Promise.resolve({}) });
+      expect(POST).toHaveBeenCalledWith(mockRequest, {
+        params: Promise.resolve({}),
+      });
     });
   });
 });

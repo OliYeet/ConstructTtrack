@@ -13,7 +13,6 @@ import { getLogger } from '../logging';
 import { performanceMonitor } from './performance-monitor';
 import { RealtimeAlertManager } from './realtime-alerts';
 import {
-  RealtimeLatencyMetric,
   RealtimeAlert,
   RealtimePerformanceStats,
   defaultRealtimeMonitoringConfig,
@@ -59,7 +58,6 @@ function isRealtimePerformanceStats(
     typeof (data as RealtimePerformanceStats).totalEvents === 'number'
   );
 }
-
 
 // Integration manager for real-time monitoring
 export class RealtimeMonitoringIntegration {
@@ -151,7 +149,6 @@ export class RealtimeMonitoringIntegration {
         },
       });
     });
-
   }
 
   // Integrate with existing performance monitoring system

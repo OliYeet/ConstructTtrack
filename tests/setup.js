@@ -70,9 +70,35 @@ global.NextResponse = {
   }),
 };
 
+// Mock Next.js NextRequest for API tests
+global.NextRequest = class NextRequest {
+  constructor(url, init = {}) {
+    this.url = url;
+    this.method = init.method || 'GET';
+    this.headers = new Map();
+    this.body = init.body || null;
+
+    // Add required NextRequest properties
+    this.cookies = {
+      get: jest.fn(),
+      set: jest.fn(),
+      delete: jest.fn(),
+    };
+    this.nextUrl = new URL(url);
+    this.page = undefined;
+    this.ua = {};
+    this.INTERNALS = Symbol('NextRequest internals');
+  }
+
+  json() {
+    return Promise.resolve(JSON.parse(this.body));
+  }
+};
+
 // Mock Next.js server module
 jest.mock('next/server', () => ({
   NextResponse: global.NextResponse,
+  NextRequest: global.NextRequest,
 }));
 
 module.exports = {};
