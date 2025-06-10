@@ -8,6 +8,7 @@ jest.mock('@/app/api/v1/health/route', () => ({
   GET: jest.fn(),
 }));
 
+import { NextRequest } from 'next/server';
 import { GET } from '@/app/api/v1/health/route';
 
 describe('/api/v1/health - Basic Tests', () => {
@@ -33,10 +34,10 @@ describe('/api/v1/health - Basic Tests', () => {
 
     (GET as jest.Mock).mockResolvedValueOnce(mockHealthResponse);
 
-    const mockRequest = {} as Request;
-    const result = await GET(mockRequest);
+    const mockRequest = new NextRequest('http://localhost:3000/api/v1/health');
+    const result = await GET(mockRequest, { params: Promise.resolve({}) });
 
     expect(result).toBeDefined();
-    expect(GET).toHaveBeenCalledWith(mockRequest);
+    expect(GET).toHaveBeenCalledWith(mockRequest, { params: Promise.resolve({}) });
   });
 });

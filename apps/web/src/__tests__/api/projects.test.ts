@@ -9,6 +9,7 @@ jest.mock('@/app/api/v1/projects/route', () => ({
   POST: jest.fn(),
 }));
 
+import { NextRequest } from 'next/server';
 import { GET, POST } from '@/app/api/v1/projects/route';
 
 describe('/api/v1/projects - Basic Tests', () => {
@@ -30,13 +31,13 @@ describe('/api/v1/projects - Basic Tests', () => {
 
       (GET as jest.Mock).mockResolvedValueOnce(mockResponse);
 
-      const mockRequest = {} as Request;
+      const mockRequest = new NextRequest(
+        'http://localhost:3000/api/v1/projects'
+      );
       const result = await GET(mockRequest, { params: Promise.resolve({}) });
 
       expect(result).toBeDefined();
-      expect(GET).toHaveBeenCalledWith(mockRequest, {
-        params: Promise.resolve({}),
-      });
+      expect(GET).toHaveBeenCalledWith(mockRequest, { params: Promise.resolve({}) });
     });
   });
 
@@ -54,13 +55,17 @@ describe('/api/v1/projects - Basic Tests', () => {
 
       (POST as jest.Mock).mockResolvedValueOnce(mockResponse);
 
-      const mockRequest = {} as Request;
+      const mockRequest = new NextRequest(
+        'http://localhost:3000/api/v1/projects',
+        {
+          method: 'POST',
+          body: JSON.stringify({ name: 'Test Project' }),
+        }
+      );
       const result = await POST(mockRequest, { params: Promise.resolve({}) });
 
       expect(result).toBeDefined();
-      expect(POST).toHaveBeenCalledWith(mockRequest, {
-        params: Promise.resolve({}),
-      });
+      expect(POST).toHaveBeenCalledWith(mockRequest, { params: Promise.resolve({}) });
     });
   });
 });

@@ -329,7 +329,7 @@ async function handlePrivacyRequest(parameters: {
         requestType: 'consent-withdrawal',
         status: success ? 'completed' : 'failed',
         userId,
-        consentId: details.consentId,
+        consentId: details?.consentId as string | undefined,
         processedAt: new Date().toISOString(),
       };
     }

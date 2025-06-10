@@ -263,7 +263,7 @@ export class ResourceCollector extends BaseRealtimeCollector {
       totalSamples;
   }
 
-  private checkMemoryLeak(_currentMemoryMB: number): void {
+  private checkMemoryLeak(): void {
     if (this.memoryHistory.length < 20) {
       return; // Need at least 20 samples
     }
