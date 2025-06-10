@@ -116,11 +116,16 @@ async function handleGet(
   // Dynamically import Supabase client
   const { supabase } = await import('@constructtrack/supabase/client');
 
+  // Ensure organizationId is available
+  if (!context.organizationId) {
+    throw new Error('Organization ID is required');
+  }
+
   // Build query
   let query = supabase
     .from('projects')
     .select('*', { count: 'exact' })
-    .eq('organization_id', context.organizationId!);
+    .eq('organization_id', context.organizationId);
 
   // Apply filters
   if (queryParams.status) {
@@ -184,9 +189,14 @@ async function handlePost(
   // Dynamically import Supabase client
   const { supabase } = await import('@constructtrack/supabase/client');
 
+  // Ensure organizationId is available
+  if (!context.organizationId) {
+    throw new Error('Organization ID is required');
+  }
+
   // Prepare data for insertion
   const insertData = {
-    organization_id: context.organizationId!,
+    organization_id: context.organizationId,
     name: projectData.name,
     description: projectData.description || null,
     start_date: projectData.startDate || null,

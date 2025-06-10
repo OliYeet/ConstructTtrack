@@ -27,14 +27,16 @@ describe('/api/v1/projects - Basic Tests', () => {
         json: () => Promise.resolve({ success: true, data: [] }),
         status: 200,
       };
-      
+
       (GET as jest.Mock).mockResolvedValueOnce(mockResponse);
-      
+
       const mockRequest = {} as Request;
       const result = await GET(mockRequest, { params: Promise.resolve({}) });
-      
+
       expect(result).toBeDefined();
-      expect(GET).toHaveBeenCalledWith(mockRequest, { params: Promise.resolve({}) });
+      expect(GET).toHaveBeenCalledWith(mockRequest, {
+        params: Promise.resolve({}),
+      });
     });
   });
 
@@ -49,14 +51,16 @@ describe('/api/v1/projects - Basic Tests', () => {
         json: () => Promise.resolve({ success: true, data: { id: '123' } }),
         status: 201,
       };
-      
+
       (POST as jest.Mock).mockResolvedValueOnce(mockResponse);
-      
+
       const mockRequest = {} as Request;
       const result = await POST(mockRequest, { params: Promise.resolve({}) });
-      
+
       expect(result).toBeDefined();
-      expect(POST).toHaveBeenCalledWith(mockRequest, { params: Promise.resolve({}) });
+      expect(POST).toHaveBeenCalledWith(mockRequest, {
+        params: Promise.resolve({}),
+      });
     });
   });
 });

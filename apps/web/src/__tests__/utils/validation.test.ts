@@ -37,7 +37,7 @@ describe('Validation Utilities', () => {
     it('should validate latitude ranges', () => {
       expect(47.6062).toBeGreaterThanOrEqual(-90);
       expect(47.6062).toBeLessThanOrEqual(90);
-      
+
       expect(-91).toBeLessThan(-90); // Invalid
       expect(91).toBeGreaterThan(90); // Invalid
     });
@@ -45,7 +45,7 @@ describe('Validation Utilities', () => {
     it('should validate longitude ranges', () => {
       expect(-122.3321).toBeGreaterThanOrEqual(-180);
       expect(-122.3321).toBeLessThanOrEqual(180);
-      
+
       expect(-181).toBeLessThan(-180); // Invalid
       expect(181).toBeGreaterThan(180); // Invalid
     });
@@ -54,7 +54,7 @@ describe('Validation Utilities', () => {
   describe('budget validation', () => {
     it('should accept positive numbers', () => {
       expect(50000).toBeGreaterThan(0);
-      expect(1.50).toBeGreaterThan(0);
+      expect(1.5).toBeGreaterThan(0);
     });
 
     it('should reject negative numbers', () => {
