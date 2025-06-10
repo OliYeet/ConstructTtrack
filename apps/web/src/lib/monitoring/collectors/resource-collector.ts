@@ -191,7 +191,7 @@ export class ResourceCollector extends BaseRealtimeCollector {
         percentage: totalMemory ? (memUsage.rss / totalMemory) * 100 : 0,
       },
       cpu: {
-        usage: Math.max(0, Math.min(100, cpuPercentage)), // Clamp between 0-100
+        usage: cpuPercentage, // No clamping - let callers decide how to interpret values
         loadAverage,
         userTime: currentCpuUsage.user,
         systemTime: currentCpuUsage.system,
