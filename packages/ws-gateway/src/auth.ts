@@ -3,11 +3,45 @@
  * Implements Charlie's JWT verification and authorization strategy
  */
 
+import { createHash } from 'crypto';
+
 import jwt from 'jsonwebtoken';
 
 import { config } from './config';
 import type { AuthContext } from './types';
 import { logger } from './utils/logger';
+
+/**
+ * Create a secure token preview for logging without exposing PII
+ * Returns only the JWT header segment or a hash of the token
+ */
+function createSecureTokenPreview(token: string): string {
+  try {
+    // Extract only the JWT header (first segment before first dot)
+    const headerSegment = token.split('.')[0];
+    if (headerSegment && headerSegment.length > 0) {
+      return `header:${headerSegment}`;
+    }
+
+    // Fallback: create a hash of the token for identification
+    const tokenHash = createHash('sha256')
+      .update(token)
+      .digest('hex')
+      .substring(0, 16);
+    return `hash:${tokenHash}`;
+  } catch {
+    // If anything fails, create a simple hash
+    try {
+      const tokenHash = createHash('sha256')
+        .update(token)
+        .digest('hex')
+        .substring(0, 16);
+      return `hash:${tokenHash}`;
+    } catch {
+      return 'token:redacted';
+    }
+  }
+}
 
 /**
  * Verify JWT token and extract auth context
@@ -100,7 +134,7 @@ export function verifyToken(token: string): AuthContext | null {
         `JWT verification failed - JsonWebTokenError: ${error.message}`,
         {
           errorName: error.name,
-          tokenPreview: token.substring(0, 20) + '...',
+          tokenPreview: createSecureTokenPreview(token),
         }
       );
     } else if (error instanceof jwt.TokenExpiredError) {
@@ -121,7 +155,7 @@ export function verifyToken(token: string): AuthContext | null {
         error: error instanceof Error ? error.message : String(error),
         errorType:
           error instanceof Error ? error.constructor.name : typeof error,
-        tokenPreview: token.substring(0, 20) + '...',
+        tokenPreview: createSecureTokenPreview(token),
       });
     }
     return null;

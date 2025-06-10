@@ -75,7 +75,9 @@ class CorrelationStore {
     // Only use AsyncLocalStorage in server environment
     if (typeof window === 'undefined') {
       try {
-        const { AsyncLocalStorage } = eval('require')('node:async_hooks');
+        // Use direct require inside try-catch for synchronous import in server environment
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const { AsyncLocalStorage } = require('node:async_hooks');
         this.als = new AsyncLocalStorage();
       } catch {
         // Fallback if AsyncLocalStorage is not available

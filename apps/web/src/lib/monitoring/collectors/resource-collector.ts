@@ -139,8 +139,18 @@ export class ResourceCollector extends BaseRealtimeCollector {
         // Minimum 10ms to avoid division by zero
         // Convert microseconds to milliseconds and calculate percentage
         const totalCpuTime = (cpuDelta.user + cpuDelta.system) / 1000; // ms
-        // Use a default of 1 core, will be updated with actual count later
-        const cores = 1; // Default, will use actual count from os module if available
+
+        // Get actual CPU count first, then calculate percentage
+        let cores = 1; // Default fallback
+        try {
+          if (typeof process !== 'undefined' && process.versions?.node) {
+            const os = await import('os');
+            cores = os.cpus().length;
+          }
+        } catch {
+          // Use default if os module is not available
+        }
+
         cpuPercentage = (totalCpuTime / (timeDelta * cores)) * 100;
 
         // Don’t clamp – callers can decide how to interpret >100 %
@@ -217,7 +227,7 @@ export class ResourceCollector extends BaseRealtimeCollector {
     this.updateCpuStats(metrics.cpu.usage);
 
     // Check for memory leaks
-    this.checkMemoryLeak(memoryUsageMB);
+    this.checkMemoryLeak();
   }
 
   private updateMemoryStats(memoryUsageMB: number): void {

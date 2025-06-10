@@ -81,40 +81,38 @@ class MockNextRequest {
   private _body: unknown;
 
   constructor(
-    url?:
-      | string
-      | {
-          url?: string;
-          method?: string;
-          headers?: MockHeaders | Record<string, string>;
-          body?: unknown;
-        },
-    options?: {
+    url: string,
+    init: {
       method?: string;
       headers?: MockHeaders | Record<string, string>;
       body?: unknown;
-    }
+    } = {}
   ) {
-    // Handle both NextRequest(url, options) and MockNextRequest(_info) patterns
-    if (typeof url === 'string') {
-      this.url = url;
-      this.method = options?.method || 'GET';
-      this.headers =
-        options?.headers instanceof MockHeaders
-          ? options.headers
-          : new MockHeaders(options?.headers || {});
-      this._body = options?.body;
-    } else {
-      // Legacy _info pattern
-      const _info = url || {};
-      this.url = _info.url || 'http://localhost:3000/api/test';
-      this.method = _info.method || 'GET';
-      this.headers =
-        _info.headers instanceof MockHeaders
-          ? _info.headers
-          : new MockHeaders(_info.headers || {});
-      this._body = _info.body;
-    }
+    // Canonical constructor form - always requires a URL string
+    this.url = url;
+    this.method = init.method || 'GET';
+    this.headers =
+      init.headers instanceof MockHeaders
+        ? init.headers
+        : new MockHeaders(init.headers || {});
+    this._body = init.body;
+  }
+
+  // Static helper method for legacy info-object pattern
+  static fromInfo(
+    info: {
+      url?: string;
+      method?: string;
+      headers?: MockHeaders | Record<string, string>;
+      body?: unknown;
+    } = {}
+  ): MockNextRequest {
+    const url = info.url || 'http://localhost:3000/api/test';
+    return new MockNextRequest(url, {
+      method: info.method,
+      headers: info.headers,
+      body: info.body,
+    });
   }
 
   async json() {
@@ -124,12 +122,12 @@ class MockNextRequest {
 
 /* Make mocks globally visible for convenience (optional) */
 // Only polyfill Headers if the runtime does not already provide it
-if (typeof (global as { Headers?: unknown }).Headers === 'undefined') {
-  (global as { Headers: typeof MockHeaders }).Headers = MockHeaders;
+if (typeof (globalThis as { Headers?: unknown }).Headers === 'undefined') {
+  (globalThis as { Headers: typeof MockHeaders }).Headers = MockHeaders;
 }
-(global as { NextResponse: typeof MockNextResponse }).NextResponse =
+(globalThis as { NextResponse: typeof MockNextResponse }).NextResponse =
   MockNextResponse;
-(global as { NextRequest: typeof MockNextRequest }).NextRequest =
+(globalThis as { NextRequest: typeof MockNextRequest }).NextRequest =
   MockNextRequest;
 
 /* Provide module mock so `import { NextResponse } from 'next/server'` resolves */
@@ -198,7 +196,6 @@ declare const afterAll: (fn: () => void) => void;
 declare const expect: {
   extend: (matchers: Record<string, unknown>) => void;
 } & jest.Matchers<unknown>;
-declare const global: Record<string, unknown>;
 
 declare const Headers: {
   new (init?: [string, string][]): {
@@ -307,12 +304,21 @@ expect.extend({
   },
 });
 
-// Mock fetch for tests
-global.fetch = jest.fn(() =>
+// Mock fetch for tests with proper Response-like object
+globalThis.fetch = jest.fn(() =>
   Promise.resolve({
     ok: true,
+    status: 200,
+    statusText: 'OK',
+    headers: new Map([['content-type', 'application/json']]),
     json: () => Promise.resolve({}),
-  })
+    text: () => Promise.resolve('{}'),
+    blob: () => Promise.resolve(new Blob()),
+    arrayBuffer: () => Promise.resolve(new ArrayBuffer(0)),
+    clone: function () {
+      return this;
+    },
+  } as Response)
 ) as jest.MockedFunction<typeof fetch>;
 
 // Mock Supabase client

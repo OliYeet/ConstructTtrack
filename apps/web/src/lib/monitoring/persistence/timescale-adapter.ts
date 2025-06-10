@@ -30,9 +30,10 @@ export interface QueryOptions {
   startTime?: Date;
   endTime?: Date;
   limit?: number;
-  aggregation?: 'avg' | 'max' | 'min' | 'sum' | 'count';
-  groupBy?: string[];
-  interval?: string; // e.g., '1 hour', '5 minutes'
+  // TODO: Implement aggregation, groupBy, and interval in a future version
+  // aggregation?: 'avg' | 'max' | 'min' | 'sum' | 'count';
+  // groupBy?: string[];
+  // interval?: string; // e.g., '1 hour', '5 minutes'
 }
 
 // Query result
@@ -320,9 +321,10 @@ export class TimescaleAdapter implements MetricPersistenceAdapter {
       });
 
       // Use upsert for better performance with potential duplicates
-      // Match the database primary key: (time, metric_name, tags)
+      // Avoid JSONB comparison in conflict target for better performance
+      // Use only time and metric_name for conflict detection
       const { error } = await supabase.from('realtime_metrics').upsert(rows, {
-        onConflict: 'time,metric_name,tags',
+        onConflict: 'time,metric_name',
         ignoreDuplicates: true,
       });
 

@@ -374,26 +374,19 @@ export class PrivacyComplianceManager {
     }
   }
 
-  // Data export for access requests
+  // Data export for access requests - read-only operation
   private async generateDataExport(
     userId: string
   ): Promise<Record<string, unknown>> {
     const consents = this.consentRecords.get(userId) || [];
     const processing = this.processingRecords.get(userId) || [];
-
-    // Mark processing records for deletion
-    processing.forEach(p => {
-      p.retentionPeriod = 0; // or introduce a dedicated `markedForDeletion` boolean
-    });
-
-    this.processingRecords.set(userId, processing);
     const requests = this.dataSubjectRequests.get(userId) || [];
 
     return {
       userId,
       exportDate: new Date().toISOString(),
       consents,
-      processingRecords: processing,
+      processingRecords: processing, // Export original data without modification
       dataSubjectRequests: requests,
       // Add other user data as needed
     };
@@ -416,6 +409,11 @@ export class PrivacyComplianceManager {
         consent.withdrawalDate = new Date().toISOString();
       }
     });
+
+    // Mark processing records for deletion if needed
+    // processing.forEach(record => {
+    //   record.retentionPeriod = 0; // Mark for deletion
+    // });
 
     if (this.config.enableAuditLogging) {
       const logger = getLogger();

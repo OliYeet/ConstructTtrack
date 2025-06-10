@@ -301,18 +301,38 @@ const fs = require('fs');
 
   checkWCAGCompliance(level) {
     const axeResults = Object.values(this.results.axeResults);
-    const criticalViolations = axeResults.reduce((sum, result) => {
-      return (
-        sum +
-        result.violationDetails.filter(
-          v => v.impact === 'critical' || v.impact === 'serious'
-        ).length
-      );
-    }, 0);
 
-    if (level === '2A') return criticalViolations === 0;
-    if (level === '2AA') return criticalViolations <= 0; // customise
-    if (level === '2AAA') return criticalViolations <= 0; // customise
+    // Count violations by impact level
+    const violationCounts = axeResults.reduce(
+      (counts, result) => {
+        result.violationDetails.forEach(v => {
+          counts[v.impact] = (counts[v.impact] || 0) + 1;
+        });
+        return counts;
+      },
+      { critical: 0, serious: 0, moderate: 0, minor: 0 }
+    );
+
+    // WCAG 2A: No critical violations allowed
+    if (level === '2A') {
+      return violationCounts.critical === 0;
+    }
+
+    // WCAG 2AA: No critical violations, allow some minor violations but limit serious/moderate
+    if (level === '2AA') {
+      return violationCounts.critical === 0 && violationCounts.serious === 0;
+    }
+
+    // WCAG 2AAA: Strictest criteria - no violations allowed
+    if (level === '2AAA') {
+      return (
+        violationCounts.critical === 0 &&
+        violationCounts.serious === 0 &&
+        violationCounts.moderate === 0 &&
+        violationCounts.minor === 0
+      );
+    }
+
     return false;
   }
 

@@ -5,7 +5,11 @@
 
 import { NextRequest } from 'next/server';
 
-import { withApiMiddleware, createSuccessResponse } from '@/lib/api';
+import {
+  withApiMiddleware,
+  createSuccessResponse,
+  createErrorResponse,
+} from '@/lib/api';
 import {
   getVersionInfo,
   MigrationHelper,
@@ -14,6 +18,7 @@ import {
   ApiVersion,
   getVersionAnalytics,
 } from '@/lib/api/versioning';
+import { ValidationError } from '@/lib/errors/api-errors';
 
 // GET /api/version - Get comprehensive version information
 export const GET = withApiMiddleware({
@@ -21,8 +26,15 @@ export const GET = withApiMiddleware({
     const url = new URL(request.url);
     const action = url.searchParams.get('action') || 'info';
     const versionParam = url.searchParams.get('version');
-    if (versionParam && !Object.keys(API_VERSIONS).includes(versionParam)) {
-      return createSuccessResponse({ error: 'Unsupported version supplied' });
+    if (
+      versionParam !== null &&
+      !Object.keys(API_VERSIONS).includes(versionParam)
+    ) {
+      return createErrorResponse(
+        new ValidationError(
+          `Unsupported API version: ${versionParam}. Supported versions: ${Object.keys(API_VERSIONS).join(', ')}`
+        )
+      );
     }
     const version = versionParam as ApiVersion | undefined;
 

@@ -5,6 +5,10 @@
 
 describe('Integration Tests', () => {
   describe('Mock API Integration', () => {
+    afterEach(() => {
+      // Restore all mocks after each test to prevent side effects
+      jest.restoreAllMocks();
+    });
     test('should mock API calls', async () => {
       // Mock fetch function
       global.fetch = jest.fn().mockResolvedValue({

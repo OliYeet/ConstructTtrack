@@ -94,7 +94,7 @@ export abstract class BaseRealtimeCollector
     };
   }
 
-  public start(): void {
+  public async start(): Promise<void> {
     if (this._status === 'running' || this._status === 'starting') {
       return;
     }
@@ -104,7 +104,7 @@ export abstract class BaseRealtimeCollector
     this._stats.startTime = this._startTime.toISOString();
 
     try {
-      this.onStart();
+      await this.onStart();
       this._status = 'running';
       this._stats.status = 'running';
       this.emit('started', this.id);

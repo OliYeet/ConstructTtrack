@@ -15,9 +15,82 @@ import { RealtimeAlertManager } from './realtime-alerts';
 import {
   RealtimeLatencyMetric,
   RealtimeAlert,
+  RealtimePerformanceStats,
+  RealtimeMonitoringEvent,
   defaultRealtimeMonitoringConfig,
 } from './realtime-metrics';
 import { realtimePerformanceMonitor } from './realtime-performance-monitor';
+
+// Event payload type definitions
+type AlertEventPayload = RealtimeAlert;
+type StatsEventPayload = RealtimePerformanceStats;
+type MetricEventPayload = RealtimeMonitoringEvent;
+
+// Type guard functions for safe type narrowing
+function isRealtimeAlert(data: unknown): data is RealtimeAlert {
+  return (
+    typeof data === 'object' &&
+    data !== null &&
+    'id' in data &&
+    'timestamp' in data &&
+    'type' in data &&
+    'severity' in data &&
+    'message' in data &&
+    typeof (data as RealtimeAlert).id === 'string' &&
+    typeof (data as RealtimeAlert).timestamp === 'number' &&
+    ['latency', 'error_rate', 'connection', 'throughput'].includes(
+      (data as RealtimeAlert).type
+    ) &&
+    ['warning', 'critical'].includes((data as RealtimeAlert).severity) &&
+    typeof (data as RealtimeAlert).message === 'string'
+  );
+}
+
+function isRealtimePerformanceStats(
+  data: unknown
+): data is RealtimePerformanceStats {
+  return (
+    typeof data === 'object' &&
+    data !== null &&
+    'totalEvents' in data &&
+    'timeWindow' in data &&
+    'latencyStats' in data &&
+    'connectionStats' in data &&
+    'errorStats' in data &&
+    'throughputStats' in data &&
+    typeof (data as RealtimePerformanceStats).totalEvents === 'number'
+  );
+}
+
+function isRealtimeMonitoringEvent(
+  data: unknown
+): data is RealtimeMonitoringEvent {
+  return (
+    typeof data === 'object' &&
+    data !== null &&
+    'type' in data &&
+    ['stats_calculated', 'alert_triggered', 'threshold_exceeded'].includes(
+      (data as RealtimeMonitoringEvent).type
+    )
+  );
+}
+
+function isLatencyMetricEvent(
+  event: RealtimeMonitoringEvent
+): event is { type: 'latency'; metric: RealtimeLatencyMetric } {
+  // Note: Based on the current code usage, it seems 'latency' is a custom event type
+  // This type guard checks for the expected structure used in the existing code
+  return (
+    'type' in event &&
+    event.type === 'latency' &&
+    'metric' in event &&
+    typeof event.metric === 'object' &&
+    event.metric !== null &&
+    'eventId' in event.metric &&
+    'eventType' in event.metric &&
+    'latencies' in event.metric
+  );
+}
 
 // Integration manager for real-time monitoring
 export class RealtimeMonitoringIntegration {
@@ -73,13 +146,29 @@ export class RealtimeMonitoringIntegration {
   private setupEventListeners(): void {
     // Listen for alerts and send them through alert manager
     realtimePerformanceMonitor.on('alert', async (data: unknown) => {
-      const alert = data as RealtimeAlert;
+      if (!isRealtimeAlert(data)) {
+        const logger = getLogger();
+        logger.warn('Invalid alert event payload received', {
+          metadata: { receivedData: data },
+        });
+        return;
+      }
+
+      const alert: AlertEventPayload = data;
       await this.alertManager.sendAlert(alert);
     });
 
     // Listen for performance stats and log them
     realtimePerformanceMonitor.on('stats', (data: unknown) => {
-      const stats = data as any; // Type assertion for stats object
+      if (!isRealtimePerformanceStats(data)) {
+        const logger = getLogger();
+        logger.warn('Invalid stats event payload received', {
+          metadata: { receivedData: data },
+        });
+        return;
+      }
+
+      const stats: StatsEventPayload = data;
       const logger = getLogger();
       logger.info('Real-time performance stats calculated', {
         metadata: {
@@ -96,9 +185,19 @@ export class RealtimeMonitoringIntegration {
 
     // Listen for metrics and optionally sample them for detailed logging
     realtimePerformanceMonitor.on('metric', (data: unknown) => {
-      const event = data as any; // Type assertion for event object
-      if (event.type === 'latency') {
-        const metric = event.metric as RealtimeLatencyMetric;
+      if (!isRealtimeMonitoringEvent(data)) {
+        const logger = getLogger();
+        logger.warn('Invalid metric event payload received', {
+          metadata: { receivedData: data },
+        });
+        return;
+      }
+
+      const event: MetricEventPayload = data;
+
+      // Check if this is a latency metric event (custom type based on existing code)
+      if (isLatencyMetricEvent(event)) {
+        const metric = event.metric;
 
         // Log high-latency events for debugging
         if (metric.latencies.endToEnd && metric.latencies.endToEnd > 1000) {

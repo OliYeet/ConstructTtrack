@@ -16,6 +16,8 @@
 
 /* eslint-env node */
 
+const crypto = require('crypto');
+
 const jwt = require('jsonwebtoken');
 
 // ANSI color codes for console output
@@ -98,7 +100,13 @@ function testTokenCreationAndVerification() {
     });
 
     logSuccess('JWT token created successfully');
-    logInfo(`Token preview: ${token.substring(0, 50)}...`);
+    // Log secure hash instead of token content to prevent PII exposure
+    const tokenHash = crypto
+      .createHash('sha256')
+      .update(token)
+      .digest('hex')
+      .substring(0, 16);
+    logInfo(`Token hash: ${tokenHash}`);
 
     // Verify token
     const decoded = jwt.verify(token, jwtSecret, {
@@ -224,17 +232,17 @@ function main() {
   let allTestsPassed = true;
 
   // Run validation tests
-  allTestsPassed &= validateEnvironmentVariables();
+  allTestsPassed &&= validateEnvironmentVariables();
   console.log();
 
   if (process.env.JWT_SECRET) {
-    allTestsPassed &= testTokenCreationAndVerification();
+    allTestsPassed &&= testTokenCreationAndVerification();
     console.log();
 
-    allTestsPassed &= testClockSkew();
+    allTestsPassed &&= testClockSkew();
     console.log();
 
-    allTestsPassed &= testMalformedTokens();
+    allTestsPassed &&= testMalformedTokens();
     console.log();
   }
 

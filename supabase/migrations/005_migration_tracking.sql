@@ -57,24 +57,8 @@ BEGIN
         $ddl$;
         RETURN TRUE;
     END IF;
-            applied_at TIMESTAMPTZ DEFAULT NOW(),
-            applied_by TEXT DEFAULT current_user,
-            execution_time_ms INTEGER,
-            success BOOLEAN DEFAULT true,
-            error_message TEXT,
-            rollback_sql TEXT,
-            metadata JSONB DEFAULT '{}',
-            created_at TIMESTAMPTZ DEFAULT NOW()
-        );
-        
-        CREATE INDEX IF NOT EXISTS idx_schema_migrations_filename ON schema_migrations(filename);
-        CREATE INDEX IF NOT EXISTS idx_schema_migrations_applied_at ON schema_migrations(applied_at);
-        CREATE INDEX IF NOT EXISTS idx_schema_migrations_success ON schema_migrations(success);
-        
-        RETURN true;
-    END IF;
-    
-    RETURN false;
+
+    RETURN FALSE;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 

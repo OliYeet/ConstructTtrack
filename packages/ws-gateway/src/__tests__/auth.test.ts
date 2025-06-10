@@ -19,6 +19,18 @@ describe('Authentication', () => {
   // Use consistent time for all tests to avoid timing issues in CI
   const baseTime = Math.floor(Date.now() / 1000);
 
+  beforeAll(() => {
+    // Use fake timers to ensure deterministic test behavior
+    jest.useFakeTimers();
+    // Set system time to baseTime * 1000 (milliseconds)
+    jest.setSystemTime(baseTime * 1000);
+  });
+
+  afterAll(() => {
+    // Restore real timers after tests complete
+    jest.useRealTimers();
+  });
+
   describe('verifyToken', () => {
     it('should verify valid JWT token', () => {
       const payload = {

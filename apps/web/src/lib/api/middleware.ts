@@ -258,7 +258,7 @@ export function withApiMiddleware(
       }
 
       // Start API metrics tracking
-      const requestId = apiMetricsTracker.recordRequestStart(
+      const requestId = await apiMetricsTracker.recordRequestStart(
         request,
         requestContext
       );
@@ -617,7 +617,7 @@ export function withApiMiddleware(
       }
 
       // Record API metrics
-      apiMetricsTracker.recordRequestEnd(
+      await apiMetricsTracker.recordRequestEnd(
         request,
         response,
         requestId,
